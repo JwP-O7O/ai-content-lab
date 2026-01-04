@@ -20,6 +20,7 @@ try:
     from src.autonomous_agents.execution.feature_architect import FeatureArchitect
     from src.autonomous_agents.execution.deep_debugger import DeepDebugger
     from src.autonomous_agents.execution.visionary_agent import VisionaryAgent
+    from src.autonomous_agents.execution.web_architect import WebArchitect # NIEUW
 except ImportError as e:
     logger.critical(f"IMPORT ERROR: {e}")
     sys.exit(1)
@@ -29,10 +30,11 @@ class TermuxMasterOrchestrator:
         self.is_running = False
         self.cycle_count = 0
         
-        # Team All In AI
+        # Het Team
         self.publisher = GitPublisher()
         self.listener = GitHubListener()
-        self.architect = FeatureArchitect()
+        self.architect = FeatureArchitect() # Python
+        self.web_architect = WebArchitect() # HTML/JS (Nieuw)
         self.debugger = DeepDebugger()
         self.visionary = VisionaryAgent()
         
@@ -57,70 +59,62 @@ class TermuxMasterOrchestrator:
         logger.info(f"--- 🔄 Cycle #{self.cycle_count} ---")
         last_action = "Monitoring..."
         
-        # 1. CHECK ORDERS
         orders = await self.listener.check_for_orders()
         if orders.get("status") == "new_tasks":
             for task in orders['tasks']:
                 
-                # A. CODE BOUWEN
-                if task['type'] == 'code':
+                # A. WEBSITE BOUWEN (NIEUW)
+                if "WEB:" in task['title'].upper():
+                    logger.info(f"🌐 Web Taak: {task['title']}")
+                    res = await self.web_architect.build_website(f"{task['title']} {task['body']}")
+                    
+                    if res['status'] == 'built':
+                        # Eerst pushen
+                        await self.publisher.publish_changes()
+                        
+                        # Live link genereren
+                        # Jouw GitHub gebruikersnaam is JwP-O7O
+                        live_url = f"https://JwP-O7O.github.io/ai-content-lab/apps/{res['filename']}"
+                        
+                        msg = f"✅ **Website Online!**\n\nJe kunt de app hier bekijken en spelen:\n👉 [**KLIK OM TE OPENEN**]({live_url})\n\n*(Geef GitHub Pages 1-2 minuten om te updaten)*"
+                        task['issue_obj'].create_comment(msg)
+                        last_action = f"🌐 Web App: {res['filename']}"
+
+                # B. CODE BOUWEN (PYTHON)
+                elif task['type'] == 'code':
                     logger.info(f"⚙️ Code taak: {task['title']}")
                     res = await self.architect.build_feature(f"{task['title']} {task['body']}")
                     if res['status'] == 'built':
                         await self.publisher.publish_changes()
-                        msg = f"✅ **Code Gebouwd & Live!**\nBestand: `{res['file']}`"
+                        msg = f"✅ **Python Code Gebouwd!**\nBestand: `{res['file']}`"
                         task['issue_obj'].create_comment(msg)
                         last_action = f"🏗️ Code: {res['file']}"
 
-                # B. AFBEELDING MAKEN (DE URL FIX)
+                # C. AFBEELDING MAKEN
                 elif "IMG:" in task['title'].upper():
                     prompt = task['title'].replace("IMG:", "").strip()
                     logger.info(f"🎨 Foto taak: {prompt}")
                     res = self.visionary.generate_image(prompt, "github_order")
-                    
                     if res['status'] == 'success':
-                        logger.info("🚀 Afbeelding direct uploaden naar GitHub...")
-                        # 1. Push
                         await self.publisher.publish_changes()
-                        
-                        # 2. Maak URLs
                         img_filename = os.path.basename(res['file'])
-                        
-                        # URL A: De Viewer Link (Werkt ALTIJD, ook als raw nog niet cached is)
                         blob_url = f"https://github.com/JwP-O7O/ai-content-lab/blob/main/data/images/{img_filename}"
-                        
-                        # URL B: De Raw Link (Voor embedding, kan vertraagd zijn)
                         raw_url = f"https://raw.githubusercontent.com/JwP-O7O/ai-content-lab/main/data/images/{img_filename}"
-                        
-                        # 3. Het bericht met beide opties
-                        msg = f"""✅ **Afbeelding Gegenereerd!**
-                        
-Het bestand is opgeslagen als: `{img_filename}`
-
-👉 [**KLIK HIER OM DE AFBEELDING TE ZIEN**]({blob_url})
-*(Gebruik de link hierboven als de preview hieronder nog aan het laden is)*
-
----
-![Preview]({raw_url})
-"""
+                        msg = f"✅ **Afbeelding Gegenereerd!**\n\n👉 [**KLIK HIER OM TE ZIEN**]({blob_url})\n\n![Preview]({raw_url})"
                         task['issue_obj'].create_comment(msg)
-                        
-                        last_action = "🎨 Afbeelding gemaakt & gepusht"
+                        last_action = "🎨 Afbeelding gemaakt"
 
-                # C. CONTENT SCHRIJVEN
+                # D. CONTENT SCHRIJVEN
                 elif task['type'] == 'content':
-                    logger.info(f"📝 Content taak: {task['title']}")
-                    with open(f"data/output/task_{datetime.now().strftime('%S')}.md", 'w') as f: 
-                        f.write(task['title'])
+                    with open(f"data/output/task_{datetime.now().strftime('%S')}.md", 'w') as f: f.write(task['title'])
                     last_action = "✍️ Artikel gestart"
 
-        # 2. CONTENT PIPELINE
+        # Content Pipeline & Publish
         content = await self.content_monitor.analyze()
         if content['status'] == 'issues':
             await self.content_editor.fix_content(content['details'])
             await self.content_writer.expand_content()
 
-        # 3. PUBLISH
         await self._update_remote_status(last_action)
         await self.publisher.publish_changes()
         
