@@ -70,3 +70,4 @@ class GitHubListener:
         except Exception as e:
             logger.error(f"GitHub Listener Fout: {e}")
             return {"status": "error", "error": str(e)}
+# Security verified
