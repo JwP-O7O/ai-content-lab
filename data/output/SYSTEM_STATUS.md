@@ -2,5 +2,5 @@
 
 | Metric | Waarde |
 |---|---|
-| **Update** | `07:26:20` |
+| **Update** | `07:26:43` |
 | **Actie** | Monitoring... |
