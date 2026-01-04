@@ -2,14 +2,14 @@ from github import Github
 from loguru import logger
 import os
 
-# JOUW TOKEN (Correct zonder spaties)
+# JOUW SPECIFIEKE TOKEN (Hersteld)
 GITHUB_TOKEN = "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"
 REPO_NAME = "JwP-O7O/ai-content-lab"
 
 class GitHubListener:
     def __init__(self):
         self.name = "GitHubListener"
-        self.token = GITHUB_TOKEN 
+        self.token = GITHUB_TOKEN
         self.repo_name = REPO_NAME
         
     async def check_for_orders(self):
@@ -25,16 +25,18 @@ class GitHubListener:
             
             for issue in open_issues:
                 # 1. Veiligheidscheck: Hebben we dit al behandeld?
-                # We kijken of de bot al heeft gereageerd met "Opdracht Geaccepteerd"
-                # Of we kijken naar de titel (als die al aangepast is met 🤖)
                 if "🤖" in issue.title:
                     continue
                 
                 logger.info(f"[{self.name}] Order ontvangen: {issue.title}")
+                title_upper = issue.title.upper()
                 
                 # 2. ANALYSE: Wat voor taak is dit?
-                # Als 'BUILD' of 'CODE' in de titel staat -> Programmeertaak
-                if "BUILD:" in issue.title.upper() or "CODE:" in issue.title.upper():
+                if "WEB:" in title_upper or "SITE:" in title_upper:
+                    task_type = "web"
+                elif "IMG:" in title_upper:
+                    task_type = "image"
+                elif "BUILD:" in title_upper or "CODE:" in title_upper:
                     task_type = "code"
                 else:
                     task_type = "content"
