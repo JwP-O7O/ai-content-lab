@@ -1,7 +1,6 @@
-# 🟢 S21 Ultra AI - V13 Self-Healing
+# 🟢 S21 Ultra AI - V13
 
 | Metric | Waarde |
-| :--- | :--- |
-| **Heartbeat** | `06:06:12` |
-| **Laatste Actie** | Monitoring... |
-| **Status** | ✅ MONITORING & HEALING |
+|---|---|
+| **Update** | `06:08:42` |
+| **Actie** | Monitoring... |
