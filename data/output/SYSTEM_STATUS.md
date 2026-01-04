@@ -2,6 +2,6 @@
 
 | Metric | Waarde |
 | :--- | :--- |
-| **Laatste Heartbeat** | `05:35:06` |
+| **Laatste Heartbeat** | `05:36:08` |
 | **Laatste Actie** | Monitoring... |
 | **Status** | ✅ READY FOR CODE & CONTENT |
