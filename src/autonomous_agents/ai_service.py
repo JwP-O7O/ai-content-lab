@@ -5,61 +5,89 @@ import time
 
 class AIService:
     def __init__(self):
-        # De lijst met sleutels (De Pool)
+        # 1. Je API Sleutels
         self.api_keys = [
-            "AIzaSyDgayrzXgtdhNgQd_enucOrVPcg0pXchs8", # Nieuw 1
-            "AIzaSyBQXtSC3mopsBJJgvRQI81hQRy877eklGo", # Nieuw 2
-            "AIzaSyDz2NaBIhS_d30efumafNjclnS8xcnTG4I"  # Oude (Backup)
+            "AIzaSyDgayrzXgtdhNgQd_enucOrVPcg0pXchs8",
+            "AIzaSyBQXtSC3mopsBJJgvRQI81hQRy877eklGo",
+            "AIzaSyDz2NaBIhS_d30efumafNjclnS8xcnTG4I"
         ]
         self.current_key_index = 0
-        self.model_name = "models/gemini-1.5-flash" # Snelste model
+        
+        # 2. JOUW SPECIFIEKE MODELLEN (Uit je curl lijst)
+        # We zetten 'Lite' bovenaan voor snelheid en stabiliteit.
+        self.model_candidates = [
+            "models/gemini-2.0-flash-lite",      # De favoriet (Snel & Stabiel)
+            "models/gemini-2.0-flash",           # De back-up
+            "models/gemini-flash-latest",        # De algemene alias
+            "models/gemini-2.5-flash"            # De nieuwste krachtpatser
+        ]
+        
+        self.active_model_name = None
+        self.model = None
         self.online = False
         
-        self._configure_current_key()
+        self._initialize_connection()
 
-    def _configure_current_key(self):
-        """Activeert de huidige sleutel in de lijst."""
-        try:
-            current_key = self.api_keys[self.current_key_index]
-            # Maskeer de sleutel voor logs (laat alleen laatste 4 tekens zien)
-            masked_key = f"...{current_key[-4:]}"
-            
-            genai.configure(api_key=current_key)
-            self.model = genai.GenerativeModel(self.model_name)
-            self.online = True
-            logger.info(f"🔑 AI Sleutel geactiveerd: {masked_key} (Index {self.current_key_index + 1}/{len(self.api_keys)})")
-        except Exception as e:
-            logger.error(f"❌ Kon sleutel niet configureren: {e}")
+    def _initialize_connection(self):
+        """Probeert verbinding te maken met de sleutels en modellen."""
+        current_key = self.api_keys[self.current_key_index]
+        genai.configure(api_key=current_key)
+        
+        # Test welk model werkt
+        for model_name in self.model_candidates:
+            try:
+                # We maken het object aan (geen netwerk call nog)
+                self.model = genai.GenerativeModel(model_name)
+                self.active_model_name = model_name
+                self.online = True
+                
+                # Maskeer key voor logs
+                masked_key = f"...{current_key[-4:]}"
+                logger.info(f"🧠 AI Verbonden | Model: {model_name} | Key: {masked_key}")
+                return
+            except Exception:
+                continue
+        
+        logger.warning("⚠️ Kon geen model initialiseren. Check internet/keys.")
 
     def _rotate_key(self):
-        """Wisselt naar de volgende sleutel in de lijst."""
         self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
-        logger.warning(f"🔄 Limiet bereikt! Roteren naar sleutel #{self.current_key_index + 1}...")
-        self._configure_current_key()
+        logger.warning(f"🔄 Quota op? Roteren naar API Key #{self.current_key_index + 1}...")
+        self._initialize_connection()
 
     async def generate_text(self, prompt):
+        if not self.online: self._initialize_connection()
         if not self.online: return ""
-        
-        # We proberen het net zo vaak als we sleutels hebben (maximaal 3 pogingen)
-        for attempt in range(len(self.api_keys)):
+
+        for attempt in range(len(self.api_keys) * 2): # Probeer keys en modellen
             try:
                 response = self.model.generate_content(prompt)
-                
                 if response.text:
                     return response.text.replace("```json", "").replace("```python", "").replace("```", "").strip()
-                return ""
+                return "" # Leeg antwoord
                 
             except Exception as e:
                 error_msg = str(e)
-                # Check specifiek op Quota errors (429)
-                if "429" in error_msg or "Quota" in error_msg or "Resource has been exhausted" in error_msg:
-                    # Sleutel is op, draai naar de volgende en probeer in de volgende loop opnieuw
+                
+                # 404 = Model naam fout -> Volgend model in de lijst proberen
+                if "404" in error_msg or "not found" in error_msg:
+                    logger.warning(f"⚠️ Model {self.active_model_name} niet gevonden. Schakelen...")
+                    # Pak index van huidig model
+                    try:
+                        current_idx = self.model_candidates.index(self.active_model_name)
+                        next_idx = (current_idx + 1) % len(self.model_candidates)
+                        self.active_model_name = self.model_candidates[next_idx]
+                        self.model = genai.GenerativeModel(self.active_model_name)
+                        logger.info(f"👉 Nieuw model geselecteerd: {self.active_model_name}")
+                        continue
+                    except:
+                        pass
+
+                # 429 = Quota op -> Nieuwe sleutel
+                if "429" in error_msg or "Quota" in error_msg:
                     self._rotate_key()
-                    continue 
-                else:
-                    # Een echte fout (geen quota), stop met proberen
-                    logger.error(f"⚠️ Gemini Error (Niet-Quota): {e}")
-                    return ""
-        
-        logger.error("❌ ALLE sleutels zijn tijdelijk uitgeput. Even pauze nemen.")
+                    continue
+                
+                logger.error(f"❌ Gemini Error: {e}")
+                return ""
         return ""
