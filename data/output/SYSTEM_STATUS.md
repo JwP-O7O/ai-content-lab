@@ -2,8 +2,8 @@
 
 | Metric | Waarde |
 | :--- | :--- |
-| **Laatste Heartbeat** | `2026-01-04 04:54:15` |
-| **Uptime** | `0:00:10` |
-| **Cycli** | `1` |
-| **Actie** | ✍️ Orders uitgevoerd (1 items) |
+| **Laatste Heartbeat** | `2026-01-04 04:55:18` |
+| **Uptime** | `0:01:13` |
+| **Cycli** | `2` |
+| **Actie** | Waiting for orders... |
 | **Status** | ✅ LISTENING FOR COMMANDS |
