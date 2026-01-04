@@ -67,14 +67,12 @@ class TermuxMasterOrchestrator:
                     logger.info(f"⚙️ Code taak: {task['title']}")
                     res = await self.architect.build_feature(f"{task['title']} {task['body']}")
                     if res['status'] == 'built':
-                        # Eerst pushen zodat code zichtbaar is
                         await self.publisher.publish_changes()
-                        
                         msg = f"✅ **Code Gebouwd & Live!**\nBestand: `{res['file']}`"
                         task['issue_obj'].create_comment(msg)
                         last_action = f"🏗️ Code: {res['file']}"
 
-                # B. AFBEELDING MAKEN (DE FIX)
+                # B. AFBEELDING MAKEN (DE URL FIX)
                 elif "IMG:" in task['title'].upper():
                     prompt = task['title'].replace("IMG:", "").strip()
                     logger.info(f"🎨 Foto taak: {prompt}")
@@ -82,15 +80,29 @@ class TermuxMasterOrchestrator:
                     
                     if res['status'] == 'success':
                         logger.info("🚀 Afbeelding direct uploaden naar GitHub...")
-                        # STAP 1: DIRECT PUSHEN
+                        # 1. Push
                         await self.publisher.publish_changes()
                         
-                        # STAP 2: LINK MAKEN (Nu bestaat hij wel)
+                        # 2. Maak URLs
                         img_filename = os.path.basename(res['file'])
-                        # Let op: 'raw' link werkt direct voor images
-                        raw_url = f"https://github.com/JwP-O7O/ai-content-lab/raw/main/data/images/{img_filename}"
                         
-                        msg = f"✅ **Afbeelding Gegenereerd!**\n\n![AI Art]({raw_url})"
+                        # URL A: De Viewer Link (Werkt ALTIJD, ook als raw nog niet cached is)
+                        blob_url = f"https://github.com/JwP-O7O/ai-content-lab/blob/main/data/images/{img_filename}"
+                        
+                        # URL B: De Raw Link (Voor embedding, kan vertraagd zijn)
+                        raw_url = f"https://raw.githubusercontent.com/JwP-O7O/ai-content-lab/main/data/images/{img_filename}"
+                        
+                        # 3. Het bericht met beide opties
+                        msg = f"""✅ **Afbeelding Gegenereerd!**
+                        
+Het bestand is opgeslagen als: `{img_filename}`
+
+👉 [**KLIK HIER OM DE AFBEELDING TE ZIEN**]({blob_url})
+*(Gebruik de link hierboven als de preview hieronder nog aan het laden is)*
+
+---
+![Preview]({raw_url})
+"""
                         task['issue_obj'].create_comment(msg)
                         
                         last_action = "🎨 Afbeelding gemaakt & gepusht"
@@ -108,9 +120,8 @@ class TermuxMasterOrchestrator:
             await self.content_editor.fix_content(content['details'])
             await self.content_writer.expand_content()
 
-        # 3. PUBLISH (Voor overige wijzigingen)
+        # 3. PUBLISH
         await self._update_remote_status(last_action)
-        # We doen nog een check-publish, kan geen kwaad
         await self.publisher.publish_changes()
         
         if last_action != "Monitoring...":
