@@ -1,6 +1,7 @@
-# 🟢 S21 Ultra AI - DEBUG MODE
+# 🔵 All In AI - System Status
 
 | Metric | Waarde |
 |---|---|
-| **Update** | `07:51:28` |
-| **Actie** | Monitoring... |
+| **Model** | `Gemini 2.0 Flash Lite` |
+| **Laatste Actie** | Monitoring... |
+| **Status** | ✅ OPERATIONAL |

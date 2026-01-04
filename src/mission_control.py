@@ -1,5 +1,4 @@
 import os
-import json
 import time
 from datetime import datetime
 
@@ -12,39 +11,33 @@ BOLD = '\033[1m'
 RESET = '\033[0m'
 
 LOG_FILE = "logs/autonomous_agents/agent.log"
-MEMORY_FILE = "data/improvement_plans/lessons_learned.json"
 
 def clear_screen(): os.system('clear')
 
-def get_last_log_lines(n=8):
+def get_last_log_lines(n=10):
     if not os.path.exists(LOG_FILE): return ["Wachten op logs..."]
     with open(LOG_FILE, 'r') as f: return [line.strip() for line in f.readlines()[-n:]]
-
-def get_learned_lessons():
-    if not os.path.exists(MEMORY_FILE): return "0 patronen"
-    with open(MEMORY_FILE, 'r') as f: return f"{len(f.readlines())} patronen"
 
 def draw_dashboard():
     clear_screen()
     print(f"{BOLD}{CYAN}╔══════════════════════════════════════════════════╗{RESET}")
-    print(f"{BOLD}{CYAN}║     AUTONOMOUS SYSTEM V12 - S21 ULTRA            ║{RESET}")
-    print(f"{BOLD}{CYAN}║         HIVE MIND (BUILDER & CODER)              ║{RESET}")
+    print(f"{BOLD}{CYAN}║              🔵 ALL IN AI  V14.0                 ║{RESET}")
+    print(f"{BOLD}{CYAN}║            S21 ULTRA - THE HIVE MIND             ║{RESET}")
     print(f"{BOLD}{CYAN}╚══════════════════════════════════════════════════╝{RESET}")
     
     status = os.popen("pgrep -f master_orchestrator").read()
     print(f"\n{BOLD}🤖 AGENT WORKFORCE:{RESET}")
     if status:
         print(f"  [{GREEN}ONLINE{RESET}] Master Orchestrator")
-        print(f"  [{GREEN}ACTIVE{RESET}] GitHub Listener {YELLOW}(COMMAND CENTER){RESET}")
-        print(f"  [{GREEN}ACTIVE{RESET}] FeatureArchitect {YELLOW}(BUILDER){RESET}")
-        print(f"  [{GREEN}ACTIVE{RESET}] Gemini Writer {CYAN}(CONTENT){RESET}")
-        print(f"  [{GREEN}ACTIVE{RESET}] CodeHealth & GitPublisher")
+        print(f"  [{GREEN}ACTIVE{RESET}] GitHub Command Center")
+        print(f"  [{GREEN}ACTIVE{RESET}] FeatureArchitect {YELLOW}(CODE){RESET}")
+        print(f"  [{GREEN}ACTIVE{RESET}] VisionaryAgent {CYAN}(ART){RESET}")
+        print(f"  [{GREEN}ACTIVE{RESET}] Gemini Writer")
     else:
         print(f"  [{RED}OFFLINE{RESET}] Systeem ligt stil")
 
-    print(f"\n{BOLD}🧠 INTELLIGENCE:{RESET} {get_learned_lessons()}")
     print(f"\n{BOLD}📝 LIVE LOGS:{RESET}")
-    for log in get_last_log_lines(8):
+    for log in get_last_log_lines(10):
         if "ERROR" in log: print(f"  {RED}✖ {log.split('|')[-1].strip()}{RESET}")
         elif "WARNING" in log: print(f"  {YELLOW}⚠ {log.split('|')[-1].strip()}{RESET}")
         elif "SUCCESS" in log: print(f"  {GREEN}✔ {log.split('|')[-1].strip()}{RESET}")

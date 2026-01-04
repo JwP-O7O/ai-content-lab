@@ -7,7 +7,7 @@ from datetime import datetime
 
 sys.path.append(os.getcwd())
 
-# Forceer laden van de modules
+# Importeer het hele team
 try:
     from src.autonomous_agents.monitoring.code_health_monitor import CodeHealthMonitor
     from src.autonomous_agents.execution.code_refactorer import CodeRefactorer
@@ -20,80 +20,79 @@ try:
     from src.autonomous_agents.execution.github_listener import GitHubListener
     from src.autonomous_agents.execution.feature_architect import FeatureArchitect
     from src.autonomous_agents.execution.deep_debugger import DeepDebugger
+    from src.autonomous_agents.execution.visionary_agent import VisionaryAgent # NIEUW
 except ImportError as e:
-    logger.critical(f"🔥 IMPORT ERROR: {e}")
+    logger.critical(f"IMPORT ERROR: {e}")
     sys.exit(1)
 
 class TermuxMasterOrchestrator:
     def __init__(self):
         self.is_running = False
         self.cycle_count = 0
-        self.start_time = datetime.now()
         
-        # We initiëren alles met prints om zeker te zijn
-        print("DEBUG: Start init agents...")
-        self.code_monitor = CodeHealthMonitor()
-        self.refactorer = CodeRefactorer()
-        self.validator = TestRunner()
-        self.learner = PatternLearner()
-        self.content_monitor = ContentQualityMonitor()
-        self.content_editor = ContentEditor()
-        self.content_writer = ContentWriter()
+        # Team "All In AI"
         self.publisher = GitPublisher()
         self.listener = GitHubListener()
         self.architect = FeatureArchitect()
         self.debugger = DeepDebugger()
-        print("DEBUG: Init klaar.")
+        self.visionary = VisionaryAgent() # De Kunstenaar
+        
+        # Support agents
+        self.code_monitor = CodeHealthMonitor()
+        self.refactorer = CodeRefactorer()
+        self.content_monitor = ContentQualityMonitor()
+        self.content_editor = ContentEditor()
+        self.content_writer = ContentWriter()
 
     async def _update_remote_status(self, last_action):
-        try:
-            with open("data/output/SYSTEM_STATUS.md", "w") as f:
-                f.write(f"# 🟢 S21 Ultra AI - DEBUG MODE\n\n| Metric | Waarde |\n|---|---|\n| **Update** | `{datetime.now().strftime('%H:%M:%S')}` |\n| **Actie** | {last_action} |\n")
-        except Exception: pass
+        with open("data/output/SYSTEM_STATUS.md", "w") as f:
+            f.write(f"# 🔵 All In AI - System Status\n\n")
+            f.write(f"| Metric | Waarde |\n|---|---|\n")
+            f.write(f"| **Model** | `Gemini 2.0 Flash Lite` |\n")
+            f.write(f"| **Laatste Actie** | {last_action} |\n")
+            f.write(f"| **Status** | ✅ OPERATIONAL |\n")
 
     async def run_improvement_cycle(self):
         self.cycle_count += 1
         logger.info(f"--- 🔄 Cycle #{self.cycle_count} ---")
         last_action = "Monitoring..."
         
-        # 1. CHECK GITHUB ORDERS
-        logger.debug("👀 Even kijken op GitHub...")
+        # 1. CHECK ORDERS
         orders = await self.listener.check_for_orders()
-        
-        # DEBUG PRINT: Wat kwam er terug?
         if orders.get("status") == "new_tasks":
-            logger.warning(f"🚨 ORDER GEVONDEN! Aantal: {len(orders['tasks'])}")
-            
             for task in orders['tasks']:
-                logger.warning(f"👉 Taak Type: {task['type']} | Titel: {task['title']}")
                 
+                # A. CODE BOUWEN
                 if task['type'] == 'code':
-                    logger.info("🚀 Start FeatureArchitect...")
-                    try:
-                        # HIER GAAT HET WAARSCHIJNLIJK MIS
-                        prompt = f"{task['title']} {task['body']}"
-                        logger.info(f"🧠 Prompt sturen naar Gemini: {prompt[:50]}...")
-                        
-                        res = await self.architect.build_feature(prompt)
-                        logger.warning(f"🔙 Resultaat van Architect: {res}")
-                        
-                        if res['status'] == 'built':
-                            last_action = f"🏗️ Code gebouwd: {res['file']}"
-                            # Probeer meteen te reageren
-                            task['issue_obj'].create_comment(f"✅ **Code Klaar!**\nBestand: `{res['file']}`")
-                        else:
-                            logger.error(f"❌ Architect faalde: {res}")
-                            
-                    except Exception as e:
-                        logger.critical(f"🔥 CRASH TIJDENS BOUWEN: {e}")
+                    logger.info(f"⚙️ Code taak: {task['title']}")
+                    res = await self.architect.build_feature(f"{task['title']} {task['body']}")
+                    if res['status'] == 'built':
+                        msg = f"✅ **Code Gebouwd!**\nBestand: `{res['file']}`"
+                        task['issue_obj'].create_comment(msg)
+                        last_action = f"🏗️ Code: {res['file']}"
 
+                # B. AFBEELDING MAKEN (NIEUW)
+                elif "IMG:" in task['title'].upper():
+                    prompt = task['title'].replace("IMG:", "").strip()
+                    logger.info(f"🎨 Foto taak: {prompt}")
+                    res = self.visionary.generate_image(prompt, "github_order")
+                    if res['status'] == 'success':
+                        # Post de foto in de comments!
+                        img_filename = os.path.basename(res['file'])
+                        # GitHub raw url hack om hem direct te tonen
+                        raw_url = f"https://github.com/JwP-O7O/ai-content-lab/raw/main/data/images/{img_filename}"
+                        msg = f"✅ **Afbeelding Gegenereerd!**\n\n![AI Art]({raw_url})"
+                        task['issue_obj'].create_comment(msg)
+                        last_action = "🎨 Afbeelding gemaakt"
+
+                # C. CONTENT SCHRIJVEN
                 elif task['type'] == 'content':
-                    logger.info("📝 Content taak starten...")
-                    fname = f"data/output/task_{datetime.now().strftime('%S')}.md"
-                    with open(fname, 'w') as f: f.write(task['title'])
-                    last_action = "✍️ Content taak gestart"
+                    logger.info(f"📝 Content taak: {task['title']}")
+                    with open(f"data/output/task_{datetime.now().strftime('%S')}.md", 'w') as f: 
+                        f.write(task['title'])
+                    last_action = "✍️ Artikel gestart"
 
-        # 2. CONTENT PIPELINE (Slaan we even over in logs als er niks is)
+        # 2. CONTENT PIPELINE
         content = await self.content_monitor.analyze()
         if content['status'] == 'issues':
             await self.content_editor.fix_content(content['details'])
@@ -108,7 +107,7 @@ class TermuxMasterOrchestrator:
 
     async def run_autonomous_loop(self):
         self.is_running = True
-        logger.info("🧠 AIS V13 (DEBUG MODE) ONLINE")
+        logger.info("🧠 All In AI - ONLINE")
         while self.is_running:
             try:
                 await self.run_improvement_cycle()
