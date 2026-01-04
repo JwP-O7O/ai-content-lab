@@ -1,25 +1,33 @@
 import google.generativeai as genai
 import os
 from loguru import logger
-import time
+from dotenv import load_dotenv
+
+# Laad de geheime kluis
+load_dotenv()
 
 class AIService:
     def __init__(self):
-        # 1. Je API Sleutels
+        # Haal sleutels uit de omgeving (.env)
         self.api_keys = [
-            "AIzaSyDgayrzXgtdhNgQd_enucOrVPcg0pXchs8",
-            "AIzaSyBQXtSC3mopsBJJgvRQI81hQRy877eklGo",
-            "AIzaSyDz2NaBIhS_d30efumafNjclnS8xcnTG4I"
+            os.getenv("GEMINI_KEY_1"),
+            os.getenv("GEMINI_KEY_2"),
+            os.getenv("GEMINI_KEY_3")
         ]
+        # Filter lege sleutels eruit (als je er maar 2 hebt ingevuld)
+        self.api_keys = [k for k in self.api_keys if k]
+
+        if not self.api_keys:
+            logger.critical("❌ GEEN API KEYS GEVONDEN! Check je .env bestand.")
+        
         self.current_key_index = 0
         
-        # 2. JOUW SPECIFIEKE MODELLEN (Uit je curl lijst)
-        # We zetten 'Lite' bovenaan voor snelheid en stabiliteit.
+        # MODEL CONFIGURATIE (Jouw lijst)
         self.model_candidates = [
-            "models/gemini-2.0-flash-lite",      # De favoriet (Snel & Stabiel)
-            "models/gemini-2.0-flash",           # De back-up
-            "models/gemini-flash-latest",        # De algemene alias
-            "models/gemini-2.5-flash"            # De nieuwste krachtpatser
+            "models/gemini-2.0-flash-lite",
+            "models/gemini-2.0-flash",
+            "models/gemini-flash-latest",
+            "models/gemini-1.5-flash"
         ]
         
         self.active_model_name = None
@@ -29,65 +37,74 @@ class AIService:
         self._initialize_connection()
 
     def _initialize_connection(self):
-        """Probeert verbinding te maken met de sleutels en modellen."""
+        if not self.api_keys: return
+
         current_key = self.api_keys[self.current_key_index]
-        genai.configure(api_key=current_key)
+        try:
+            genai.configure(api_key=current_key)
+            
+            # Test modellen
+            for model_name in self.model_candidates:
+                try:
+                    self.model = genai.GenerativeModel(model_name)
+                    self.active_model_name = model_name
+                    self.online = True
+                    masked_key = f"...{current_key[-4:]}"
+                    logger.info(f"🧠 AI Verbonden | Model: {model_name} | Key: {masked_key}")
+                    return
+                except Exception:
+                    continue
+        except Exception as e:
+             logger.error(f"Configuratie fout: {e}")
         
-        # Test welk model werkt
-        for model_name in self.model_candidates:
-            try:
-                # We maken het object aan (geen netwerk call nog)
-                self.model = genai.GenerativeModel(model_name)
-                self.active_model_name = model_name
-                self.online = True
-                
-                # Maskeer key voor logs
-                masked_key = f"...{current_key[-4:]}"
-                logger.info(f"🧠 AI Verbonden | Model: {model_name} | Key: {masked_key}")
-                return
-            except Exception:
-                continue
-        
-        logger.warning("⚠️ Kon geen model initialiseren. Check internet/keys.")
+        logger.warning("⚠️ Kon geen model initialiseren.")
 
     def _rotate_key(self):
+        if not self.api_keys: return
         self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
-        logger.warning(f"🔄 Quota op? Roteren naar API Key #{self.current_key_index + 1}...")
+        logger.warning(f"🔄 Roteren naar API Key #{self.current_key_index + 1}...")
         self._initialize_connection()
 
     async def generate_text(self, prompt):
         if not self.online: self._initialize_connection()
         if not self.online: return ""
 
-        for attempt in range(len(self.api_keys) * 2): # Probeer keys en modellen
+        # Probeer max 2x per sleutel om loops te voorkomen
+        max_attempts = len(self.api_keys) * 2
+        
+        for attempt in range(max_attempts):
             try:
                 response = self.model.generate_content(prompt)
                 if response.text:
-                    return response.text.replace("```json", "").replace("```python", "").replace("```", "").strip()
-                return "" # Leeg antwoord
+                    return response.text.replace("```json", "").replace("```python", "").replace("```html", "").replace("```", "").strip()
+                return "" 
                 
             except Exception as e:
                 error_msg = str(e)
                 
-                # 404 = Model naam fout -> Volgend model in de lijst proberen
-                if "404" in error_msg or "not found" in error_msg:
-                    logger.warning(f"⚠️ Model {self.active_model_name} niet gevonden. Schakelen...")
-                    # Pak index van huidig model
-                    try:
-                        current_idx = self.model_candidates.index(self.active_model_name)
-                        next_idx = (current_idx + 1) % len(self.model_candidates)
-                        self.active_model_name = self.model_candidates[next_idx]
-                        self.model = genai.GenerativeModel(self.active_model_name)
-                        logger.info(f"👉 Nieuw model geselecteerd: {self.active_model_name}")
-                        continue
-                    except:
-                        pass
+                # 403 = LEAKED KEY (Direct roteren en hopen dat de volgende werkt)
+                if "403" in error_msg or "leaked" in error_msg:
+                    logger.error("🚫 Deze sleutel is geblokkeerd/gelekt! Roteren...")
+                    self._rotate_key()
+                    continue
 
-                # 429 = Quota op -> Nieuwe sleutel
+                # 429 = QUOTA OP
                 if "429" in error_msg or "Quota" in error_msg:
                     self._rotate_key()
                     continue
                 
+                # 404 = MODEL NIET GEVONDEN
+                if "404" in error_msg or "not found" in error_msg:
+                    # Probeer volgend model in de lijst
+                    try:
+                        curr_idx = self.model_candidates.index(self.active_model_name)
+                        next_idx = (curr_idx + 1) % len(self.model_candidates)
+                        self.active_model_name = self.model_candidates[next_idx]
+                        self.model = genai.GenerativeModel(self.active_model_name)
+                        logger.info(f"👉 Schakelen naar model: {self.active_model_name}")
+                        continue
+                    except: pass
+
                 logger.error(f"❌ Gemini Error: {e}")
                 return ""
         return ""

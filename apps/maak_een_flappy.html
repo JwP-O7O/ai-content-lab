@@ -1,0 +1,250 @@
+html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Flappy Bird Kloon</title>
+<style>
+body {
+    font-family: sans-serif;
+    background-color: #70c5ce;
+    overflow: hidden; /* Prevent scrollbars */
+    margin: 0; /* Remove default body margin */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+#game-container {
+    position: relative;
+    width: 320px;
+    height: 480px;
+    background-color: #4ec0ca;
+    border: 2px solid #333;
+    overflow: hidden;
+    touch-action: none; /* Disable touch scrolling */
+}
+
+#bird {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background-color: red;
+    border-radius: 50%;
+    left: 50px;
+    top: 200px;
+}
+
+.pipe {
+    position: absolute;
+    width: 50px;
+    background-color: green;
+    right: -50px; /* Start offscreen */
+}
+
+.pipe-top {
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+.pipe-bottom {
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+#score {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 20px;
+    color: white;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+#game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 30px;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    display: none;
+    cursor: pointer;
+}
+</style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="bird"></div>
+        <div id="score">Score: 0</div>
+        <div id="game-over">Game Over!<br>Tap to Restart</div>
+    </div>
+<script>
+    const bird = document.getElementById('bird');
+    const gameContainer = document.getElementById('game-container');
+    const scoreDisplay = document.getElementById('score');
+    const gameOverDisplay = document.getElementById('game-over');
+
+    let birdTop = 200;
+    let gravity = 0.5;
+    let velocity = 0;
+    let score = 0;
+    let gameInterval;
+    let pipeInterval;
+    let pipes = [];
+    let isGameOver = false;
+
+    function startGame() {
+        birdTop = 200;
+        velocity = 0;
+        score = 0;
+        pipes = [];
+        scoreDisplay.textContent = 'Score: 0';
+        gameOverDisplay.style.display = 'none';
+        isGameOver = false;
+        if(gameInterval) clearInterval(gameInterval);
+        if(pipeInterval) clearInterval(pipeInterval);
+        gameInterval = setInterval(gameLoop, 20);
+        pipeInterval = setInterval(createPipes, 2000); // Create pipes every 2 seconds
+    }
+    
+    function endGame() {
+        clearInterval(gameInterval);
+        clearInterval(pipeInterval);
+        gameOverDisplay.style.display = 'block';
+        isGameOver = true;
+    }
+
+
+    function gameLoop() {
+        if (isGameOver) return;
+
+        velocity += gravity;
+        birdTop += velocity;
+        bird.style.top = birdTop + 'px';
+
+        if (birdTop < 0) {
+            birdTop = 0;
+            velocity = 0;
+        }
+
+        if (birdTop > gameContainer.offsetHeight - bird.offsetHeight) {
+            birdTop = gameContainer.offsetHeight - bird.offsetHeight;
+            endGame();
+        }
+
+        movePipes();
+        checkCollisions();
+    }
+
+
+    function jump() {
+        velocity = -10;
+    }
+
+    function createPipes() {
+        if (isGameOver) return;
+
+        const gap = 120;
+        const pipeHeight = Math.floor(Math.random() * 200) + 50; // Random height
+        const pipeBottomHeight = gameContainer.offsetHeight - pipeHeight - gap;
+
+        const pipeTop = document.createElement('div');
+        pipeTop.classList.add('pipe', 'pipe-top');
+        pipeTop.style.height = pipeHeight + 'px';
+        pipeTop.style.top = '0px';
+        pipeTop.style.left = gameContainer.offsetWidth + 'px'; // Start offscreen
+        gameContainer.appendChild(pipeTop);
+
+        const pipeBottom = document.createElement('div');
+        pipeBottom.classList.add('pipe', 'pipe-bottom');
+        pipeBottom.style.height = pipeBottomHeight + 'px';
+        pipeBottom.style.bottom = '0px';
+        pipeBottom.style.left = gameContainer.offsetWidth + 'px'; // Start offscreen
+        gameContainer.appendChild(pipeBottom);
+
+        pipes.push({ top: pipeTop, bottom: pipeBottom });
+    }
+
+    function movePipes() {
+        for (let i = 0; i < pipes.length; i++) {
+            const pipeTop = pipes[i].top;
+            const pipeBottom = pipes[i].bottom;
+
+            let pipeX = parseInt(pipeTop.style.left);
+            pipeX -= 2;
+            pipeTop.style.left = pipeX + 'px';
+            pipeBottom.style.left = pipeX + 'px';
+
+            if (pipeX + 50 < 0) {
+                pipeTop.remove();
+                pipeBottom.remove();
+                pipes.splice(i, 1);
+                i--; // Adjust index after removing an element
+                continue;
+            }
+
+            if(pipeX + 50 < 50 && pipeX + 50 > 48){
+                score++;
+                scoreDisplay.textContent = 'Score: ' + score;
+            }
+        }
+    }
+
+
+    function checkCollisions() {
+        const birdRect = bird.getBoundingClientRect();
+
+        for (const pipeSet of pipes) {
+            const pipeTopRect = pipeSet.top.getBoundingClientRect();
+            const pipeBottomRect = pipeSet.bottom.getBoundingClientRect();
+
+            // Collision with top pipe
+            if (birdRect.left < pipeTopRect.right &&
+                birdRect.right > pipeTopRect.left &&
+                birdRect.top < pipeTopRect.bottom) {
+                endGame();
+                return;
+            }
+
+            // Collision with bottom pipe
+            if (birdRect.left < pipeBottomRect.right &&
+                birdRect.right > pipeBottomRect.left &&
+                birdRect.bottom > pipeBottomRect.top) {
+                endGame();
+                return;
+            }
+        }
+    }
+
+
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+            jump();
+        }
+    });
+
+    document.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // Prevent scrolling on touch
+        if (isGameOver) {
+            startGame();
+        } else {
+            jump();
+        }
+    });
+
+    gameOverDisplay.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        startGame();
+    })
+
+
+    startGame();
+</script>
+</body>
+</html>

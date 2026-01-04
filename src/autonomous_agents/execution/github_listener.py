@@ -1,9 +1,13 @@
 from github import Github
 from loguru import logger
 import os
+from dotenv import load_dotenv
 
-# JOUW SPECIFIEKE TOKEN (Hersteld)
-GITHUB_TOKEN = "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"
+# Laad de kluis
+load_dotenv()
+
+# Haal token veilig op
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 REPO_NAME = "JwP-O7O/ai-content-lab"
 
 class GitHubListener:
@@ -12,8 +16,13 @@ class GitHubListener:
         self.token = GITHUB_TOKEN
         self.repo_name = REPO_NAME
         
+        if not self.token:
+            logger.critical("❌ GITHUB_TOKEN ontbreekt in .env bestand!")
+        
     async def check_for_orders(self):
         """Checkt GitHub Issues voor nieuwe opdrachten"""
+        if not self.token: return {"status": "error", "error": "No token"}
+
         try:
             g = Github(self.token)
             repo = g.get_repo(self.repo_name)
@@ -24,14 +33,13 @@ class GitHubListener:
             tasks = []
             
             for issue in open_issues:
-                # 1. Veiligheidscheck: Hebben we dit al behandeld?
                 if "🤖" in issue.title:
                     continue
                 
                 logger.info(f"[{self.name}] Order ontvangen: {issue.title}")
                 title_upper = issue.title.upper()
                 
-                # 2. ANALYSE: Wat voor taak is dit?
+                # ANALYSE
                 if "WEB:" in title_upper or "SITE:" in title_upper:
                     task_type = "web"
                 elif "IMG:" in title_upper:
@@ -41,7 +49,6 @@ class GitHubListener:
                 else:
                     task_type = "content"
                 
-                # 3. Voeg toe aan takenlijst
                 tasks.append({
                     "type": task_type,
                     "title": issue.title,
@@ -49,10 +56,9 @@ class GitHubListener:
                     "issue_obj": issue
                 })
                 
-                # 4. Markeer direct als 'Gezien' op GitHub
                 try:
                     issue.edit(title=f"🤖 [WIP] {issue.title}")
-                    issue.create_comment(f"🤖 **Opdracht Geaccepteerd**\nTaak Type: `{task_type}`\nIk ga aan de slag op S21 Ultra.")
+                    issue.create_comment(f"🤖 **Opdracht Geaccepteerd**\nTaak Type: `{task_type}`\nIk ga aan de slag.")
                 except Exception as e:
                     logger.warning(f"Kon GitHub issue niet updaten: {e}")
 
