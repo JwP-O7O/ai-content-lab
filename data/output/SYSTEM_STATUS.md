@@ -2,6 +2,6 @@
 
 | Metric | Waarde |
 | :--- | :--- |
-| **Heartbeat** | `06:00:58` |
+| **Heartbeat** | `06:02:01` |
 | **Laatste Actie** | Monitoring... |
 | **Status** | ✅ MONITORING & HEALING |
