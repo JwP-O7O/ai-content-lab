@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Flappy Bird Space Edition</title>
+<style>
+body {
+    margin: 0;
+    overflow: hidden;
+    background: linear-gradient(to bottom, #1e3c72, #2a5298);
+    font-family: sans-serif;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+#game-container {
+    position: relative;
+    width: 400px;
+    height: 600px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+#game-over-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    z-index: 10;
+    display: none;
+}
+
+#game-over-screen h2 {
+    font-size: 2em;
+    margin-bottom: 20px;
+}
+
+#game-over-screen p {
+    font-size: 1.2em;
+    margin-bottom: 30px;
+}
+
+#restart-button {
+    padding: 10px 20px;
+    font-size: 1.2em;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#score {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 1.5em;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+#rocket {
+    position: absolute;
+    width: 40px;
+    height: 30px;
+    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAfCAYAAAC6fH57AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSRgIB2dWAcwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAl2SUCYdAAAAP0lEQVRYw+2VwQ2AMAwEgzTjX0+J7/YVfV/LpLpLgN92HIA7p6Xp6Xp6Xq646452zD1sWvT/X/t/yP438e8oJc2n84oAAAAASUVORK5CYII=') center/contain no-repeat;
+    left: 50px;
+    top: 250px;
+}
+
+.asteroid {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSRgIB2dWAcwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAl2SUCYdAAAAR0lEQVRYw+3WMQ2AMAwEwH/XqfX5D9X8552+3y1x73g80xV/h99L64qV9v39K9l96v4293f77+u0c768wAAACV0RVh0Q3JlYXRpb24gVGltZSAyOC8wNS8yMDIzAAACV0RVh0bW9kaWZpY2F0aW9uIFRpbWUgMjgvMDUvMjAyMwAAACV0RVh0dXNlciBjb21tZW50AH/x+wAB0G3pAAAAABJRU5ErkJggg==') center/contain no-repeat;
+    right: -50px;
+    top: 0;
+}
+
+@media (max-width: 480px) {
+    #game-container {
+        width: 90%;
+        height: auto;
+        max-height: 80vh;
+    }
+}
+</style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="rocket"></div>
+    <div id="score">Score: 0</div>
+    <div id="game-over-screen">
+        <h2>Game Over</h2>
+        <p>Your Score: <span id="final-score"></span></p>
+        <button id="restart-button">Restart</button>
+    </div>
+</div>
+
+<script>
+const rocket = document.getElementById('rocket');
+const gameContainer = document.getElementById('game-container');
+const scoreDisplay = document.getElementById('score');
+const gameOverScreen = document.getElementById('game-over-screen');
+const finalScoreDisplay = document.getElementById('final-score');
+const restartButton = document.getElementById('restart-button');
+let score = 0;
+let gameInterval;
+let asteroidInterval;
+let rocketTop = 250;
+let gameRunning = false;
+
+function startGame() {
+    score = 0;
+    scoreDisplay.textContent = 'Score: 0';
+    rocketTop = 250;
+    rocket.style.top = rocketTop + 'px';
+    gameOverScreen.style.display = 'none';
+    gameRunning = true;
+    if (asteroidInterval) clearInterval(asteroidInterval);
+    if (gameInterval) clearInterval(gameInterval);
+    generateAsteroid();
+    gameInterval = setInterval(gameLoop, 20);
+    asteroidInterval = setInterval(moveAsteroids, 30);
+}
+
+function gameOver() {
+    gameRunning = false;
+    clearInterval(gameInterval);
+    clearInterval(asteroidInterval);
+    finalScoreDisplay.textContent = score;
+    gameOverScreen.style.display = 'flex';
+}
+
+function gameLoop() {
+    if (!gameRunning) return;
+    rocketTop += 2;
+    rocket.style.top = rocketTop + 'px';
+    if (rocketTop < 0) {
+        rocketTop = 0;
+        rocket.style.top = rocketTop + 'px';
+    }
+    if (rocketTop > 570) {
+        rocketTop = 570;
+        rocket.style.top = rocketTop + 'px';
+        gameOver();
+    }
+    score++;
+    scoreDisplay.textContent = 'Score: ' + score;
+}
+
+function jump() {
+    if (!gameRunning) return;
+    rocketTop -= 50;
+    if (rocketTop < 0) rocketTop = 0;
+    rocket.style.top = rocketTop + 'px';
+}
+
+function generateAsteroid() {
+    if (!gameRunning) return;
+    const asteroid = document.createElement('div');
+    asteroid.classList.add('asteroid');
+    const asteroidHeight = Math.floor(Math.random() * 300);
+    asteroid.style.top = asteroidHeight + 'px';
+    gameContainer.appendChild(asteroid);
+    asteroid.style.right = '-50px';
+    asteroid.dataset.speed = Math.random() * 2 + 1;
+
+    asteroid.addEventListener('animationend', () => {
+        asteroid.remove();
+    });
+
+    setTimeout(() => {
+        if (!gameRunning) return;
+        asteroid.style.right = '450px';
+    }, 10);
+}
+
+function moveAsteroids() {
+    if (!gameRunning) return;
+    document.querySelectorAll('.asteroid').forEach(asteroid => {
+        const currentRight = parseFloat(asteroid.style.right);
+        asteroid.style.right = (currentRight + asteroid.dataset.speed) + 'px';
+        if (checkCollision(rocket, asteroid)) {
+            gameOver();
+        }
+    });
+}
+
+function checkCollision(rocket, asteroid) {
+    const rocketRect = rocket.getBoundingClientRect();
+    const asteroidRect = asteroid.getBoundingClientRect();
+
+    return !(rocketRect.right < asteroidRect.left ||
+        rocketRect.left > asteroidRect.right ||
+        rocketRect.bottom < asteroidRect.top ||
+        rocketRect.top > asteroidRect.bottom);
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.code === 'ArrowUp') {
+        jump();
+    }
+});
+
+document.addEventListener('touchstart', jump);
+
+restartButton.addEventListener('click', startGame);
+
+startGame();
+</script>
+
+</body>
+</html>
