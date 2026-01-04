@@ -1,6 +1,6 @@
-# 🟢 S21 Ultra AI - V13
+# 🟢 S21 Ultra AI - DEBUG MODE
 
 | Metric | Waarde |
 |---|---|
-| **Update** | `06:20:24` |
+| **Update** | `06:21:56` |
 | **Actie** | Monitoring... |
