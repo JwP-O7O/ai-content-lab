@@ -1,0 +1,26 @@
+[
+  {
+    "name": "ContentStrategistAgent",
+    "file_path": "agents/content_strategist_agent.py",
+    "description": "Executes the content strategy formulation.",
+    "module": "agents.content_strategist_agent"
+  },
+  {
+    "name": "MarketScannerAgent",
+    "file_path": "agents/market_scanner_agent.py",
+    "description": "Continuously scans markets for data.",
+    "module": "agents.market_scanner_agent"
+  },
+  {
+    "name": "ContentCreationAgent",
+    "file_path": "agents/content_creation_agent.py",
+    "description": "Generates content based on plans.",
+    "module": "agents.content_creation_agent"
+  },
+  {
+    "name": "PublishingAgent",
+    "file_path": "agents/publishing_agent.py",
+    "description": "Publishes content.",
+    "module": "agents.publishing_agent"
+  }
+]
