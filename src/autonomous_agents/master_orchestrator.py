@@ -7,7 +7,6 @@ from datetime import datetime
 
 sys.path.append(os.getcwd())
 
-# Importeer het hele team
 try:
     from src.autonomous_agents.monitoring.code_health_monitor import CodeHealthMonitor
     from src.autonomous_agents.execution.code_refactorer import CodeRefactorer
@@ -20,7 +19,7 @@ try:
     from src.autonomous_agents.execution.github_listener import GitHubListener
     from src.autonomous_agents.execution.feature_architect import FeatureArchitect
     from src.autonomous_agents.execution.deep_debugger import DeepDebugger
-    from src.autonomous_agents.execution.visionary_agent import VisionaryAgent # NIEUW
+    from src.autonomous_agents.execution.visionary_agent import VisionaryAgent
 except ImportError as e:
     logger.critical(f"IMPORT ERROR: {e}")
     sys.exit(1)
@@ -30,14 +29,13 @@ class TermuxMasterOrchestrator:
         self.is_running = False
         self.cycle_count = 0
         
-        # Team "All In AI"
+        # Team All In AI
         self.publisher = GitPublisher()
         self.listener = GitHubListener()
         self.architect = FeatureArchitect()
         self.debugger = DeepDebugger()
-        self.visionary = VisionaryAgent() # De Kunstenaar
+        self.visionary = VisionaryAgent()
         
-        # Support agents
         self.code_monitor = CodeHealthMonitor()
         self.refactorer = CodeRefactorer()
         self.content_monitor = ContentQualityMonitor()
@@ -45,12 +43,14 @@ class TermuxMasterOrchestrator:
         self.content_writer = ContentWriter()
 
     async def _update_remote_status(self, last_action):
-        with open("data/output/SYSTEM_STATUS.md", "w") as f:
-            f.write(f"# 🔵 All In AI - System Status\n\n")
-            f.write(f"| Metric | Waarde |\n|---|---|\n")
-            f.write(f"| **Model** | `Gemini 2.0 Flash Lite` |\n")
-            f.write(f"| **Laatste Actie** | {last_action} |\n")
-            f.write(f"| **Status** | ✅ OPERATIONAL |\n")
+        try:
+            with open("data/output/SYSTEM_STATUS.md", "w") as f:
+                f.write(f"# 🔵 All In AI - System Status\n\n")
+                f.write(f"| Metric | Waarde |\n|---|---|\n")
+                f.write(f"| **Model** | `Gemini 2.0 Flash Lite` |\n")
+                f.write(f"| **Laatste Actie** | {last_action} |\n")
+                f.write(f"| **Status** | ✅ OPERATIONAL |\n")
+        except: pass
 
     async def run_improvement_cycle(self):
         self.cycle_count += 1
@@ -67,23 +67,33 @@ class TermuxMasterOrchestrator:
                     logger.info(f"⚙️ Code taak: {task['title']}")
                     res = await self.architect.build_feature(f"{task['title']} {task['body']}")
                     if res['status'] == 'built':
-                        msg = f"✅ **Code Gebouwd!**\nBestand: `{res['file']}`"
+                        # Eerst pushen zodat code zichtbaar is
+                        await self.publisher.publish_changes()
+                        
+                        msg = f"✅ **Code Gebouwd & Live!**\nBestand: `{res['file']}`"
                         task['issue_obj'].create_comment(msg)
                         last_action = f"🏗️ Code: {res['file']}"
 
-                # B. AFBEELDING MAKEN (NIEUW)
+                # B. AFBEELDING MAKEN (DE FIX)
                 elif "IMG:" in task['title'].upper():
                     prompt = task['title'].replace("IMG:", "").strip()
                     logger.info(f"🎨 Foto taak: {prompt}")
                     res = self.visionary.generate_image(prompt, "github_order")
+                    
                     if res['status'] == 'success':
-                        # Post de foto in de comments!
+                        logger.info("🚀 Afbeelding direct uploaden naar GitHub...")
+                        # STAP 1: DIRECT PUSHEN
+                        await self.publisher.publish_changes()
+                        
+                        # STAP 2: LINK MAKEN (Nu bestaat hij wel)
                         img_filename = os.path.basename(res['file'])
-                        # GitHub raw url hack om hem direct te tonen
+                        # Let op: 'raw' link werkt direct voor images
                         raw_url = f"https://github.com/JwP-O7O/ai-content-lab/raw/main/data/images/{img_filename}"
+                        
                         msg = f"✅ **Afbeelding Gegenereerd!**\n\n![AI Art]({raw_url})"
                         task['issue_obj'].create_comment(msg)
-                        last_action = "🎨 Afbeelding gemaakt"
+                        
+                        last_action = "🎨 Afbeelding gemaakt & gepusht"
 
                 # C. CONTENT SCHRIJVEN
                 elif task['type'] == 'content':
@@ -98,8 +108,9 @@ class TermuxMasterOrchestrator:
             await self.content_editor.fix_content(content['details'])
             await self.content_writer.expand_content()
 
-        # 3. PUBLISH
+        # 3. PUBLISH (Voor overige wijzigingen)
         await self._update_remote_status(last_action)
+        # We doen nog een check-publish, kan geen kwaad
         await self.publisher.publish_changes()
         
         if last_action != "Monitoring...":
