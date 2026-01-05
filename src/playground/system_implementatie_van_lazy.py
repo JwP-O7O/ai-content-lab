@@ -22,7 +22,8 @@ class LazyAgent(BaseAgent):
                 self._initialized = True
 
     def execute(self, *args: Any, **kwargs: Any) -> Any:
-        self._initialize()
+        if not self._initialized:  # Check without locking first
+            self._initialize()
         if self._agent:
             return self._agent.execute(*args, **kwargs)
         else:
