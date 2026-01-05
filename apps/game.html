@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Game</title>
+<title>Pixel Click Game</title>
 <style>
 body {
     font-family: sans-serif;
@@ -14,140 +14,86 @@ body {
     margin: 0;
 }
 
-.game-container {
+#game-container {
     background-color: #fff;
-    border-radius: 10px;
-    padding: 20px;
+    border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
     text-align: center;
 }
 
-#gameCanvas {
+#game-board {
     border: 1px solid #ccc;
-    margin-bottom: 10px;
+    margin-top: 10px;
 }
 
-#scoreDisplay {
-    font-size: 1.2em;
-    margin-bottom: 10px;
+.pixel {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    border: 1px solid #eee;
+    box-sizing: border-box; /* Important for consistent sizing */
 }
 
-button {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
+.pixel:hover {
+    background-color: rgba(0, 0, 0, 0.05);
     cursor: pointer;
-    font-size: 1em;
 }
 
-button:hover {
-    background-color: #3e8e41;
+.pixel-clicked {
+    background-color: #007bff;
+    border-color: #0056b3;
+}
+
+#score {
+    margin-top: 10px;
+    font-size: 1.2em;
+    color: #333;
 }
 </style>
 </head>
 <body>
 
-<div class="game-container">
-    <h1>Simple Game</h1>
-    <canvas id="gameCanvas" width="400" height="300"></canvas>
-    <div id="scoreDisplay">Score: 0</div>
-    <button id="startButton">Start Game</button>
+<div id="game-container">
+    <h1>Pixel Click Game</h1>
+    <div id="game-board"></div>
+    <div id="score">Score: 0</div>
 </div>
 
+
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const scoreDisplay = document.getElementById('scoreDisplay');
-const startButton = document.getElementById('startButton');
-
-let score = 0;
-let gameRunning = false;
-let circleX = 50;
-let circleY = 50;
-let circleRadius = 20;
-let targetX = 200;
-let targetY = 150;
-let targetRadius = 15;
-let speedX = 2;
-let speedY = 2;
+    const gameBoard = document.getElementById('game-board');
+    const scoreDisplay = document.getElementById('score');
+    let score = 0;
+    let boardSize = 20; // Example: 20x20 grid
+    let pixels = [];
 
 
-function drawCircle() {
-    ctx.beginPath();
-    ctx.arc(circleX, circleY, circleRadius, 0, Math.PI * 2);
-    ctx.fillStyle = 'blue';
-    ctx.fill();
-    ctx.closePath();
-}
+    function generateBoard() {
+        for (let i = 0; i < boardSize * boardSize; i++) {
+            const pixel = document.createElement('div');
+            pixel.classList.add('pixel');
+            pixel.dataset.index = i;
+            pixels.push(pixel);
+            gameBoard.appendChild(pixel);
 
-function drawTarget() {
-    ctx.beginPath();
-    ctx.arc(targetX, targetY, targetRadius, 0, Math.PI * 2);
-    ctx.fillStyle = 'red';
-    ctx.fill();
-    ctx.closePath();
-}
-
-function updateScore() {
-    scoreDisplay.textContent = 'Score: ' + score;
-}
-
-function checkCollision() {
-    const dx = circleX - targetX;
-    const dy = circleY - targetY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance < circleRadius + targetRadius) {
-        score += 10;
-        updateScore();
-        // Reset target position (example)
-        targetX = Math.random() * (canvas.width - 2 * targetRadius) + targetRadius;
-        targetY = Math.random() * (canvas.height - 2 * targetRadius) + targetRadius;
+            pixel.addEventListener('click', () => {
+                if (!pixel.classList.contains('pixel-clicked')) {
+                    pixel.classList.add('pixel-clicked');
+                    score++;
+                    updateScore();
+                }
+            });
+        }
+        gameBoard.style.width = `${boardSize * 22}px`; // adjust based on pixel size and border
     }
-}
 
-function moveCircle() {
-    circleX += speedX;
-    circleY += speedY;
-
-    if (circleX + circleRadius > canvas.width || circleX - circleRadius < 0) {
-        speedX = -speedX;
+    function updateScore() {
+        scoreDisplay.textContent = `Score: ${score}`;
     }
-    if (circleY + circleRadius > canvas.height || circleY - circleRadius < 0) {
-        speedY = -speedY;
-    }
-}
 
-
-function gameLoop() {
-    if (!gameRunning) return; // Stop the loop if game is not running
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    moveCircle();
-    drawCircle();
-    drawTarget();
-    checkCollision();
-
-    requestAnimationFrame(gameLoop);
-}
-
-function startGame() {
-    if (!gameRunning) {
-        gameRunning = true;
-        score = 0;
-        updateScore();
-        // Reset circle and target positions if needed
-        circleX = 50;
-        circleY = 50;
-        targetX = 200;
-        targetY = 150;
-        gameLoop();
-    }
-}
-
-startButton.addEventListener('click', startGame);
+    // Initial setup
+    generateBoard();
 
 </script>
 </body>
