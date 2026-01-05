@@ -5,7 +5,7 @@
 <title>Simple Game Loop</title>
 <style>
 body {
-    font-family: sans-serif;
+    font-family: Arial, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -17,33 +17,33 @@ body {
 #gameContainer {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
 }
 
-#gameCanvas {
+#canvas {
     border: 1px solid #ccc;
     margin-bottom: 10px;
 }
 
-#scoreDisplay {
+#score {
     font-size: 1.2em;
     margin-bottom: 10px;
 }
 
-#startButton, #stopButton {
+button {
     background-color: #4CAF50;
     color: white;
     padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    margin: 5px;
+    font-size: 1em;
 }
 
-#startButton:hover, #stopButton:hover {
-    opacity: 0.8;
+button:hover {
+    background-color: #3e8e41;
 }
 </style>
 </head>
@@ -51,66 +51,87 @@ body {
 
 <div id="gameContainer">
     <h1>Simple Game Loop</h1>
-    <canvas id="gameCanvas" width="400" height="300"></canvas>
-    <div id="scoreDisplay">Score: <span id="scoreValue">0</span></div>
-    <button id="startButton">Start</button>
-    <button id="stopButton">Stop</button>
+    <canvas id="canvas" width="400" height="300"></canvas>
+    <div id="score">Score: 0</div>
+    <button id="startButton">Start Game</button>
 </div>
 
 <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const scoreDisplay = document.getElementById('scoreValue');
-    const startButton = document.getElementById('startButton');
-    const stopButton = document.getElementById('stopButton');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const scoreDisplay = document.getElementById('score');
+const startButton = document.getElementById('startButton');
 
-    let score = 0;
-    let gameRunning = false;
-    let animationFrameId;
+let score = 0;
+let gameRunning = false;
+let animationFrameId;
 
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'blue';
-        ctx.fillRect(50, 50, 50, 50);
+// Game object (example: a simple square)
+const gameObject = {
+    x: 50,
+    y: 50,
+    width: 20,
+    height: 20,
+    color: 'blue',
+    speed: 2,
+    directionX: 1, // 1 or -1 for right or left
+    directionY: 1  // 1 or -1 for down or up
+};
 
-        ctx.fillStyle = 'black';
-        ctx.font = '16px Arial';
-        ctx.fillText('Game Loop!', 10, 20);
+function update() {
+    if (!gameRunning) return;
+
+    // Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Update game object position
+    gameObject.x += gameObject.speed * gameObject.directionX;
+    gameObject.y += gameObject.speed * gameObject.directionY;
+
+    // Bounce off the walls
+    if (gameObject.x + gameObject.width > canvas.width || gameObject.x < 0) {
+        gameObject.directionX *= -1;
+        score++; // Increase score when bouncing
+    }
+    if (gameObject.y + gameObject.height > canvas.height || gameObject.y < 0) {
+        gameObject.directionY *= -1;
+        score++; // Increase score when bouncing
     }
 
-    function update() {
-        if (!gameRunning) return;
+    // Draw the game object
+    ctx.fillStyle = gameObject.color;
+    ctx.fillRect(gameObject.x, gameObject.y, gameObject.width, gameObject.height);
 
-        score++;
-        scoreDisplay.textContent = score;
-    }
+    // Update the score
+    scoreDisplay.textContent = 'Score: ' + score;
+
+    // Request the next frame
+    animationFrameId = requestAnimationFrame(update);
+}
 
 
-    function gameLoop() {
-        if (!gameRunning) return;
-
+function startGame() {
+    if (!gameRunning) {
+        gameRunning = true;
+        score = 0;
+        startButton.textContent = "Stop Game";
         update();
-        draw();
-        animationFrameId = requestAnimationFrame(gameLoop);
+    } else {
+        stopGame();
     }
+}
 
 
-    startButton.addEventListener('click', () => {
-        if (!gameRunning) {
-            gameRunning = true;
-            score = 0;
-            scoreDisplay.textContent = score;
-            gameLoop();
-        }
-    });
+function stopGame() {
+    gameRunning = false;
+    startButton.textContent = "Start Game";
+    cancelAnimationFrame(animationFrameId); // Stop the animation
+}
 
-    stopButton.addEventListener('click', () => {
-        gameRunning = false;
-        cancelAnimationFrame(animationFrameId);
 
-    });
-
+startButton.addEventListener('click', startGame);
 </script>
+
 </body>
 </html>
 ```
