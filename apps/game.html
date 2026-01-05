@@ -14,111 +14,101 @@ body {
     background-color: #f0f0f0;
 }
 
-#gameContainer {
-    background-color: #fff;
+.container {
+    background-color: white;
+    padding: 20px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
     text-align: center;
 }
 
-#gameCanvas {
+#canvas {
     border: 1px solid #ccc;
     margin-bottom: 10px;
 }
 
-#score {
+#scoreDisplay {
     font-size: 1.2em;
     margin-bottom: 10px;
 }
 
-#startButton, #stopButton {
-    padding: 10px 20px;
-    font-size: 1em;
+button {
     background-color: #4CAF50;
     color: white;
+    padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    margin: 5px;
+    font-size: 1em;
 }
 
-#startButton:hover, #stopButton:hover {
+button:hover {
     background-color: #3e8e41;
 }
 
-#stopButton {
-    background-color: #f44336;
+.controls {
+    margin-top: 10px;
 }
-
-#stopButton:hover {
-    background-color: #da190b;
-}
-
 </style>
 </head>
 <body>
+    <div class="container">
+        <h1>Game Loop Example</h1>
+        <canvas id="canvas" width="400" height="300"></canvas>
+        <div id="scoreDisplay">Score: 0</div>
+        <div class="controls">
+            <button id="startButton">Start</button>
+            <button id="stopButton">Stop</button>
+        </div>
+    </div>
 
-<div id="gameContainer">
-    <h1>Game Loop Demo</h1>
-    <canvas id="gameCanvas" width="400" height="300"></canvas>
-    <div id="score">Score: 0</div>
-    <button id="startButton">Start</button>
-    <button id="stopButton">Stop</button>
-</div>
-
-<script>
-    const canvas = document.getElementById('gameCanvas');
+    <script>
+    const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    const scoreDisplay = document.getElementById('score');
+    const scoreDisplay = document.getElementById('scoreDisplay');
     const startButton = document.getElementById('startButton');
     const stopButton = document.getElementById('stopButton');
 
     let score = 0;
-    let gameRunning = false;
-    let animationFrameId;
+    let isRunning = false;
+    let gameLoopInterval;
 
-    function clearCanvas() {
+
+    function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'blue';
+        ctx.fillRect(10, 10, 50, 50);
     }
-
-    function drawRectangle(x, y, width, height, color) {
-        ctx.fillStyle = color;
-        ctx.fillRect(x, y, width, height);
-    }
-
 
     function update() {
-        if (!gameRunning) return;
-
-        clearCanvas();
-
-        // Game logic goes here
-        drawRectangle(10, 10, 50, 50, 'blue');
         score++;
-        scoreDisplay.textContent = 'Score: ' + score;
-
-
-        animationFrameId = requestAnimationFrame(update);
+        scoreDisplay.textContent = `Score: ${score}`;
     }
 
 
 
+    function gameLoop() {
+        if (!isRunning) return;
+        update();
+        draw();
+        // Request the next frame
+        requestAnimationFrame(gameLoop);
+    }
+
     startButton.addEventListener('click', () => {
-        if (!gameRunning) {
-            gameRunning = true;
+        if (!isRunning) {
+            isRunning = true;
             score = 0;
-            scoreDisplay.textContent = 'Score: ' + score;
-            update();
+            scoreDisplay.textContent = `Score: ${score}`;
+            gameLoop(); // Start the first loop
         }
     });
 
     stopButton.addEventListener('click', () => {
-        gameRunning = false;
-        cancelAnimationFrame(animationFrameId);
+        isRunning = false;
     });
-</script>
 
+    </script>
 </body>
 </html>
 ```
