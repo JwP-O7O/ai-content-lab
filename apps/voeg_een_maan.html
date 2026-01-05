@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maan & Planeten Overlay</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+            background-color: #000;
+            color: #fff;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #starfield {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allows clicks to pass through */
+        }
+
+        .star {
+            position: absolute;
+            background-color: #fff;
+            border-radius: 50%;
+            animation: twinkle 5s linear infinite;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        #overlay {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .celestial-body {
+            position: absolute;
+            border-radius: 50%;
+        }
+
+        #moon {
+            width: 80px;
+            height: 80px;
+            background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABAAQMAAACQxJzGAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JQAAgI+jA/lRAAAAABzQW1zRQAAAAEAAAC1t03HIAAAABVBMVEUAAABVVVVVVVVVVFRUVFRUVFRVVVVVVVVVVVVVVVVVVVVVVVVVVFRUVFRVAAAAADj/t1gAAACc0lEQVQYGb3R0UoEURQF0D+p+B0L6H8jQvoJbC1hL0Xb/1G+hYt2b7+f+QW2n9T9/x+m0gAgd+cWdABAE9A4AUBGgWkEAA8A4AIB0A4C4AUBmgFwO9hGgb8BwG0ACgB0AFBLQN4A8AFAn0A9AbQDAEwAdA6AJwB8HwOAB2A+AFwA+AaAXwB8AwAnAFwDwD8AzA6AbwA8B0AJwA8AnANwB8AwAzA6AbwA8B0A5ALyAgD4BQA+AXgDQCcAnADwBAAvAMABAFwBwD8AvAIAJwDQAfAOADgA0AJwD4A4AZAJgDwDwC4AgBOAfAOALgCAEwBwDwB4AuAIAVwB8A4AaAJwB8A4AKAKgA8A+AMgE8A8AfA3A+AMAGABsAvALgAwB4AXAFwBgAvAfABwBcAfAcAuAMA/ATgEAB/AAwAYAHwDwBwAxALgB0AGAFwB+AdAGQEgA+AfA/ABsAxAIAZAfABwDQAiAbAFwB8AXAJAAwAMABAAwAZAQwA8AXALgDwC4AXAcwB8AUAfAeAfACgCgD4B8A0AHwHgBQAUAHgDQAcAXANwBwAfAMwB4AoAoAfAcAdA+AJgDABgBcAcAZAPgDQBwC4AOAMgEwA/7APwF4ADAMwD8BwAwALAAwA8A8AfAfwBAAIA3ACwAEAPwGwDgDwB8A4AZAJwB8BwA/A0gPgDwD4BQAwAnAPgBwBwAnANwD8AeAGgBwAwAlAQwA8A8AfA4AKAMwB8A8AXAfAHQAAgD4BQAwAnAPgD4BgAgBcApANgHQDcAXAfgBQA4AMAXAMgEwB4AuAKAOgD4A+A8AjALgDQA4AgAbAfAOAfAIAFAJwCQD4BwA4ANAGgEwB4AuAKAKgA+AfA/AfALgDgBwA4AOgEwA8AcAXAUgA+AeAeAfAFgDABwA4AOAMgEwA8AOAUAVgEwA8AgAYAZAJwB8A8AgAMAVAPgDwB0A8AcAaAKABwB0A0AVAMgEwB4AOALgBwA4AcAUAFwB8AXAXgBwA4AOANgEQDwBwC4AQAAwB0AaAaAKAKgDwB0AYAcAMwBQAsAnAB4AuAMA8A/8ABALgBwBwAoA4A+ATgOAHgBwA4B0ATAD4BQAwAgA4APALgDgA4A0AOAMwF8DkAFAPgDQBwA4AaAbgDAB8A4AZALgB8A4AXAYAAAB+6mQ9QAAAAABJRU5ErkJggg==") no-repeat center center/cover;
+            position: absolute;
+            top: 20%;
+            left: 10%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        #jupiter {
+            width: 100px;
+            height: 100px;
+            background-color: #f00;
+            position: absolute;
+            top: 60%;
+            left: 70%;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            animation: orbit 25s linear infinite;
+
+        }
+
+        #mars {
+            width: 60px;
+            height: 60px;
+            background-color: #f00;
+            position: absolute;
+            top: 10%;
+            left: 80%;
+            border-radius: 50%;
+             box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+            animation: orbit 18s linear infinite reverse;
+        }
+
+        #saturn {
+            width: 120px;
+            height: 60px;
+            background-color: #daa520;
+            position: absolute;
+            top: 30%;
+            left: 20%;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(218, 165, 32, 0.5);
+            animation: orbit 30s linear infinite;
+        }
+           #saturn::before {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: -30%;
+                transform: translate(0, -50%);
+                width: 180px;
+                height: 0px;
+                border: 2px solid #daa520;
+                border-radius: 50%;
+                box-shadow: 0 0 10px rgba(218, 165, 32, 0.5);
+            }
+               #saturn::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 100%;
+                transform: translate(0, -50%);
+                width: 180px;
+                height: 0px;
+                border: 2px solid #daa520;
+                border-radius: 50%;
+                box-shadow: 0 0 10px rgba(218, 165, 32, 0.5);
+            }
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        @keyframes orbit {
+            0% {
+                transform: rotate(0deg) translateX(150px) rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg) translateX(150px) rotate(-360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            #moon {
+                width: 50px;
+                height: 50px;
+            }
+
+            #jupiter {
+                width: 70px;
+                height: 70px;
+            }
+
+            #mars {
+                width: 40px;
+                height: 40px;
+            }
+            #saturn{
+              width: 90px;
+              height: 45px;
+            }
+             #saturn::before {
+                width: 120px;
+            }
+              #saturn::after {
+                width: 120px;
+            }
+
+        }
+    </style>
+</head>
+<body>
+    <div id="starfield"></div>
+    <div id="overlay">
+        <div id="moon" class="celestial-body"></div>
+        <div id="jupiter" class="celestial-body"></div>
+        <div id="mars" class="celestial-body"></div>
+        <div id="saturn" class="celestial-body"></div>
+    </div>
+
+
+    <script>
+        // Starfield
+        const starfield = document.getElementById('starfield');
+        const numStars = 200;
+
+        for (let i = 0; i < numStars; i++) {
+            const star = document.createElement('div');
+            star.classList.add('star');
+            star.style.left = `${Math.random() * 100}%`;
+            star.style.top = `${Math.random() * 100}%`;
+            star.style.width = `${Math.random() * 2}px`;
+            star.style.height = star.style.width;
+            star.style.animationDelay = `${Math.random() * 5}s`;
+            starfield.appendChild(star);
+        }
+    </script>
+</body>
+</html>
