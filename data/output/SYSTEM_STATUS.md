@@ -3,6 +3,6 @@
 | Metric | Waarde |
 |---|---|
 | **Model** | `Gemini 2.0` |
-| **Cycles** | 12 |
+| **Cycles** | 20 |
 | **Status** | 🧠 LEARNING & OPTIMIZING |
-| **Laatste Actie** | 🛠️ Systeem geüpgraded |
+| **Laatste Actie** | 🌐 Web App: voeg_een_dynamische.html |
