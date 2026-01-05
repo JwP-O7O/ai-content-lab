@@ -2,144 +2,168 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Game</title>
+<title>Pixel Grid Game</title>
 <style>
 body {
     font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    margin: 0;
+    min-height: 100vh;
     background-color: #f0f0f0;
+    margin: 0;
 }
 
-#game-container {
+#container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
-    text-align: center;
+    width: 600px; /* Adjust as needed */
 }
 
-#game-canvas {
+#pixel-grid {
+    display: grid;
+    grid-template-columns: repeat(20, 20px); /* Adjust grid size */
+    grid-gap: 1px;
     border: 1px solid #ccc;
-    margin-bottom: 10px;
 }
 
-#score {
-    font-size: 1.2em;
-    margin-bottom: 10px;
+.pixel {
+    width: 20px;
+    height: 20px;
+    background-color: #eee;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    box-sizing: border-box; /* Important for consistent sizing */
 }
 
-#start-button, #restart-button {
+.pixel.active {
+    background-color: #3498db; /* Active color */
+}
+
+#controls {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    padding: 10px 15px;
     background-color: #4CAF50;
     color: white;
-    padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 1em;
+    transition: background-color 0.2s ease;
 }
 
-#start-button:hover, #restart-button:hover {
+button:hover {
     background-color: #3e8e41;
 }
 
-.hidden {
-    display: none;
+#score {
+    margin-top: 10px;
+    font-size: 1.2em;
 }
 </style>
 </head>
 <body>
 
-<div id="game-container">
-    <canvas id="game-canvas" width="400" height="300"></canvas>
-    <div id="score">Score: 0</div>
-    <button id="start-button">Start Game</button>
-    <button id="restart-button" class="hidden">Restart</button>
+<div id="container">
+    <h1>Pixel Grid Game</h1>
+    <div id="pixel-grid"></div>
+    <div id="controls">
+        <button id="start-button">Start</button>
+        <button id="reset-button">Reset</button>
+    </div>
+    <div id="score">Score: <span id="score-value">0</span></div>
 </div>
 
 <script>
-const canvas = document.getElementById('game-canvas');
-const ctx = canvas.getContext('2d');
-const scoreDisplay = document.getElementById('score');
+const grid = document.getElementById('pixel-grid');
 const startButton = document.getElementById('start-button');
-const restartButton = document.getElementById('restart-button');
+const resetButton = document.getElementById('reset-button');
+const scoreValue = document.getElementById('score-value');
 
+const gridSize = 20; // Size of grid
+let pixels = [];
+let gameInterval;
 let score = 0;
-let gameRunning = false;
-let animationFrameId;
+let activePixelIndex;
 
-// Game object (example: a simple square)
-const gameObject = {
-    x: 50,
-    y: 50,
-    width: 20,
-    height: 20,
-    color: 'blue',
-    speed: 2,
-    directionX: 1, // 1 or -1
-    directionY: 1 // 1 or -1
-};
-
-
-function drawGameObject() {
-    ctx.fillStyle = gameObject.color;
-    ctx.fillRect(gameObject.x, gameObject.y, gameObject.width, gameObject.height);
-}
-
-function updateGameObject() {
-    gameObject.x += gameObject.speed * gameObject.directionX;
-    gameObject.y += gameObject.speed * gameObject.directionY;
-
-    // Bounce off walls
-    if (gameObject.x + gameObject.width > canvas.width || gameObject.x < 0) {
-        gameObject.directionX *= -1;
-    }
-    if (gameObject.y + gameObject.height > canvas.height || gameObject.y < 0) {
-        gameObject.directionY *= -1;
+// Function to create the grid
+function createGrid() {
+    for (let i = 0; i < gridSize * gridSize; i++) {
+        const pixel = document.createElement('div');
+        pixel.classList.add('pixel');
+        pixel.addEventListener('click', () => pixelClick(i));
+        grid.appendChild(pixel);
+        pixels.push(pixel);
     }
 }
 
-function clearCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function getRandomPixelIndex() {
+    return Math.floor(Math.random() * pixels.length);
 }
 
-function updateScore() {
-    score++;
-    scoreDisplay.textContent = `Score: ${score}`;
-}
-
-function gameLoop() {
-    if (!gameRunning) return;
-
-    clearCanvas();
-    updateGameObject();
-    drawGameObject();
-    updateScore();
-
-
-    animationFrameId = requestAnimationFrame(gameLoop);
+function activateRandomPixel() {
+    if (activePixelIndex !== undefined) {
+        pixels[activePixelIndex].classList.remove('active');
+    }
+    activePixelIndex = getRandomPixelIndex();
+    pixels[activePixelIndex].classList.add('active');
 }
 
 function startGame() {
     score = 0;
-    scoreDisplay.textContent = `Score: ${score}`;
-    gameRunning = true;
-    startButton.classList.add('hidden');
-    restartButton.classList.remove('hidden');
-    gameLoop();
+    scoreValue.textContent = score;
+    gameInterval = setInterval(() => {
+        activateRandomPixel();
+    }, 1000); // Adjust speed as needed (milliseconds)
+    startButton.disabled = true;
 }
 
-function restartGame() {
-    gameRunning = false;
-    cancelAnimationFrame(animationFrameId);
-    startGame();
+
+function endGame() {
+    clearInterval(gameInterval);
+    startButton.disabled = false;
 }
 
+function resetGame() {
+    endGame();
+    for (let pixel of pixels) {
+        pixel.classList.remove('active');
+    }
+    score = 0;
+    scoreValue.textContent = score;
+    activePixelIndex = undefined;
+}
+
+
+function pixelClick(index) {
+    if (index === activePixelIndex) {
+        score++;
+        scoreValue.textContent = score;
+        activateRandomPixel(); // Activate a new pixel immediately
+    } else {
+        endGame();
+        alert("Game Over! Your score: " + score);
+    }
+}
+
+
+// Event Listeners
 startButton.addEventListener('click', startGame);
-restartButton.addEventListener('click', restartGame);
+resetButton.addEventListener('click', resetGame);
+
+
+// Initialize
+createGrid();
+
 </script>
 </body>
 </html>
