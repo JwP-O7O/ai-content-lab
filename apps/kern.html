@@ -1,0 +1,272 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Simple Game</title>
+<style>
+body {
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+
+#game-container {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+}
+
+#game-canvas {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+}
+
+#score-display {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+#controls {
+    display: flex;
+    justify-content: center;
+}
+
+button {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 0 5px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #3e8e41;
+}
+
+#gameOverModal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
+#gameOverModal h2 {
+    margin-bottom: 10px;
+}
+
+#overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 5;
+}
+</style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="game-canvas" width="400" height="300"></canvas>
+    <div id="score-display">Score: <span id="score">0</span></div>
+    <div id="controls">
+        <button id="startButton">Start</button>
+        <button id="resetButton">Reset</button>
+    </div>
+
+    <div id="gameOverModal">
+        <h2>Game Over</h2>
+        <p>Your score: <span id="finalScore"></span></p>
+        <button id="restartButton">Restart</button>
+    </div>
+
+    <div id="overlay"></div>
+</div>
+
+
+<script>
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const scoreDisplay = document.getElementById('score');
+const startButton = document.getElementById('startButton');
+const resetButton = document.getElementById('resetButton');
+const gameOverModal = document.getElementById('gameOverModal');
+const finalScoreDisplay = document.getElementById('finalScore');
+const restartButton = document.getElementById('restartButton');
+const overlay = document.getElementById('overlay');
+
+let score = 0;
+let gameRunning = false;
+let playerX = canvas.width / 2;
+let playerY = canvas.height - 20;
+const playerWidth = 20;
+const playerHeight = 20;
+let obstacles = [];
+const obstacleWidth = 10;
+const obstacleHeight = 10;
+let obstacleSpeed = 2; // Initial obstacle speed
+const obstacleSpawnInterval = 1000; // Time between obstacle spawns in milliseconds
+let lastObstacleSpawn = 0;
+let animationFrameId;
+
+
+
+function resetGame() {
+    score = 0;
+    scoreDisplay.textContent = score;
+    playerX = canvas.width / 2;
+    obstacles = [];
+    obstacleSpeed = 2;
+    gameRunning = false;
+    cancelAnimationFrame(animationFrameId);
+    startButton.disabled = false;
+    gameOverModal.style.display = 'none';
+    overlay.style.display = 'none';
+
+    draw();
+
+}
+
+
+
+function startGame() {
+    resetGame();
+    gameRunning = true;
+    startButton.disabled = true;
+    lastObstacleSpawn = 0;
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+
+function gameLoop(timestamp) {
+    if (!gameRunning) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Obstacle spawning
+    if (timestamp - lastObstacleSpawn > obstacleSpawnInterval) {
+        spawnObstacle();
+        lastObstacleSpawn = timestamp;
+    }
+
+    // Update obstacles
+    for (let i = 0; i < obstacles.length; i++) {
+        obstacles[i].y += obstacleSpeed;
+
+        // Collision Detection
+        if (
+            playerX < obstacles[i].x + obstacleWidth &&
+            playerX + playerWidth > obstacles[i].x &&
+            playerY < obstacles[i].y + obstacleHeight &&
+            playerY + playerHeight > obstacles[i].y
+        ) {
+            endGame();
+            return;
+        }
+
+        //Remove offscreen obstacles
+        if(obstacles[i].y > canvas.height){
+            obstacles.splice(i,1);
+            i--; //Adjust index after removing
+        }
+    }
+
+    //Draw Obstacles
+    for (let i = 0; i < obstacles.length; i++) {
+        ctx.fillStyle = 'red';
+        ctx.fillRect(obstacles[i].x, obstacles[i].y, obstacleWidth, obstacleHeight);
+    }
+
+
+
+    // Draw Player
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
+
+    //Update Score
+    score += 0.1;
+    scoreDisplay.textContent = Math.floor(score);
+
+
+     //Increase speed over time
+     if (score > 500 && obstacleSpeed < 5) { //example increase condition
+        obstacleSpeed = 3;
+    } else if (score > 1000 && obstacleSpeed < 7) {
+        obstacleSpeed = 4;
+    }
+    else if (score > 1500 && obstacleSpeed < 9) {
+        obstacleSpeed = 5;
+    }
+
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+function spawnObstacle() {
+    const x = Math.random() * (canvas.width - obstacleWidth);
+    obstacles.push({ x: x, y: 0 });
+}
+
+
+function endGame() {
+    gameRunning = false;
+    cancelAnimationFrame(animationFrameId);
+    finalScoreDisplay.textContent = Math.floor(score);
+    gameOverModal.style.display = 'block';
+    overlay.style.display = 'block';
+
+}
+
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
+
+    for (let i = 0; i < obstacles.length; i++) {
+        ctx.fillStyle = 'red';
+        ctx.fillRect(obstacles[i].x, obstacles[i].y, obstacleWidth, obstacleHeight);
+    }
+}
+
+
+// Event Listeners
+startButton.addEventListener('click', startGame);
+resetButton.addEventListener('click', resetGame);
+restartButton.addEventListener('click', startGame);
+
+//Player Controls (Example: Move Left/Right)
+document.addEventListener('keydown', (e) => {
+    if (!gameRunning) return;
+    if (e.key === 'ArrowLeft' && playerX > 0) {
+        playerX -= 10;
+    } else if (e.key === 'ArrowRight' && playerX < canvas.width - playerWidth) {
+        playerX += 10;
+    }
+});
+
+
+</script>
+</body>
+</html>
+```
