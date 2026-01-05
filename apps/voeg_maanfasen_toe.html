@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sterrenhemel met Maanfasen</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #sky {
+            position: relative;
+            width: 100%;
+            height: 80%;
+            max-width: 600px;
+        }
+
+        .star {
+            position: absolute;
+            background-color: #fff;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        #moon {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #f0f0f0 0%, #aaa 100%);
+            overflow: hidden;
+        }
+
+        #moon-phase {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+            background-color: #000;
+        }
+
+        #controls {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 200px;
+            height: 8px;
+            background: #ddd;
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+
+        input[type="range"]:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sterrenhemel</h1>
+    <div id="sky">
+        </div>
+        <div id="moon">
+            <div id="moon-phase"></div>
+        </div>
+
+    <div id="controls">
+        <input type="range" id="moon-slider" min="0" max="29" value="0">
+        <label for="moon-slider" style="margin-left: 10px;">Maanfase</label>
+    </div>
+
+    <script>
+        const sky = document.getElementById('sky');
+        const moon = document.getElementById('moon');
+        const moonPhase = document.getElementById('moon-phase');
+        const moonSlider = document.getElementById('moon-slider');
+
+        // Stars
+        function createStars() {
+            const numStars = 100;
+            for (let i = 0; i < numStars; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                const size = Math.random() * 3 + 1; // Random size
+                const x = Math.random() * 100;
+                const y = Math.random() * 100;
+
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                star.style.left = `${x}%`;
+                star.style.top = `${y}%`;
+                star.style.animationDelay = `${Math.random() * 2}s`;
+                sky.appendChild(star);
+            }
+        }
+        createStars();
+
+
+        // Moon Phases
+        function updateMoonPhase(day) {
+            let clipPath;
+            const phase = day % 29;
+
+            if (phase >= 0 && phase < 7.25) { // Waxing crescent
+                clipPath = `polygon(0 0, ${phase * 14}% 0, ${phase * 14}% 100%, 0 100%)`;
+            } else if (phase >= 7.25 && phase < 14.5) { // First quarter
+                clipPath = `polygon(0 0, 100% 0, 100% 100%, 0 100%)`;
+            } else if (phase >= 14.5 && phase < 21.75) { // Waxing gibbous
+                 clipPath = `polygon(100% 0, 100% 100%, ${100 - ((phase - 14.5) * 14)}% 100%, ${100 - ((phase - 14.5) * 14)}% 0)`;
+            } else if (phase >= 21.75 && phase < 29) { // Waning gibbous
+                clipPath = `polygon(0 0, 0 100%, ${((phase - 21.75) * 14)}% 100%, ${((phase - 21.75) * 14)}% 0)`;
+
+            }else {
+              clipPath = 'polygon(0 0, 0 0, 0 100%, 0 100%)';
+            }
+
+
+            moonPhase.style.clipPath = clipPath;
+        }
+
+        moonSlider.addEventListener('input', (event) => {
+            updateMoonPhase(parseInt(event.target.value));
+        });
+
+        updateMoonPhase(0);
+    </script>
+</body>
+</html>
