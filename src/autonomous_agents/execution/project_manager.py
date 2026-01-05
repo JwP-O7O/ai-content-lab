@@ -1,6 +1,10 @@
 import asyncio
 import json
+import logging
 from typing import List, Dict, Any
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class ProjectManager:
     """
@@ -31,10 +35,11 @@ class ProjectManager:
             "description": task_description,
             "status": "pending",
             "agent": agent_recommendation,
-            "data": task_data
+            "data": task_data,
+            "attempts": 0 # Track attempts for retry logic
         }
         await self.task_queue.put(task)
-        print(f"ProjectManager: Taak '{task_description}' toegevoegd aan de wachtrij.")
+        logging.info(f"ProjectManager: Taak '{task_description}' toegevoegd aan de wachtrij.")
 
 
     async def dispatch_task(self, task: Dict) -> Any:
@@ -43,27 +48,38 @@ class ProjectManager:
         """
         agent_name = task.get("agent")
         if not agent_name or agent_name not in self.agents:
-            # Fallback mechanisme: gebruik een 'algemene' agent of genereer een fout.
-            print(f"ProjectManager: Geen specifieke agent gevonden voor taak '{task.get('description')}'.")
+            # Fallback mechanisme: use a 'general' agent or raise an error.  Implement a more robust fallback later.
+            logging.warning(f"ProjectManager: Geen specifieke agent gevonden voor taak '{task.get('description')}'.")
             return None
 
         agent = self.agents[agent_name]
         task["status"] = "in progress"
-        print(f"ProjectManager: Taak '{task.get('description')}' naar {agent_name} gestuurd.")
+        logging.info(f"ProjectManager: Taak '{task.get('description')}' naar {agent_name} gestuurd.")
 
         try:
             # Stuur de taak door naar de agent
             result = await agent.execute_task(task.get("description"), task.get("data"))
             task["status"] = "completed"
             task["result"] = result
-            print(f"ProjectManager: Taak '{task.get('description')}' voltooid door {agent_name}.")
+            logging.info(f"ProjectManager: Taak '{task.get('description')}' voltooid door {agent_name}.")
             return result
         except Exception as e:
             task["status"] = "failed"
             task["error"] = str(e)
-            print(f"ProjectManager: Fout tijdens het uitvoeren van taak '{task.get('description')}' door {agent_name}: {e}")
+            task["attempts"] += 1 # Increment attempt counter
+            logging.error(f"ProjectManager: Fout tijdens het uitvoeren van taak '{task.get('description')}' door {agent_name}: {e}")
             return None
 
+    async def retry_task(self, task: Dict):
+        """
+        Retries a failed task.
+        """
+        if task["attempts"] < 3: # Limit the number of retries
+            logging.info(f"ProjectManager: Probeer taak '{task.get('description')}' opnieuw (poging {task['attempts'] + 1}).")
+            await self.task_queue.put(task) # Re-add to the queue
+        else:
+            logging.error(f"ProjectManager: Taak '{task.get('description')}' mislukt na meerdere pogingen.")
+            # Optionally, implement further handling, like notifying a human, or escalating to another agent.
 
     async def analyze_results(self, task_results: List[Dict]) -> None:
         """
@@ -71,16 +87,16 @@ class ProjectManager:
         """
         for task in task_results:
             if task.get("status") == "completed":
-                print(f"ProjectManager: Resultaten van taak '{task.get('description')}': {task.get('result')}")
+                logging.info(f"ProjectManager: Resultaten van taak '{task.get('description')}': {task.get('result')}")
                 # Logica om de resultaten te analyseren.  Bijvoorbeeld:
                 # - Controleer of er nieuwe taken nodig zijn.
                 # - Verander prioriteiten op basis van resultaten.
                 # - Roep andere agents aan om de resultaten te verwerken (bijvoorbeeld ContentWriter)
             elif task.get("status") == "failed":
-                print(f"ProjectManager: Taak '{task.get('description')}' is mislukt.  Fout: {task.get('error')}")
-                # Logica om te proberen de taak opnieuw uit te voeren, of andere acties.
+                logging.warning(f"ProjectManager: Taak '{task.get('description')}' is mislukt.  Fout: {task.get('error')}")
+                await self.retry_task(task)  # Retry the failed task.
             else:
-                print(f"ProjectManager: Taak '{task.get('description')}' heeft een onbekende status: {task.get('status')}")
+                logging.warning(f"ProjectManager: Taak '{task.get('description')}' heeft een onbekende status: {task.get('status')}")
 
 
     async def run(self):
@@ -88,7 +104,7 @@ class ProjectManager:
         De hoofdfunctie die de projectmanagement loop runt.
         """
         self.status = "planning"
-        print("ProjectManager: Start planning fase.")
+        logging.info("ProjectManager: Start planning fase.")
 
         # Hier de planningsfase implementeren.  Bijvoorbeeld:
         # - Vraag de VisionaryAgent om de overkoepelende doelen te bepalen.
@@ -98,25 +114,26 @@ class ProjectManager:
         # await self.add_task("Bepaal de belangrijkste functionaliteiten voor de volgende release", agent_recommendation="VisionaryAgent")
 
         self.status = "executing"
-        print("ProjectManager: Start execution fase.")
+        logging.info("ProjectManager: Start execution fase.")
 
         task_results: List[Dict] = []
         while True:
             try:
                 task = self.task_queue.get_nowait()
                 result = await self.dispatch_task(task)
-                task_results.append(task)
+                if task["status"] == "completed":
+                    task_results.append(task)
                 self.task_queue.task_done()
             except asyncio.QueueEmpty:
                 # Wacht tot er nieuwe taken beschikbaar zijn of stop als er geen taken meer zijn.
                 if self.task_queue.empty():
                     if task_results:
                         self.status = "reviewing"
-                        print("ProjectManager: Start reviewing fase.")
+                        logging.info("ProjectManager: Start reviewing fase.")
                         await self.analyze_results(task_results)
                         self.status = "idle"
-                        print("ProjectManager: Klaar met alle taken.")
+                        logging.info("ProjectManager: Klaar met alle taken.")
                     else:
-                        print("ProjectManager: Geen taken te verwerken.")
+                        logging.info("ProjectManager: Geen taken te verwerken.")
                     break # Stop de loop als de queue leeg is en er geen resultaten zijn.
                 await asyncio.sleep(1) # wacht 1 seconde als de wachtrij leeg is, om te voorkomen dat de CPU overbelast wordt.
