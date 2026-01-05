@@ -2,106 +2,154 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Speelveld Generatie en Klik Event</title>
+<title>Pixel Game</title>
 <style>
 body {
     font-family: sans-serif;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    min-height: 100vh;
-    background-color: #f0f0f0;
+    justify-content: center;
+    height: 100vh;
     margin: 0;
+    background-color: #f0f0f0;
 }
 
 #game-container {
-    display: grid;
-    grid-template-columns: repeat(10, 50px);
-    grid-gap: 5px;
-    background-color: #ddd;
-    padding: 10px;
-    border-radius: 5px;
+    border: 2px solid #333;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.cell {
-    width: 50px;
-    height: 50px;
-    background-color: #eee;
-    border: 1px solid #ccc;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 20px;
+#pixel-canvas {
+    display: grid;
+    /* Adjust grid size dynamically in JavaScript */
+}
+
+.pixel {
+    width: 20px; /* Initial pixel size */
+    height: 20px;
+    border: 1px solid #ddd;
+    box-sizing: border-box;
     cursor: pointer;
-    border-radius: 3px;
+}
+
+.pixel.filled {
+    background-color: #007bff; /* Default filled color */
+}
+
+button {
+    margin: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
     transition: background-color 0.2s;
 }
 
-.cell:hover {
-    background-color: #ddd;
+button:hover {
+    background-color: #218838;
 }
 
-.clicked {
-    background-color: #b0e2ff; /* Light blue for clicked cells */
+#controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
 }
 
-#message {
-    margin-top: 20px;
-    font-size: 1.2em;
-    color: #333;
+#color-picker {
+    margin-right: 10px;
 }
 </style>
 </head>
 <body>
+    <h1>Pixel Game</h1>
 
-<div id="game-container">
-</div>
+    <div id="controls">
+        <input type="color" id="color-picker" value="#007bff">
+        <button id="clear-button">Clear</button>
+        <button id="random-button">Random</button>
+    </div>
 
-<div id="message"></div>
+    <div id="game-container">
+        <div id="pixel-canvas">
+            <!-- Pixels will be dynamically added here -->
+        </div>
+    </div>
+
 
 <script>
-const gameContainer = document.getElementById('game-container');
-const messageElement = document.getElementById('message');
-let gameBoard = [];
-let clickedCells = [];
-const rows = 10;
-const cols = 10;
+    const pixelCanvas = document.getElementById('pixel-canvas');
+    const clearButton = document.getElementById('clear-button');
+    const randomButton = document.getElementById('random-button');
+    const colorPicker = document.getElementById('color-picker');
+    let selectedColor = colorPicker.value;
 
-function generateBoard() {
-    gameBoard = [];
-    gameContainer.innerHTML = '';
-    for (let row = 0; row < rows; row++) {
-        gameBoard[row] = [];
-        for (let col = 0; col < cols; col++) {
-            gameBoard[row][col] = 0; // 0 represents an empty cell
-            const cell = document.createElement('div');
-            cell.classList.add('cell');
-            cell.dataset.row = row;
-            cell.dataset.col = col;
-            cell.addEventListener('click', cellClick);
-            gameContainer.appendChild(cell);
+    const gridSize = 32; // Default grid size
+    let pixels = []; // Array to hold pixel elements
+
+    // Function to generate a random hex color
+    function getRandomColor() {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
+
+
+    function createPixelElement() {
+        const pixel = document.createElement('div');
+        pixel.classList.add('pixel');
+        pixel.addEventListener('click', () => {
+            pixel.style.backgroundColor = selectedColor;
+            pixel.classList.add('filled');
+        });
+        return pixel;
+    }
+
+
+    function initializeGrid() {
+        pixelCanvas.innerHTML = ''; // Clear existing pixels
+        pixelCanvas.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+        pixelCanvas.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
+
+        pixels = []; // Reset the pixels array
+        for (let i = 0; i < gridSize * gridSize; i++) {
+            const pixel = createPixelElement();
+            pixelCanvas.appendChild(pixel);
+            pixels.push(pixel); // Add pixel to the array
         }
     }
-}
 
 
-function cellClick(event) {
-    const row = parseInt(event.target.dataset.row);
-    const col = parseInt(event.target.dataset.col);
-
-    if (clickedCells.some(cell => cell.row === row && cell.col === col)) {
-        return; // Already clicked
+    function clearCanvas() {
+        pixels.forEach(pixel => {
+            pixel.style.backgroundColor = '';
+            pixel.classList.remove('filled');
+        });
     }
 
+    function fillRandomColors() {
+        pixels.forEach(pixel => {
+            pixel.style.backgroundColor = getRandomColor();
+            pixel.classList.add('filled');
+        });
+    }
 
-    clickedCells.push({ row, col });
-    event.target.classList.add('clicked');
-    messageElement.textContent = `Cell geklikt: Rij ${row + 1}, Kolom ${col + 1}`;
-}
+    colorPicker.addEventListener('change', (event) => {
+        selectedColor = event.target.value;
+    });
 
+    clearButton.addEventListener('click', clearCanvas);
+    randomButton.addEventListener('click', fillRandomColors);
 
-generateBoard();
-
+    initializeGrid(); // Initialize the grid when the page loads
 </script>
 </body>
 </html>
