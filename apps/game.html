@@ -17,7 +17,7 @@ body {
 #gameContainer {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
 }
@@ -27,9 +27,26 @@ body {
     margin-bottom: 10px;
 }
 
-#status {
-    margin-top: 10px;
-    color: #333;
+#scoreDisplay {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+#startButton, #stopButton {
+    background-color: #4CAF50; /* Green */
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+#stopButton {
+    background-color: #f44336; /* Red */
 }
 </style>
 </head>
@@ -37,91 +54,86 @@ body {
 
 <div id="gameContainer">
     <canvas id="gameCanvas" width="400" height="300"></canvas>
-    <div id="status">Loading...</div>
+    <div id="scoreDisplay">Score: 0</div>
+    <button id="startButton">Start</button>
+    <button id="stopButton">Stop</button>
 </div>
 
 <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const statusElement = document.getElementById('status');
+// Game Canvas and Context
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-    let isRunning = true;
-    let frameCount = 0;
-    let startTime = performance.now();
-    let lastRenderTime = 0;
+// Game Variables
+let score = 0;
+let gameRunning = false;
+let animationFrameId;
 
-    // Game variables
-    let x = canvas.width / 2;
-    let y = canvas.height / 2;
-    let speed = 2;
+// Game Objects (Example - a simple circle)
+let circleX = canvas.width / 2;
+let circleY = canvas.height / 2;
+let circleRadius = 20;
+let circleSpeedX = 2;
+let circleSpeedY = 2;
 
 
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+// UI Elements
+const scoreDisplay = document.getElementById('scoreDisplay');
+const startButton = document.getElementById('startButton');
+const stopButton = document.getElementById('stopButton');
 
-        // Draw a simple circle
-        ctx.beginPath();
-        ctx.arc(x, y, 10, 0, Math.PI * 2);
-        ctx.fillStyle = 'blue';
-        ctx.fill();
-        ctx.closePath();
+
+// Game Functions
+function draw() {
+    // Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw the circle
+    ctx.beginPath();
+    ctx.arc(circleX, circleY, circleRadius, 0, Math.PI * 2);
+    ctx.fillStyle = 'blue';
+    ctx.fill();
+    ctx.closePath();
+}
+
+function update() {
+    // Update circle position
+    circleX += circleSpeedX;
+    circleY += circleSpeedY;
+
+    // Bounce off the walls
+    if (circleX + circleRadius > canvas.width || circleX - circleRadius < 0) {
+        circleSpeedX = -circleSpeedX;
+    }
+    if (circleY + circleRadius > canvas.height || circleY - circleRadius < 0) {
+        circleSpeedY = -circleSpeedY;
     }
 
+    // Example: Increase score (simulated)
+    score += 0.1;
+    scoreDisplay.textContent = `Score: ${Math.floor(score)}`; // Display as integer
+}
 
-    function update(deltaTime) {
-        // Update game state (e.g., movement)
-        x += speed * deltaTime / 16;
-        if (x > canvas.width || x < 0) {
-            speed = -speed; // Reverse direction
-        }
+function gameLoop() {
+    if (!gameRunning) return;
+
+    update();
+    draw();
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+// Event Listeners
+startButton.addEventListener('click', () => {
+    if (!gameRunning) {
+        gameRunning = true;
+        gameLoop();
     }
+});
 
-
-    function gameLoop(currentTime) {
-        if (!isRunning) return;
-
-        const deltaTime = currentTime - lastRenderTime;
-        lastRenderTime = currentTime;
-
-        update(deltaTime);
-        draw();
-
-        frameCount++;
-        requestAnimationFrame(gameLoop);
-    }
-
-
-    function calculateFPS(currentTime) {
-        const elapsedTime = currentTime - startTime;
-        const fps = frameCount / (elapsedTime / 1000);
-        statusElement.textContent = `FPS: ${fps.toFixed(2)}`;
-    }
-
-
-    function start() {
-        isRunning = true;
-        startTime = performance.now();
-        frameCount = 0;
-        lastRenderTime = performance.now();
-        requestAnimationFrame(gameLoop);
-    }
-
-    function stop() {
-        isRunning = false;
-        calculateFPS(performance.now());
-    }
-
-    // Initialize
-    statusElement.textContent = "Click to Start";
-    canvas.addEventListener('click', () => {
-        if (!isRunning) {
-            start();
-            statusElement.textContent = "Running. Click to Stop";
-        } else {
-            stop();
-            statusElement.textContent = "Stopped. Click to Start";
-        }
-    });
+stopButton.addEventListener('click', () => {
+    gameRunning = false;
+    cancelAnimationFrame(animationFrameId);
+});
 
 </script>
 </body>
