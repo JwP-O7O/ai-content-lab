@@ -55,6 +55,7 @@
             color: white;
             font-weight: bold;
             font-size: 1.2em;
+            transition: opacity 0.3s ease; /* Add transition for visual feedback */
         }
 
         .power-up.speed {
@@ -68,11 +69,20 @@
         .power-up.score-boost {
             background-color: #ffc107;
         }
+           .power-up.none {
+            background-color: #6c757d; /* Grey */
+        }
 
         #status {
             margin-top: 15px;
             font-size: 1.1em;
         }
+
+        #timer {
+            margin-top: 10px;
+            font-size: 1.0em;
+        }
+
 
         @keyframes move-right {
             0% {
@@ -87,6 +97,11 @@
                 width: 95%;
             }
         }
+
+        .power-up.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -97,29 +112,66 @@
             <div class="power-up speed" onclick="activatePowerUp('speed')">⚡</div>
             <div class="power-up shield" onclick="activatePowerUp('shield')">🛡️</div>
             <div class="power-up score-boost" onclick="activatePowerUp('score')">⭐</div>
+             <div class="power-up none" onclick="activatePowerUp('none')">🚫</div>
         </div>
         <div id="status"></div>
+        <div id="timer"></div>
     </div>
 
     <script>
         let player = document.getElementById('player');
         let status = document.getElementById('status');
+        let timerDisplay = document.getElementById('timer');
         let powerUpActive = null;
         let powerUpTimer;
+        let powerUpTimers = {}; // Store individual timers for each power-up type
+        let powerUpCooldowns = {
+            'speed': 0,
+            'shield': 0,
+            'score': 0,
+            'none': 0,
+        };
+        let cooldownDurations = { // Cooldown duur in seconden
+            'speed': 5,
+            'shield': 5,
+            'score': 5,
+            'none': 5,
+        };
 
         function activatePowerUp(powerUpType) {
-            if (powerUpActive) {
+            if (powerUpCooldowns[powerUpType] > 0) {
+                status.textContent = `Power-up ${powerUpType} is nog in cooldown!`;
+                return;
+            }
+
+            if (powerUpActive && powerUpType !== 'none') {
                 status.textContent = "Een power-up is al actief!";
                 return;
+            }
+            // Reset bestaande timer als de gebruiker een nieuwe powerup activeert.
+            if (powerUpActive && powerUpType !== 'none') {
+                deactivatePowerUp();
             }
 
             powerUpActive = powerUpType;
             status.textContent = `Power-up ${powerUpType} geactiveerd!`;
             applyPowerUp(powerUpType);
 
-            powerUpTimer = setTimeout(() => {
+            // Timer voor de power-up
+            let duration = 5000; // 5 seconden standaard
+             if (powerUpType === 'none') {
+                    duration = 3000; // 3 seconden voor none
+                }
+
+            powerUpTimers[powerUpType] = setTimeout(() => {
                 deactivatePowerUp();
-            }, 5000); // 5 seconden
+                startCooldown(powerUpType);
+            }, duration);
+                //Start de timer voor de cooldown
+               //startCooldown(powerUpType);
+                updateTimerDisplay(powerUpType, duration);
+
+
         }
 
         function applyPowerUp(powerUpType) {
@@ -128,16 +180,29 @@
                     player.style.animationDuration = '1.5s'; // Sneller
                     break;
                 case 'shield':
-                     player.style.backgroundColor = '#6c757d'; //Grijs als shield
+                    player.style.backgroundColor = '#6c757d'; //Grijs als shield
                     break;
                 case 'score':
-                     status.textContent += " Score boost!"; //Voeg info toe
+                    status.textContent += " Score boost!"; //Voeg info toe
                     break;
+                case 'none':
+                  // Geen visual effect voor none
+                    status.textContent = "Power-ups uitgeschakeld voor 3 seconden.";
+                    // Disable alle powerups
+                    disableAllPowerUps();
+
+                    // Enable alle powerups na 3 seconden
+                   setTimeout(() => {
+                        enableAllPowerUps();
+                        status.textContent = "Power-ups weer ingeschakeld.";
+                    }, 3000); // 3 seconden
+                break;
             }
         }
 
         function deactivatePowerUp() {
             if (!powerUpActive) return;
+
             switch (powerUpActive) {
                 case 'speed':
                     player.style.animationDuration = '3s';
@@ -146,13 +211,90 @@
                     player.style.backgroundColor = '#007bff';
                     break;
                 case 'score':
-                     // Geen visuals nodig voor score, wel logs
+                    // Geen visuals nodig voor score, wel logs
                     console.log("Score boost is afgelopen.");
+                    break;
+                 case 'none':
+                    // Geen visuals voor 'none'
                     break;
             }
 
             powerUpActive = null;
             status.textContent = "Power-up is verlopen.";
+             updateTimerDisplay(powerUpActive, 0); // Reset de timer display
+        }
+
+        function startCooldown(powerUpType) {
+            powerUpCooldowns[powerUpType] = cooldownDurations[powerUpType]; // Stel de volledige cooldown in
+            updatePowerUpButtonState(powerUpType); // Update de knop state direct
+
+            const cooldownInterval = setInterval(() => {
+                powerUpCooldowns[powerUpType]--;
+                updatePowerUpButtonState(powerUpType); // Update de knop state
+                if (powerUpCooldowns[powerUpType] <= 0) {
+                    clearInterval(cooldownInterval);
+                    powerUpCooldowns[powerUpType] = 0; // Zorg dat de cooldown nooit onder 0 komt
+                    updatePowerUpButtonState(powerUpType);
+                }
+            }, 1000); // Update elke seconde
+        }
+
+        function updatePowerUpButtonState(powerUpType) {
+            const button = document.querySelector(`.power-up.${powerUpType}`);
+            if (!button) return;
+
+            if (powerUpCooldowns[powerUpType] > 0) {
+                button.classList.add('disabled');
+                button.textContent = `${getPowerUpSymbol(powerUpType)} (${powerUpCooldowns[powerUpType]})`;
+            } else {
+                button.classList.remove('disabled');
+                button.textContent = getPowerUpSymbol(powerUpType);
+            }
+        }
+        function getPowerUpSymbol(powerUpType) {
+            switch (powerUpType) {
+                case 'speed': return '⚡';
+                case 'shield': return '🛡️';
+                case 'score': return '⭐';
+                case 'none': return '🚫';
+                default: return '?';
+            }
+        }
+
+        function updateTimerDisplay(powerUpType, duration) {
+            if (duration <= 0) {
+                timerDisplay.textContent = "";
+                return;
+            }
+            let timeLeft = Math.ceil(duration / 1000);
+            timerDisplay.textContent = `Power-up ${powerUpType} actief voor ${timeLeft}s`;
+
+            const timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = `Power-up ${powerUpType} actief voor ${timeLeft}s`;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerDisplay.textContent = "";
+                }
+            }, 1000);
+        }
+
+          function disableAllPowerUps() {
+            document.querySelectorAll('.power-up').forEach(button => {
+                button.classList.add('disabled');
+                button.style.cursor = 'not-allowed';
+                button.onclick = null; //Verwijder de onclick event.
+            });
+        }
+
+        function enableAllPowerUps() {
+            document.querySelectorAll('.power-up').forEach(button => {
+                button.classList.remove('disabled');
+                button.style.cursor = 'pointer';
+                  //Herstel de onclick event handlers.
+                const powerUpType = button.classList[1]; //Haal de power-up type op uit de class
+                button.onclick = () => activatePowerUp(powerUpType);
+            });
         }
     </script>
 </body>
