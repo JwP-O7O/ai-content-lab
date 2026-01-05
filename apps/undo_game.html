@@ -1,0 +1,177 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Undo Game Example</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+
+.container {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+    width: 300px;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin: 10px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #3e8e41;
+}
+
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    width: 150px;
+    margin: 20px auto;
+}
+
+.cell {
+    width: 50px;
+    height: 50px;
+    border: 1px solid #ccc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    cursor: pointer;
+    background-color: #eee;
+}
+
+.cell:hover {
+    background-color: #ddd;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Tic-Tac-Toe</h1>
+    <div id="game-board">
+        <div class="cell" data-index="0"></div>
+        <div class="cell" data-index="1"></div>
+        <div class="cell" data-index="2"></div>
+        <div class="cell" data-index="3"></div>
+        <div class="cell" data-index="4"></div>
+        <div class="cell" data-index="5"></div>
+        <div class="cell" data-index="6"></div>
+        <div class="cell" data-index="7"></div>
+        <div class="cell" data-index="8"></div>
+    </div>
+    <button id="reset-button">Reset</button>
+    <button id="undo-button" disabled>Undo</button>
+    <p id="game-message"></p>
+</div>
+
+<script>
+    const cells = document.querySelectorAll('.cell');
+    const resetButton = document.getElementById('reset-button');
+    const undoButton = document.getElementById('undo-button');
+    const gameMessage = document.getElementById('game-message');
+    let currentPlayer = 'X';
+    let gameBoard = ['', '', '', '', '', '', '', '', ''];
+    let movesHistory = [];
+    let gameActive = true;
+
+    const winningCombinations = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+        [0, 4, 8], [2, 4, 6]             // Diagonals
+    ];
+
+    function handleCellClick(e) {
+        const cellIndex = parseInt(e.target.dataset.index);
+
+        if (gameBoard[cellIndex] !== '' || !gameActive) {
+            return;
+        }
+
+        gameBoard[cellIndex] = currentPlayer;
+        e.target.textContent = currentPlayer;
+        movesHistory.push({ index: cellIndex, player: currentPlayer });
+
+        checkWin();
+        checkDraw();
+        switchPlayer();
+        updateUndoButton();
+    }
+
+    function switchPlayer() {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+    }
+
+    function checkWin() {
+        for (let i = 0; i < winningCombinations.length; i++) {
+            const [a, b, c] = winningCombinations[i];
+            if (gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) {
+                gameActive = false;
+                gameMessage.textContent = `Player ${currentPlayer} wins!`;
+                return;
+            }
+        }
+    }
+
+    function checkDraw() {
+        if (!gameBoard.includes('') && gameActive) {
+            gameActive = false;
+            gameMessage.textContent = "It's a draw!";
+        }
+    }
+
+    function resetGame() {
+        gameBoard = ['', '', '', '', '', '', '', '', ''];
+        currentPlayer = 'X';
+        gameActive = true;
+        gameMessage.textContent = '';
+        movesHistory = [];
+        cells.forEach(cell => {
+            cell.textContent = '';
+        });
+        updateUndoButton();
+    }
+
+    function undoMove() {
+        if (movesHistory.length === 0) return;
+
+        const lastMove = movesHistory.pop();
+        gameBoard[lastMove.index] = '';
+        cells[lastMove.index].textContent = '';
+        currentPlayer = lastMove.player;
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X'; // Switch back to the previous player
+        gameActive = true; // reactivate the game
+        gameMessage.textContent = '';
+        updateUndoButton();
+    }
+
+    function updateUndoButton() {
+        undoButton.disabled = movesHistory.length === 0;
+    }
+
+
+    cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+    resetButton.addEventListener('click', resetGame);
+    undoButton.addEventListener('click', undoMove);
+</script>
+</body>
+</html>
+```
