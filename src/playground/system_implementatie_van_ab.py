@@ -1,5 +1,6 @@
 import random
 import logging
+import unittest
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -61,7 +62,7 @@ class ABTestingAgent:
             if success:
                 self.results[variation] += 1
             conversion_rates = self.get_conversion_rates()
-            logging.info(f"Recorded result for variation '{variation}': success={success}, tests={self.test_counts[variation]}, successes={self.results[variation]}, conversion_rate={conversion_rates.get(variation, 0.0)}%")
+            logging.info(f"Recorded result for variation '{variation}': success={success}, tests={self.test_counts[variation]}, successes={self.results[variation]}, conversion_rates={conversion_rates}")
 
         except Exception as e:
             logging.error(f"Error recording result for variation '{variation}': {e}")
@@ -91,7 +92,7 @@ class ABTestingAgent:
                 conversion_rates[variation] = round(conversion_rate, 2)  # Round to 2 decimal places
             else:
                 conversion_rates[variation] = 0.0  # Or handle as you see fit (e.g., None, NaN)
-        logging.info(f"Conversion rates: {conversion_rates}")
+        # logging.info(f"Conversion rates: {conversion_rates}")
         return conversion_rates
 
 
@@ -114,3 +115,57 @@ class ABTestingAgent:
         """
         logging.info(f"Returning test counts per variation: {self.test_counts}")
         return self.test_counts
+
+class TestABTestingAgent(unittest.TestCase):
+    def setUp(self):
+        self.agent = ABTestingAgent(["A", "B"])
+
+    def test_initialization(self):
+        self.assertEqual(self.agent.variations, ["A", "B"])
+        self.assertEqual(self.agent.results, {"A": 0, "B": 0})
+        self.assertEqual(self.agent.test_counts, {"A": 0, "B": 0})
+        self.assertEqual(self.agent.total_tests, 0)
+
+    def test_execute(self):
+        result = self.agent.execute()
+        self.assertIn(result["variation"], ["A", "B"])
+        self.assertEqual(self.agent.total_tests, 1)
+
+    def test_record_result(self):
+        self.agent.record_result("A", True)
+        self.assertEqual(self.agent.results["A"], 1)
+        self.assertEqual(self.agent.test_counts["A"], 1)
+
+        self.agent.record_result("B", False)
+        self.assertEqual(self.agent.results["B"], 0)
+        self.assertEqual(self.agent.test_counts["B"], 1)
+
+
+    def test_get_results(self):
+        self.agent.record_result("A", True)
+        self.assertEqual(self.agent.get_results(), {"A": 1, "B": 0})
+
+    def test_get_conversion_rates(self):
+        self.assertEqual(self.agent.get_conversion_rates(), {"A": 0.0, "B": 0.0})
+        self.agent.execute()
+        self.agent.record_result("A", True)
+        self.assertEqual(self.agent.get_conversion_rates(), {'A': 100.0, 'B': 0.0})
+
+        self.agent.execute()
+        self.agent.record_result("A", True)
+        self.agent.execute()
+        self.agent.record_result("A", False)
+        self.assertEqual(self.agent.get_conversion_rates(), {'A': 66.67, 'B': 0.0})
+
+
+    def test_get_test_count(self):
+        self.agent.execute()
+        self.assertEqual(self.agent.get_test_count(), 1)
+
+    def test_get_test_counts_per_variation(self):
+        self.agent.execute()
+        counts = self.agent.get_test_counts_per_variation()
+        self.assertIn(counts["A"] + counts["B"], [1])
+
+if __name__ == '__main__':
+    unittest.main()
