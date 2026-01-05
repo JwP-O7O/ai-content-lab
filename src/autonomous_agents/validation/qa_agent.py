@@ -23,7 +23,10 @@ class QualityAssuranceAgent:
             return {"status": "passed", "msg": "Syntax OK"}
             
         except SyntaxError as e:
-            error_msg = f"❌ Syntax Fout op regel {e.lineno}: {e.msg}"
+            with open(filepath, 'r') as f:
+                lines = f.readlines()
+            error_line = lines[e.lineno - 1].strip() if 0 < e.lineno <= len(lines) else "N/A"
+            error_msg = f"❌ Syntax Fout op regel {e.lineno}: {e.msg}.  Code: '{error_line}'"
             logger.error(f"[{self.name}] {error_msg}")
             return {"status": "failed", "msg": error_msg}
         except Exception as e:
