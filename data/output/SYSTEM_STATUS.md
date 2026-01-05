@@ -2,6 +2,6 @@
 | Metric | Waarde |
 |---|---|
 | **Model** | `Gemini 2.0` |
-| **Cycles** | 9 |
+| **Cycles** | 10 |
 | **Status** | 🟢 ONLINE |
-| **Actie** | Monitoring... |
+| **Actie** | 🛠️ Systeem geüpgraded |
