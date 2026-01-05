@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Game</title>
+<title>Game Loop & Functionality</title>
 <style>
 body {
     font-family: sans-serif;
@@ -10,36 +10,27 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    margin: 0;
     background-color: #f0f0f0;
+    margin: 0;
 }
 
-#game-container {
+.game-container {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
+    width: 300px;
 }
 
-#game-board {
-    margin-top: 20px;
+#gameCanvas {
     border: 1px solid #ccc;
+    margin-bottom: 10px;
 }
 
-.cell {
-    width: 40px;
-    height: 40px;
-    border: 1px solid #eee;
-    display: inline-block;
-    text-align: center;
-    font-size: 24px;
-    line-height: 40px;
-    cursor: pointer;
-}
-
-.cell.active {
-    background-color: #e0e0e0;
+#scoreDisplay {
+    font-size: 1.2em;
+    margin-bottom: 10px;
 }
 
 button {
@@ -49,113 +40,124 @@ button {
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 16px;
-    margin-top: 10px;
+    font-size: 1em;
 }
 
 button:hover {
     background-color: #3e8e41;
 }
 
-#score {
+#gameOverMessage {
+    color: red;
+    font-size: 1.5em;
     margin-top: 10px;
-    font-size: 18px;
+    display: none;
 }
 </style>
 </head>
 <body>
 
-<div id="game-container">
+<div class="game-container">
     <h1>Simple Game</h1>
-    <p>Click the cells!</p>
-    <div id="game-board"></div>
-    <div id="score">Score: <span id="score-value">0</span></div>
-    <button id="start-button">Start Game</button>
+    <canvas id="gameCanvas" width="200" height="200"></canvas>
+    <div id="scoreDisplay">Score: 0</div>
+    <button id="startButton">Start Game</button>
+    <div id="gameOverMessage">Game Over!</div>
 </div>
 
 <script>
-    const gameBoard = document.getElementById('game-board');
-    const scoreValue = document.getElementById('score-value');
-    const startButton = document.getElementById('start-button');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const startButton = document.getElementById('startButton');
+    const gameOverMessage = document.getElementById('gameOverMessage');
 
-    let gridSize = 5;
-    let cells = [];
     let score = 0;
-    let activeCellIndex = -1;
-    let gameInterval;
     let gameRunning = false;
+    let circleX, circleY, circleRadius;
+    let dx, dy;
+    let targetX, targetY, targetRadius;
 
-
-    function createBoard() {
-        gameBoard.innerHTML = '';
-        cells = [];
-        for (let i = 0; i < gridSize * gridSize; i++) {
-            const cell = document.createElement('div');
-            cell.classList.add('cell');
-            cell.dataset.index = i;
-            cell.addEventListener('click', handleCellClick);
-            gameBoard.appendChild(cell);
-            cells.push(cell);
-        }
-        gameBoard.style.width = `${gridSize * 42}px`; // Adjust width with cell and border
+    function resetGame() {
+        score = 0;
+        circleX = canvas.width / 2;
+        circleY = canvas.height / 2;
+        circleRadius = 10;
+        dx = (Math.random() - 0.5) * 2; // Random direction
+        dy = (Math.random() - 0.5) * 2; // Random direction
+        targetX = Math.random() * canvas.width;
+        targetY = Math.random() * canvas.height;
+        targetRadius = 15;
+        gameOverMessage.style.display = 'none';
+        scoreDisplay.textContent = 'Score: ' + score;
     }
 
-    function getRandomCellIndex() {
-        return Math.floor(Math.random() * cells.length);
+
+    function drawCircle() {
+        ctx.beginPath();
+        ctx.arc(circleX, circleY, circleRadius, 0, Math.PI * 2);
+        ctx.fillStyle = 'blue';
+        ctx.fill();
+        ctx.closePath();
     }
 
-    function activateRandomCell() {
-        if (activeCellIndex !== -1) {
-            cells[activeCellIndex].classList.remove('active');
-        }
-
-        activeCellIndex = getRandomCellIndex();
-        cells[activeCellIndex].classList.add('active');
+    function drawTarget() {
+        ctx.beginPath();
+        ctx.arc(targetX, targetY, targetRadius, 0, Math.PI * 2);
+        ctx.fillStyle = 'red';
+        ctx.fill();
+        ctx.closePath();
     }
 
-    function handleCellClick(event) {
+
+    function update() {
         if (!gameRunning) return;
-        const clickedIndex = parseInt(event.target.dataset.index);
-        if (clickedIndex === activeCellIndex) {
-            score++;
-            scoreValue.textContent = score;
-            activateRandomCell();
-        } else {
-            gameOver();
+
+        circleX += dx;
+        circleY += dy;
+
+        // Bounce off walls
+        if (circleX + circleRadius > canvas.width || circleX - circleRadius < 0) {
+            dx = -dx;
         }
+        if (circleY + circleRadius > canvas.height || circleY - circleRadius < 0) {
+            dy = -dy;
+        }
+
+        // Collision detection
+        const distance = Math.sqrt((circleX - targetX) ** 2 + (circleY - targetY) ** 2);
+        if (distance < circleRadius + targetRadius) {
+            score++;
+            scoreDisplay.textContent = 'Score: ' + score;
+            targetX = Math.random() * canvas.width;
+            targetY = Math.random() * canvas.height;
+        }
+
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawCircle();
+        drawTarget();
+        requestAnimationFrame(update);
     }
 
     function startGame() {
-        if(gameRunning) return;
-        score = 0;
-        scoreValue.textContent = score;
         gameRunning = true;
-        startButton.textContent = "Stop Game";
-        createBoard();
-        activateRandomCell();
-        gameInterval = setInterval(activateRandomCell, 1000); // Change active cell every 1 second
+        resetGame();
+        update();
     }
 
-    function gameOver() {
+    function endGame() {
         gameRunning = false;
-        startButton.textContent = "Start Game";
-        clearInterval(gameInterval);
-        alert(`Game Over! Final Score: ${score}`);
-        // Optionally reset the game here if needed.
+        gameOverMessage.style.display = 'block';
     }
 
-    startButton.addEventListener('click', () => {
-        if(gameRunning) {
-          gameOver();
-        } else {
-          startGame();
-        }
 
-    });
+    startButton.addEventListener('click', startGame);
 
-
-
-    createBoard();
+    // Initial draw to prevent a blank canvas on load.
+    resetGame();
+    drawCircle();
+    drawTarget();
 </script>
 
 </body>
