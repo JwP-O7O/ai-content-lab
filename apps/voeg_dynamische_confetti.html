@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power-up Confetti</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            overflow: hidden; /* Hide confetti overflow */
+        }
+
+        .container {
+            text-align: center;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #3e8e41;
+        }
+
+        .confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            pointer-events: none; /* Allows clicks to pass through */
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                width: 90%;
+            }
+
+            button {
+                padding: 12px 28px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Power-up Activated!</h1>
+        <button id="powerupButton">Activate Power-up</button>
+    </div>
+    <canvas class="confetti-canvas"></canvas>
+    <script>
+        const button = document.getElementById('powerupButton');
+        const canvas = document.querySelector('.confetti-canvas');
+        const context = canvas.getContext('2d');
+        let confetti = [];
+        let animationFrameId;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function createConfetti(count) {
+            for (let i = 0; i < count; i++) {
+                confetti.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - 20, // Start slightly above
+                    size: Math.random() * 10 + 5,
+                    color: `hsl(${Math.random() * 360}, 70%, 50%)`,
+                    speedX: (Math.random() - 0.5) * 4,
+                    speedY: Math.random() * 6 + 2,
+                    rotation: Math.random() * 2 * Math.PI,
+                    rotationSpeed: (Math.random() - 0.5) * 0.1
+                });
+            }
+        }
+
+        function renderConfetti() {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
+            confetti.forEach((piece, index) => {
+                piece.x += piece.speedX;
+                piece.y += piece.speedY;
+                piece.rotation += piece.rotationSpeed;
+                piece.speedY += 0.08; // Gravity
+
+                if (piece.y > canvas.height) {
+                    // Reset confetti above
+                    piece.x = Math.random() * canvas.width;
+                    piece.y = -20;
+                    piece.speedY = Math.random() * 6 + 2;
+                }
+
+                context.save();
+                context.translate(piece.x, piece.y);
+                context.rotate(piece.rotation);
+                context.fillStyle = piece.color;
+                context.fillRect(-piece.size / 2, -piece.size / 2, piece.size, piece.size);
+                context.restore();
+            });
+
+            animationFrameId = requestAnimationFrame(renderConfetti);
+        }
+
+        function startConfetti() {
+            createConfetti(100);
+            renderConfetti();
+        }
+
+        function stopConfetti() {
+            cancelAnimationFrame(animationFrameId);
+            confetti = [];
+        }
+
+
+        button.addEventListener('click', () => {
+            stopConfetti(); // Ensure no previous animation is running
+            startConfetti();
+            setTimeout(stopConfetti, 3000); // Stop after 3 seconds
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+    </script>
+</body>
+</html>
