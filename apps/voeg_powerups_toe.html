@@ -1,281 +1,256 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Power-Up Game</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f0f0f0;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
+            justify-content: flex-start;
             min-height: 100vh;
         }
 
         #game-container {
             background-color: #fff;
             border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             padding: 20px;
+            margin: 20px;
             width: 90%;
             max-width: 600px;
             text-align: center;
         }
 
-        h1 {
-            color: #333;
-            margin-bottom: 20px;
-        }
-
         #game-area {
+            width: 100%;
+            height: 200px;
             background-color: #eee;
             border-radius: 5px;
-            padding: 20px;
             margin-bottom: 20px;
             position: relative;
         }
 
-        .player {
-            width: 50px;
-            height: 50px;
-            background-color: #007bff;
-            border-radius: 50%;
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        .powerup {
+        #player {
             width: 30px;
             height: 30px;
+            background-color: #3498db;
             border-radius: 50%;
             position: absolute;
-            background-color: #28a745;
+            bottom: 10px;
+            left: 10px;
+            transition: left 0.2s ease-in-out;
         }
 
-        .powerup.speed {
-            background-color: #ffc107; /* Yellow for speed */
+        .power-up {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            position: absolute;
+            background-color: #2ecc71;
+            cursor: pointer;
+            transition: all 0.5s ease-in-out;
         }
 
-        .powerup.shield {
-            background-color: #17a2b8; /* Cyan for shield */
+        .power-up.active {
+            background-color: #e74c3c;
+            transform: scale(1.2);
         }
 
-
-        #score {
+        #score-display {
             font-size: 1.2em;
-            color: #555;
             margin-bottom: 10px;
         }
 
-        button {
-            background-color: #007bff;
-            color: #fff;
+        #power-up-area {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+
+        .power-up-button {
+            padding: 10px 15px;
+            background-color: #9b59b6;
+            color: white;
             border: none;
-            padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .power-up-button:hover {
+            background-color: #8e44ad;
+        }
+
+        #timer-display {
             font-size: 1em;
+            margin-top: 10px;
         }
 
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        .game-over {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-            display: none;
+        @media (max-width: 600px) {
+            #game-container {
+                width: 95%;
+            }
         }
     </style>
 </head>
 <body>
     <div id="game-container">
         <h1>Power-Up Game</h1>
+        <div id="score-display">Score: <span id="score">0</span></div>
         <div id="game-area">
-            <div class="player"></div>
-            </div>
-            <div class="game-over">
-                <h2>Game Over!</h2>
-                <p>Score: <span id="final-score">0</span></p>
-                <button id="restart-button">Restart</button>
-            </div>
-        <div id="score">Score: 0</div>
-        <button id="start-button">Start Game</button>
+            <div id="player"></div>
+        </div>
+        <div id="power-up-area">
+            <button class="power-up-button" onclick="activatePowerUp('speed')">Speed</button>
+            <button class="power-up-button" onclick="activatePowerUp('shield')">Shield</button>
+            <button class="power-up-button" onclick="activatePowerUp('doubleScore')">Double Score</button>
+        </div>
+        <div id="timer-display"></div>
     </div>
-
     <script>
+        const player = document.getElementById('player');
         const gameArea = document.getElementById('game-area');
-        const player = document.querySelector('.player');
         const scoreDisplay = document.getElementById('score');
-        const gameOverScreen = document.querySelector('.game-over');
-        const finalScoreDisplay = document.getElementById('final-score');
-        const restartButton = document.getElementById('restart-button');
-        const startButton = document.getElementById('start-button');
-
-        let playerX = 0;
+        const timerDisplay = document.getElementById('timer-display');
         let score = 0;
-        let gameInterval;
-        let powerUps = [];
-        let playerSpeed = 5; // Base player speed
-        let hasShield = false;
-        let gameOver = false;
-
-        function getRandomInt(min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
-        }
-
-
-        function createPowerUp() {
-            const powerUpType = Math.random() < 0.5 ? 'speed' : 'shield';
-            const powerUp = document.createElement('div');
-            powerUp.classList.add('powerup', powerUpType);
-            powerUp.style.left = `${getRandomInt(0, gameArea.offsetWidth - 30)}px`;
-            powerUp.style.top = '0px';
-            gameArea.appendChild(powerUp);
-            powerUps.push({ element: powerUp, type: powerUpType, speed: getRandomInt(1, 3)});
-        }
-
-
-        function movePowerUps() {
-            powerUps.forEach((powerUp, index) => {
-                const currentTop = parseInt(powerUp.element.style.top) || 0;
-                powerUp.element.style.top = `${currentTop + powerUp.speed}px`;
-
-                if (currentTop > gameArea.offsetHeight) {
-                    powerUp.element.remove();
-                    powerUps.splice(index, 1);
-                }
-
-                const playerRect = player.getBoundingClientRect();
-                const powerUpRect = powerUp.element.getBoundingClientRect();
-
-                if (
-                    playerRect.left < powerUpRect.right &&
-                    playerRect.right > powerUpRect.left &&
-                    playerRect.bottom > powerUpRect.top &&
-                    playerRect.top < powerUpRect.bottom
-                ) {
-                    powerUp.element.remove();
-                    powerUps.splice(index, 1);
-
-                     if (powerUp.type === 'speed') {
-                        playerSpeed = 10;
-                         setTimeout(() => {
-                           playerSpeed = 5;
-                         }, 5000);
-                     } else if (powerUp.type === 'shield' && !hasShield) {
-                        hasShield = true;
-                        player.style.backgroundColor = '#6c757d'; // Gray for shield
-                         setTimeout(() => {
-                           hasShield = false;
-                           player.style.backgroundColor = '#007bff';
-                         }, 5000);
-                     }
-                }
-            });
-        }
-
+        let gameWidth = gameArea.offsetWidth;
+        let gameHeight = gameArea.offsetHeight;
+        let playerX = 10;
+        let speedPowerUpActive = false;
+        let shieldPowerUpActive = false;
+        let doubleScorePowerUpActive = false;
+        let powerUpTimers = {};
+        let initialPlayerSpeed = 5;
+        let playerSpeed = initialPlayerSpeed;
 
         function updateScore() {
-            score++;
-            scoreDisplay.textContent = `Score: ${score}`;
+            scoreDisplay.textContent = score;
+        }
+
+        function spawnPowerUp(type) {
+            const powerUp = document.createElement('div');
+            powerUp.classList.add('power-up');
+            powerUp.dataset.type = type;
+            powerUp.style.left = Math.random() * (gameArea.offsetWidth - 25) + 'px';
+            powerUp.style.top = Math.random() * (gameArea.offsetHeight - 25) + 'px';
+            gameArea.appendChild(powerUp);
+
+            powerUp.addEventListener('click', () => {
+                if (!powerUp.classList.contains('active')) {
+                   activatePowerUp(type);
+                }
+            });
+
+            setTimeout(() => {
+                if (powerUp) {
+                    powerUp.remove();
+                }
+            }, 5000);
+        }
+
+        function activatePowerUp(type) {
+            if (powerUpTimers[type]) {
+                clearTimeout(powerUpTimers[type]);
+                deactivatePowerUp(type);
+            }
+
+            switch (type) {
+                case 'speed':
+                    speedPowerUpActive = true;
+                    playerSpeed = initialPlayerSpeed * 2;
+                    break;
+                case 'shield':
+                   shieldPowerUpActive = true;
+                   break;
+                case 'doubleScore':
+                   doubleScorePowerUpActive = true;
+                   break;
+            }
+
+           const duration = 5;
+           let timeLeft = duration;
+           timerDisplay.textContent = `${type.charAt(0).toUpperCase() + type.slice(1)}: ${timeLeft}s`;
+
+           powerUpTimers[type] = setInterval(() => {
+               timeLeft--;
+               timerDisplay.textContent = `${type.charAt(0).toUpperCase() + type.slice(1)}: ${timeLeft}s`;
+               if (timeLeft <= 0) {
+                   deactivatePowerUp(type);
+               }
+           }, 1000);
+        }
+
+        function deactivatePowerUp(type) {
+            switch (type) {
+                case 'speed':
+                    speedPowerUpActive = false;
+                    playerSpeed = initialPlayerSpeed;
+                    break;
+                case 'shield':
+                   shieldPowerUpActive = false;
+                   break;
+                case 'doubleScore':
+                   doubleScorePowerUpActive = false;
+                   break;
+            }
+
+            timerDisplay.textContent = "";
+            clearInterval(powerUpTimers[type]);
+            powerUpTimers[type] = null;
+        }
+
+        function movePlayer() {
+            playerX += playerSpeed;
+            if (playerX > gameArea.offsetWidth - player.offsetWidth) {
+                playerX = gameArea.offsetWidth - player.offsetWidth;
+                score += (doubleScorePowerUpActive ? 2 : 1);
+                updateScore();
+            }
+            player.style.left = playerX + 'px';
+
+             if (playerX <= 0) {
+                 playerX = 0;
+             }
         }
 
 
         function gameLoop() {
-            if (gameOver) return;
-
-            playerX = playerX + (gameArea.offsetWidth / 200) * playerSpeed;
-            if (playerX > gameArea.offsetWidth - 50) {
-              playerX = gameArea.offsetWidth - 50;
-            }
-            if(playerX < 0) {
-              playerX = 0;
-            }
-
-            player.style.left = `${playerX}px`;
-
-            movePowerUps();
-            updateScore();
-
-            if (powerUps.some(powerUp => {
-               const playerRect = player.getBoundingClientRect();
-               const powerUpRect = powerUp.element.getBoundingClientRect();
-
-                return playerRect.left < powerUpRect.right &&
-                  playerRect.right > powerUpRect.left &&
-                  playerRect.bottom > powerUpRect.top &&
-                  playerRect.top < powerUpRect.bottom
-             })) {
-              // Game over condition removed, handled in powerup collision
-              // Check for game over (optional)
-            }
-
-
-            if(!gameOver) {
-                gameInterval = requestAnimationFrame(gameLoop);
-            }
+           movePlayer();
+            requestAnimationFrame(gameLoop);
         }
-
-        function startGame() {
-            gameOver = false;
-            score = 0;
-            scoreDisplay.textContent = 'Score: 0';
-            playerX = gameArea.offsetWidth / 2 - 25;
-            player.style.left = `${playerX}px`;
-            player.style.backgroundColor = '#007bff';
-            powerUps.forEach(powerUp => powerUp.element.remove());
-            powerUps = [];
-
-            gameInterval = requestAnimationFrame(gameLoop);
-            createPowerUpInterval = setInterval(createPowerUp, 2000);
-        }
-
-        function endGame() {
-          gameOver = true;
-          cancelAnimationFrame(gameInterval);
-          clearInterval(createPowerUpInterval);
-          finalScoreDisplay.textContent = score;
-          gameOverScreen.style.display = 'block';
-
-        }
-
-
-
-        startButton.addEventListener('click', startGame);
-
-        restartButton.addEventListener('click', () => {
-            gameOverScreen.style.display = 'none';
-            startGame();
-        });
-
+        gameLoop();
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') {
-                playerX -= 10;
-            } else if (e.key === 'ArrowRight') {
-                playerX += 10;
+            if (e.key === 'ArrowRight') {
+                playerX += playerSpeed;
+                if (playerX > gameArea.offsetWidth - player.offsetWidth) {
+                     playerX = gameArea.offsetWidth - player.offsetWidth;
+                     score += (doubleScorePowerUpActive ? 2 : 1);
+                     updateScore();
+                 }
+                player.style.left = playerX + 'px';
+            } else if (e.key === 'ArrowLeft') {
+                playerX -= playerSpeed;
+                if(playerX < 0) {
+                    playerX = 0;
+                }
+                player.style.left = playerX + 'px';
             }
-            if (playerX < 0) {
-                playerX = 0;
-            }
-            if (playerX > gameArea.offsetWidth - 50) {
-                playerX = gameArea.offsetWidth - 50;
-            }
-            player.style.left = `${playerX}px`;
         });
+
+        setInterval(() => {
+            spawnPowerUp('speed');
+            spawnPowerUp('shield');
+            spawnPowerUp('doubleScore');
+        }, 8000);
+
     </script>
 </body>
 </html>
