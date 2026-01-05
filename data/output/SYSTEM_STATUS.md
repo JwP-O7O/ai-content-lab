@@ -5,4 +5,4 @@
 | **Model** | `Gemini 2.0` |
 | **Cycles** | 5 |
 | **Internet** | 🌍 CONNECTED |
-| **Laatste Actie** | Monitoring... |
+| **Laatste Actie** | 🌐 Web App: voeg_powerup_visual.html |
