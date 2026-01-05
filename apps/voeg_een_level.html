@@ -39,6 +39,7 @@
             cursor: pointer;
             font-size: 16px;
             transition: background-color 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         button:hover {
@@ -96,15 +97,36 @@
         const button = document.getElementById('levelUpButton');
         const confettiContainer = document.getElementById('confettiContainer');
 
+        function getRandomColor() {
+            const h = Math.random() * 360;
+            const s = 100;
+            const l = Math.random() * 50 + 25; // More vibrant colors
+            return `hsl(${h}, ${s}%, ${l}%)`;
+        }
+
+        function getRandomSize() {
+            return Math.random() * 10 + 5; // Vary the size
+        }
+
+        function getRandomAnimationDuration() {
+            return Math.random() * 2 + 2; // Vary the animation duration
+        }
+
         function createConfetti() {
             const confetti = document.createElement('div');
             confetti.classList.add('confetti');
 
-            // Random position and color
+            // Random position, color, size, and animation duration
             const randomX = Math.random() * window.innerWidth;
-            const randomColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            const randomColor = getRandomColor();
+            const randomSize = getRandomSize();
+            const randomAnimationDuration = getRandomAnimationDuration();
+
             confetti.style.left = `${randomX}px`;
             confetti.style.backgroundColor = randomColor;
+            confetti.style.width = `${randomSize}px`;
+            confetti.style.height = `${randomSize}px`;
+            confetti.style.animationDuration = `${randomAnimationDuration}s`;
 
             confettiContainer.appendChild(confetti);
 
@@ -115,7 +137,7 @@
         }
 
         function launchConfetti() {
-            const numberOfConfetti = 100; // Increased for a more impressive effect
+            const numberOfConfetti = 150; // Increased for a more impressive effect
             for (let i = 0; i < numberOfConfetti; i++) {
                 setTimeout(createConfetti, i * 50); // Stagger the confetti creation
             }
