@@ -2,33 +2,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Game</title>
+<title>Pixelverwijdering</title>
 <style>
 body {
     font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    margin: 0;
+    min-height: 100vh;
     background-color: #f0f0f0;
+    margin: 0;
 }
 
 #game-container {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
 }
 
-#canvas {
+#game-canvas {
     border: 1px solid #ccc;
-    margin-bottom: 10px;
-}
-
-#score {
-    font-size: 1.2em;
     margin-bottom: 10px;
 }
 
@@ -39,155 +34,122 @@ button {
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 1em;
+    font-size: 16px;
+    margin: 5px;
 }
 
 button:hover {
     background-color: #3e8e41;
 }
+
+#score {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
 </style>
 </head>
 <body>
-
 <div id="game-container">
-    <h1>Simple Game</h1>
-    <canvas id="canvas" width="400" height="300"></canvas>
+    <h1>Pixelverwijdering Game</h1>
     <div id="score">Score: 0</div>
-    <button id="startButton">Start Game</button>
+    <canvas id="game-canvas" width="400" height="400"></canvas>
+    <button id="startButton">Starten</button>
+    <button id="stopButton">Stoppen</button>
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const scoreDisplay = document.getElementById('score');
+
+        let pixels = [];
+        let score = 0;
+        let gameRunning = false;
+        let animationFrameId;
+
+        // Pixel class
+        class Pixel {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.size = 10;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+            }
+        }
+
+
+        function generatePixel() {
+            const x = Math.floor(Math.random() * (canvas.width / 10)) * 10;
+            const y = Math.floor(Math.random() * (canvas.height / 10)) * 10;
+            const colors = ['red', 'green', 'blue', 'yellow', 'purple'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            return new Pixel(x, y, color);
+        }
+
+
+
+        function drawPixels() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (const pixel of pixels) {
+                pixel.draw();
+            }
+        }
+
+        function updateGame() {
+          if (!gameRunning) return;
+
+          if (Math.random() < 0.05) { // Adjust frequency
+              pixels.push(generatePixel());
+          }
+
+          drawPixels();
+          animationFrameId = requestAnimationFrame(updateGame);
+        }
+
+        function startGame() {
+            if (!gameRunning) {
+                gameRunning = true;
+                score = 0;
+                scoreDisplay.textContent = 'Score: ' + score;
+                pixels = []; // Clear pixels
+                updateGame();
+            }
+        }
+
+        function stopGame() {
+            gameRunning = false;
+            cancelAnimationFrame(animationFrameId);
+        }
+
+
+        canvas.addEventListener('click', (event) => {
+            if (!gameRunning) return;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+
+            for (let i = pixels.length - 1; i >= 0; i--) {
+                const pixel = pixels[i];
+                if (mouseX >= pixel.x && mouseX <= pixel.x + pixel.size &&
+                    mouseY >= pixel.y && mouseY <= pixel.y + pixel.size) {
+                    pixels.splice(i, 1);
+                    score++;
+                    scoreDisplay.textContent = 'Score: ' + score;
+                    break;
+                }
+            }
+        });
+
+
+        startButton.addEventListener('click', startGame);
+        stopButton.addEventListener('click', stopGame);
+    </script>
 </div>
-
-<script>
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const scoreDisplay = document.getElementById('score');
-const startButton = document.getElementById('startButton');
-
-let score = 0;
-let gameRunning = false;
-let playerX = canvas.width / 2;
-let playerY = canvas.height - 30;
-let playerWidth = 20;
-let playerHeight = 20;
-let playerSpeed = 5;
-let obstacles = [];
-let obstacleSpeed = 2;
-let obstacleInterval = 2000; // milliseconds
-let lastObstacleSpawn = 0;
-
-
-function drawPlayer() {
-    ctx.fillStyle = 'blue';
-    ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
-}
-
-function drawObstacles() {
-    ctx.fillStyle = 'red';
-    obstacles.forEach(obstacle => {
-        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-    });
-}
-
-function updateObstacles(deltaTime) {
-    for (let i = 0; i < obstacles.length; i++) {
-        obstacles[i].y += obstacleSpeed * (deltaTime / 16); // Adjusted for consistent speed
-        if (obstacles[i].y > canvas.height) {
-            obstacles.splice(i, 1);
-            i--; // Adjust index after removal
-            score++;
-            updateScore();
-        }
-    }
-}
-
-
-function generateObstacle() {
-    const obstacleWidth = 30;
-    const obstacleHeight = 15;
-    const x = Math.random() * (canvas.width - obstacleWidth);
-    obstacles.push({
-        x: x,
-        y: -obstacleHeight,
-        width: obstacleWidth,
-        height: obstacleHeight
-    });
-}
-
-function checkCollision() {
-    for (let i = 0; i < obstacles.length; i++) {
-        const obstacle = obstacles[i];
-        if (playerX < obstacle.x + obstacle.width &&
-            playerX + playerWidth > obstacle.x &&
-            playerY < obstacle.y + obstacle.height &&
-            playerY + playerHeight > obstacle.y) {
-            return true; // Collision detected
-        }
-    }
-    return false; // No collision
-}
-
-
-function updateScore() {
-    scoreDisplay.textContent = 'Score: ' + score;
-}
-
-let lastTime = 0;
-function gameLoop(currentTime) {
-    const deltaTime = currentTime - lastTime;
-    lastTime = currentTime;
-
-    if (!gameRunning) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawPlayer();
-    drawObstacles();
-    updateObstacles(deltaTime);
-
-    if (checkCollision()) {
-        gameOver();
-        return;
-    }
-
-    if (currentTime - lastObstacleSpawn > obstacleInterval) {
-        generateObstacle();
-        lastObstacleSpawn = currentTime;
-    }
-
-    requestAnimationFrame(gameLoop);
-}
-
-function gameOver() {
-    gameRunning = false;
-    alert('Game Over! Score: ' + score);
-    score = 0;
-    updateScore();
-    obstacles = [];
-    playerX = canvas.width / 2;
-}
-
-function startGame() {
-    gameRunning = true;
-    score = 0;
-    updateScore();
-    obstacles = []; // Clear obstacles
-    lastTime = 0;
-    requestAnimationFrame(gameLoop);
-}
-
-
-startButton.addEventListener('click', startGame);
-
-document.addEventListener('keydown', (e) => {
-    if (!gameRunning) return;
-    if (e.key === 'ArrowLeft') {
-        playerX -= playerSpeed;
-        if (playerX < 0) playerX = 0;
-    } else if (e.key === 'ArrowRight') {
-        playerX += playerSpeed;
-        if (playerX > canvas.width - playerWidth) playerX = canvas.width - playerWidth;
-    }
-});
-</script>
-
 </body>
 </html>
 ```
