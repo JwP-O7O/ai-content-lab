@@ -1,8 +1,8 @@
-# 🔵 All In AI - Self-Evolving System
+# 🔵 All In AI - Knowledge System
 
 | Metric | Waarde |
 |---|---|
 | **Model** | `Gemini 2.0` |
-| **Cycles** | 5 |
-| **Status** | 🧠 LEARNING & OPTIMIZING |
-| **Laatste Actie** | Monitoring... |
+| **Cycles** | 1 |
+| **Internet** | 🌍 CONNECTED |
+| **Laatste Actie** | 🛠️ Systeem geüpgraded |
