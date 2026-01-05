@@ -1,0 +1,150 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Pixel Click Game</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+
+#game-container {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+}
+
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(10, 30px); /* Adjust for desired grid size */
+    grid-gap: 2px;
+    margin-top: 10px;
+}
+
+.pixel {
+    width: 30px;
+    height: 30px;
+    background-color: #ddd;
+    border: 1px solid #ccc;
+    cursor: pointer;
+}
+
+.pixel.clicked {
+    background-color: #4CAF50; /* Green */
+}
+
+#score {
+    margin-top: 10px;
+    font-size: 1.2em;
+}
+
+#timer {
+  margin-top: 10px;
+  font-size: 1.2em;
+}
+
+</style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>Pixel Click Game</h1>
+    <div id="game-board">
+        <!-- Pixels will be generated here -->
+    </div>
+    <div id="score">Score: 0</div>
+    <div id="timer">Time: 60</div>
+</div>
+
+
+<script>
+const gameBoard = document.getElementById('game-board');
+const scoreDisplay = document.getElementById('score');
+const timerDisplay = document.getElementById('timer');
+const gridSize = 10;
+let score = 0;
+let timeLeft = 60;
+let gameInterval;
+let pixels = [];
+
+
+// Function to generate pixels
+function generatePixels() {
+    for (let i = 0; i < gridSize * gridSize; i++) {
+        const pixel = document.createElement('div');
+        pixel.classList.add('pixel');
+        pixel.dataset.index = i;
+        gameBoard.appendChild(pixel);
+        pixels.push(pixel); // Store the pixel in the array
+    }
+}
+
+function getRandomPixelIndex() {
+    return Math.floor(Math.random() * pixels.length);
+}
+
+function startTimer() {
+    gameInterval = setInterval(() => {
+        timeLeft--;
+        timerDisplay.textContent = `Time: ${timeLeft}`;
+        if (timeLeft <= 0) {
+            clearInterval(gameInterval);
+            alert(`Game Over! Final Score: ${score}`);
+            resetGame();
+        }
+    }, 1000);
+}
+
+
+function resetGame() {
+    clearInterval(gameInterval);
+    score = 0;
+    timeLeft = 60;
+    scoreDisplay.textContent = `Score: ${score}`;
+    timerDisplay.textContent = `Time: ${timeLeft}`;
+    pixels.forEach(pixel => {
+        pixel.classList.remove('clicked');
+        pixel.removeEventListener('click', pixelClickHandler);
+
+    });
+
+    pixels = [];
+    gameBoard.innerHTML = '';
+    generatePixels();
+    setupPixelClickHandlers();
+    startTimer();
+}
+
+function pixelClickHandler(event) {
+    const pixel = event.target;
+    if (!pixel.classList.contains('clicked')) {
+        pixel.classList.add('clicked');
+        score++;
+        scoreDisplay.textContent = `Score: ${score}`;
+    }
+}
+
+function setupPixelClickHandlers() {
+    pixels.forEach(pixel => {
+        pixel.addEventListener('click', pixelClickHandler);
+    });
+}
+
+
+// Initialize game
+generatePixels();
+setupPixelClickHandlers();
+startTimer();
+
+</script>
+</body>
+</html>
+```
