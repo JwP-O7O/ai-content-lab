@@ -3,131 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Falling Stars with Color Variation</title>
+    <title>Falling Stars with Color</title>
     <style>
         body {
-            background-color: #111;
-            overflow: hidden;
+            background-color: #110022; /* Dark, space-like background */
+            overflow: hidden; /* Hide scrollbars */
             margin: 0;
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
             height: 100vh;
-            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        #container {
-            position: relative;
+        #stars-container {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 80vh;
-            max-width: 600px; /* Adjust as needed */
+            height: 100%;
+            pointer-events: none; /* Allows clicks to pass through */
         }
 
         .star {
             position: absolute;
-            width: 2px;
-            height: 2px;
+            background-color: white; /* Default color */
             border-radius: 50%;
             animation: fall linear infinite;
         }
 
         @keyframes fall {
-            0% {
-                transform: translateY(-10px);
+            from {
+                transform: translateY(-10vh);
             }
-            100% {
-                transform: translateY(calc(100vh + 10px));
+            to {
+                transform: translateY(110vh);
             }
         }
 
-        #controls {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-        }
-
-        #colorToggle {
-            background-color: #333;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-
-        #colorToggle:hover {
-            background-color: #444;
+        /* Mobile-friendly adjustments */
+        @media (max-width: 768px) {
+            /* Adjustments for smaller screens */
+            .star {
+                width: 2px;
+                height: 2px;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Falling Stars</h1>
-    <div id="container"></div>
-    <div id="controls">
-        <button id="colorToggle">Toggle Color Variation</button>
-    </div>
+    <div id="stars-container"></div>
 
     <script>
-        const container = document.getElementById('container');
-        const colorToggle = document.getElementById('colorToggle');
-        let colorVariationEnabled = true;
-        let starCount = 150; // Adjust for more/less stars
-        const colors = ['white', 'lightblue', 'lightgreen', 'yellow', 'pink', 'cyan', 'orange'];
+        const starsContainer = document.getElementById('stars-container');
+        const numberOfStars = 150; // Increased star count for better visual effect
+
+        function getRandomColor() {
+            const colors = ['#FFC107', '#E91E63', '#9C27B0', '#2196F3', '#00BCD4']; // More color options
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
 
 
         function createStar() {
             const star = document.createElement('div');
             star.classList.add('star');
-            const size = Math.random() * 2 + 1; // Random size
+            const size = Math.random() * 3 + 1; // Random size
             star.style.width = `${size}px`;
             star.style.height = `${size}px`;
-            star.style.left = `${Math.random() * 100}%`;
-            star.style.animationDuration = `${Math.random() * 2 + 1}s`;  // Random speed
-
-            if (colorVariationEnabled) {
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                star.style.backgroundColor = color;
-            } else {
-                star.style.backgroundColor = 'white';
-            }
+            star.style.left = `${Math.random() * 100}vw`;
+            const animationDuration = Math.random() * 2 + 1; // Random animation duration
+            star.style.animationDuration = `${animationDuration}s`;
+            star.style.animationDelay = `${Math.random() * animationDuration}s`; // Add delay for staggered effect
+            star.style.backgroundColor = getRandomColor();
+            starsContainer.appendChild(star);
 
 
-            container.appendChild(star);
+            // Remove star after it falls to prevent memory leaks, also added 'star-remove' class
+            star.addEventListener('animationend', () => {
+                star.remove();
+                createStar();  // Create a new star to replace the removed one for continuous effect
+            });
+
         }
 
-        function generateStars() {
-            for (let i = 0; i < starCount; i++) {
-                createStar();
-            }
+        for (let i = 0; i < numberOfStars; i++) {
+            createStar();
         }
-
-        generateStars();
-
-        colorToggle.addEventListener('click', () => {
-            colorVariationEnabled = !colorVariationEnabled;
-            colorToggle.textContent = colorVariationEnabled ? "Disable Color Variation" : "Enable Color Variation";
-            // Clear and regenerate stars to apply color changes
-            container.innerHTML = '';
-            generateStars();
-
-        });
-
-        // Responsive adjustment for star count (optional)
-        function adjustStarCount() {
-            if (window.innerWidth < 768) { // Example: reduce stars on small screens
-                starCount = 75;
-            } else {
-                starCount = 150;
-            }
-             container.innerHTML = '';
-            generateStars();
-        }
-
-        window.addEventListener('resize', adjustStarCount);
-        adjustStarCount(); // Initial adjustment
 
     </script>
 </body>
