@@ -1,0 +1,133 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Game Loop Example</title>
+<style>
+body {
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+
+#gameContainer {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+#gameCanvas {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+}
+
+#scoreDisplay {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+#startButton, #stopButton {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 5px;
+}
+
+#stopButton {
+    background-color: #f44336;
+}
+
+#startButton:hover, #stopButton:hover {
+    opacity: 0.8;
+}
+</style>
+</head>
+<body>
+    <div id="gameContainer">
+        <h1>Simple Game Loop</h1>
+        <canvas id="gameCanvas" width="300" height="200"></canvas>
+        <div id="scoreDisplay">Score: 0</div>
+        <button id="startButton">Start</button>
+        <button id="stopButton">Stop</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+
+        let score = 0;
+        let animationFrameId;
+        let isRunning = false;
+        let x = 50;
+        let y = 50;
+        let dx = 2; // Horizontal speed
+        let dy = 2; // Vertical speed
+        const circleRadius = 20;
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw a simple circle
+            ctx.beginPath();
+            ctx.arc(x, y, circleRadius, 0, Math.PI * 2);
+            ctx.fillStyle = 'blue';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function update() {
+          // Bounce off the walls
+          if (x + circleRadius > canvas.width || x - circleRadius < 0) {
+            dx = -dx;
+          }
+          if (y + circleRadius > canvas.height || y - circleRadius < 0) {
+            dy = -dy;
+          }
+
+          x += dx;
+          y += dy;
+
+          // Increase score every frame for demonstration
+          score++;
+          scoreDisplay.textContent = 'Score: ' + score;
+        }
+
+        function gameLoop() {
+            if (!isRunning) return; // Stop the loop if not running
+            update();
+            draw();
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            if (!isRunning) {
+                isRunning = true;
+                score = 0;
+                scoreDisplay.textContent = 'Score: 0';
+                gameLoop();
+            }
+        }
+
+        function stopGame() {
+            isRunning = false;
+            cancelAnimationFrame(animationFrameId);
+        }
+
+        startButton.addEventListener('click', startGame);
+        stopButton.addEventListener('click', stopGame);
+    </script>
+</body>
+</html>
+```
