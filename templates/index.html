@@ -3,83 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PHOENIX OS</title>
+    <title>PHOENIX OS V2</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background-color: #09090b; color: #e4e4e7; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; }
-        .navbar { background: #18181b; border-bottom: 1px solid #333; }
-        .navbar-brand { color: #00ff9d !important; font-weight: bold; }
-        .nav-link.active { color: #00ff9d !important; border-bottom: 2px solid #00ff9d !important; }
-        .nav-link { color: #aaa; }
+        :root {
+            --bg-dark: #09090b;
+            --card-bg: #18181b;
+            --accent: #00ff9d;
+            --text-main: #e4e4e7;
+            --text-dim: #a1a1aa;
+        }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Roboto, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        #chat-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 10px 15px; border-radius: 12px; max-width: 85%; }
-        .msg-ai { background: #18181b; border-left: 3px solid #00ff9d; align-self: flex-start; }
-        .msg-user { background: #00ff9d; color: #000; align-self: flex-end; }
+        /* NAVBAR */
+        .navbar { background: rgba(24,24,27, 0.95); border-bottom: 1px solid #333; backdrop-filter: blur(10px); }
+        .navbar-brand { color: var(--accent) !important; font-weight: 800; letter-spacing: 1px; }
         
-        .input-area { padding: 15px; background: #18181b; display: flex; gap: 10px; }
-        input { background: #000; border: 1px solid #333; color: white; flex: 1; padding: 10px; border-radius: 20px; }
+        /* CHAT AREA */
+        #chat-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
         
-        .agent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; }
-        .agent-card { background: #18181b; border: 1px solid #333; padding: 15px; text-align: center; border-radius: 10px; }
-        .agent-card:active { transform: scale(0.95); background: #222; }
+        /* USER MESSAGE */
+        .msg-user { 
+            align-self: flex-end; 
+            background: var(--accent); 
+            color: #000; 
+            padding: 10px 15px; 
+            border-radius: 15px 15px 0 15px; 
+            font-weight: 600; 
+            max-width: 85%;
+            box-shadow: 0 2px 10px rgba(0,255,157,0.1);
+            animation: slideInRight 0.3s ease;
+        }
+
+        /* SYSTEM CARD (COLLAPSIBLE) */
+        .sys-card {
+            align-self: flex-start;
+            width: 100%;
+            max-width: 95%;
+            background: var(--card-bg);
+            border: 1px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            animation: slideInLeft 0.3s ease;
+        }
+        .sys-header {
+            padding: 8px 12px;
+            background: #222;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+        .sys-header:hover { background: #2a2a2a; color: white; }
+        .sys-status { font-weight: bold; color: var(--accent); }
+        
+        .sys-body {
+            display: none; /* Hidden by default */
+            padding: 10px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.75rem;
+            color: #ccc;
+            background: #111;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .sys-body.open { display: block; }
+        
+        /* LOG LINES inside card */
+        .log-line { margin-bottom: 4px; border-bottom: 1px dashed #222; padding-bottom: 2px; }
+        .log-icon { display: inline-block; width: 20px; text-align: center; margin-right: 5px; }
+
+        /* INPUT AREA */
+        .input-area { padding: 15px; background: var(--card-bg); border-top: 1px solid #333; display: flex; gap: 10px; }
+        input { background: #000; border: 1px solid #444; color: white; flex: 1; padding: 12px; border-radius: 25px; outline: none; transition: border 0.3s; }
+        input:focus { border-color: var(--accent); box-shadow: 0 0 8px rgba(0,255,157,0.2); }
+        .btn-send { background: var(--accent); color: black; border: none; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand">
+    <nav class="navbar">
         <div class="container-fluid">
-            <span class="navbar-brand">PHOENIX</span>
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link active" href="#" onclick="showTab('chat')">CHAT</a></li>
-                <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('agents')">AGENTS</a></li>
-            </ul>
+            <span class="navbar-brand"><i class="fas fa-terminal"></i> PHOENIX OS</span>
+            <span class="badge bg-dark border border-success text-success" id="status-badge">ONLINE</span>
         </div>
     </nav>
 
-    <div id="chat-view" style="flex: 1; display: flex; flex-direction: column;">
-        <div id="chat-container">
-            <div class="msg msg-ai">Verbinding hersteld. Ik luister.</div>
-        </div>
-        <div class="input-area">
-            <input type="text" id="cmdInput" placeholder="Typ opdracht...">
-            <button class="btn btn-success" onclick="sendCmd()">➤</button>
+    <div id="chat-container">
+        <div class="sys-card">
+            <div class="sys-header" onclick="toggleCard(this)">
+                <span><i class="fas fa-server"></i> SYSTEEM STATUS</span>
+                <span class="sys-status">ACTIVE</span>
+            </div>
+            <div class="sys-body open">
+                <div class="log-line text-success">Verbinding hersteld met Master Orchestrator.</div>
+                <div class="log-line">Klaar voor opdrachten...</div>
+            </div>
         </div>
     </div>
 
-    <div id="agents-view" style="display: none; flex: 1; overflow-y: auto;">
-        <div class="agent-grid">
-            <div class="agent-card" onclick="quickCmd('WEB: Bouw een game')">
-                <h1>🌐</h1><h5>Web Architect</h5><small>Bouw Apps</small>
-            </div>
-            <div class="agent-card" onclick="quickCmd('SYSTEM: Status Report')">
-                <h1>🔧</h1><h5>System Ops</h5><small>Status Check</small>
-            </div>
-            <div class="agent-card" onclick="quickCmd('RESEARCH: Zoek AI nieuws')">
-                <h1>🌍</h1><h5>Researcher</h5><small>Zoek Info</small>
-            </div>
-            <div class="agent-card" style="border-color: red;" onclick="quickCmd('SYSTEM: HERSTART')">
-                <h1>☠️</h1><h5>RESET</h5><small>Herstarten</small>
-            </div>
-        </div>
+    <div class="input-area">
+        <input type="text" id="cmdInput" placeholder="Geef een opdracht (bijv: WEB: Maak een app)..." autocomplete="off">
+        <button class="btn-send" onclick="sendCmd()"><i class="fas fa-paper-plane"></i></button>
     </div>
 
     <script>
-        function showTab(tab) {
-            document.getElementById('chat-view').style.display = tab === 'chat' ? 'flex' : 'none';
-            document.getElementById('agents-view').style.display = tab === 'agents' ? 'block' : 'none';
-            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            event.target.classList.add('active');
-        }
+        const chatBox = document.getElementById('chat-container');
+        let currentCardBody = null; // Houdt bij waar we logs in moeten proppen
+        let lastHeader = null;
 
+        // --- CORE CHAT FUNCTIES ---
         async function sendCmd() {
             const input = document.getElementById('cmdInput');
             const val = input.value.trim();
             if (!val) return;
             
-            addMsg(val, 'user');
+            // 1. Toon user message
+            addHTML(`<div class="msg-user">${val}</div>`);
             input.value = '';
             
+            // 2. Reset huidige kaart zodat nieuwe logs in een NIEUWE kaart komen
+            currentCardBody = null; 
+
+            // 3. Stuur naar server
             try {
                 await fetch('/send', {
                     method: 'POST',
@@ -87,37 +139,122 @@
                     body: JSON.stringify({command: val})
                 });
             } catch(e) {
-                alert("Fout: Kan server niet bereiken. Draait chat_bridge.py wel?");
+                alert("Fout: Server onbereikbaar!");
             }
         }
 
-        function quickCmd(cmd) {
-            showTab('chat');
-            document.getElementById('cmdInput').value = cmd;
-            sendCmd();
-        }
-
-        function addMsg(text, type) {
+        // Voegt HTML toe aan de chat en scrollt naar beneden
+        function addHTML(html) {
             const div = document.createElement('div');
-            div.className = 'msg msg-' + type;
-            div.innerText = text;
-            const container = document.getElementById('chat-container');
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
+            // Hacky manier om HTML string direct toe te voegen zonder wrapper, indien nodig
+            // Maar voor nu wrappen we het in een container div voor veiligheid
+            chatBox.insertAdjacentHTML('beforeend', html);
+            scrollToBottom();
         }
 
+        function createNewCard(title = "PROCESSING...") {
+            const id = "card_" + Date.now();
+            const html = `
+                <div class="sys-card" id="${id}">
+                    <div class="sys-header" onclick="toggleCard(this)">
+                        <span><i class="fas fa-cog fa-spin"></i> <span class="card-title">${title}</span></span>
+                        <span class="sys-status">...</span>
+                    </div>
+                    <div class="sys-body open"></div> </div>
+            `;
+            addHTML(html);
+            const card = document.getElementById(id);
+            currentCardBody = card.querySelector('.sys-body');
+            lastHeader = card.querySelector('.sys-header');
+        }
+
+        function appendLogToCard(line) {
+            if (!currentCardBody) {
+                createNewCard("SYSTEM ACTIVITY");
+            }
+            
+            // Icoon en kleur bepalen
+            let color = "#aaa";
+            let icon = "🔹";
+            
+            if (line.includes("ZOEKT")) { icon = "🌍"; color = "#f1c40f"; updateCardTitle("RESEARCHING..."); }
+            if (line.includes("BOUWT")) { icon = "🌐"; color = "#00e5ff"; updateCardTitle("BUILDING APP..."); }
+            if (line.includes("CODET")) { icon = "⚙️"; color = "#2ecc71"; updateCardTitle("WRITING CODE..."); }
+            if (line.includes("PUSHT")) { icon = "📦"; color = "#fff"; updateCardTitle("PUBLISHING..."); }
+            if (line.includes("ERROR") || line.includes("FAIL")) { icon = "❌"; color = "#ff4757"; updateCardStatus("ERROR", "#ff4757"); }
+            if (line.includes("SUCCESS") || line.includes("Voltooid")) { icon = "✅"; color = "#2ecc71"; updateCardStatus("DONE", "#2ecc71"); }
+
+            // Schone tekst
+            const cleanText = line.split(" - ").pop().trim();
+            const logHTML = `<div class="log-line" style="color:${color}"><span class="log-icon">${icon}</span>${cleanText}</div>`;
+            
+            currentCardBody.insertAdjacentHTML('beforeend', logHTML);
+            scrollToBottom();
+        }
+
+        function updateCardTitle(text) {
+            if (lastHeader) {
+                const titleSpan = lastHeader.querySelector('.card-title');
+                if (titleSpan) titleSpan.innerText = text;
+            }
+        }
+
+        function updateCardStatus(text, color) {
+            if (lastHeader) {
+                const statusSpan = lastHeader.querySelector('.sys-status');
+                if (statusSpan) {
+                    statusSpan.innerText = text;
+                    statusSpan.style.color = color;
+                }
+                // Stop de spinner als het klaar is
+                const icon = lastHeader.querySelector('.fa-spin');
+                if (icon && (text === "DONE" || text === "ERROR")) {
+                    icon.classList.remove('fa-spin');
+                    icon.classList.remove('fa-cog');
+                    icon.classList.add(text === "DONE" ? 'fa-check-circle' : 'fa-exclamation-circle');
+                    
+                    // Sluit de kaart automatisch na 3 seconden bij succes
+                    if (text === "DONE") {
+                        setTimeout(() => {
+                            const body = lastHeader.nextElementSibling;
+                            if(body) body.classList.remove('open');
+                        }, 5000);
+                    }
+                }
+            }
+        }
+
+        function toggleCard(header) {
+            const body = header.nextElementSibling;
+            body.classList.toggle('open');
+        }
+
+        function scrollToBottom() {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // --- POLLING LOGIC ---
+        let lastLogSize = 0;
         setInterval(async () => {
             try {
-                // Simpele logica om logs op te halen
-                const res = await fetch('/poll'); 
+                const res = await fetch('/poll?offset=' + lastLogSize);
                 const data = await res.json();
-                if (data.lines) {
-                    data.lines.forEach(l => {
-                        if (!l.includes("Cycle")) addMsg(l.split("-").pop(), 'ai');
+                lastLogSize = data.offset;
+
+                if (data.lines && data.lines.length > 0) {
+                    data.lines.forEach(line => {
+                        // Filter ruis
+                        if (line.includes("Cycle #") || line.includes("Ruststand")) return;
+                        appendLogToCard(line.trim());
                     });
                 }
             } catch(e) {}
-        }, 3000);
+        }, 1500);
+
+        // Enter support
+        document.getElementById('cmdInput').addEventListener("keypress", function(e) {
+            if (e.key === "Enter") sendCmd();
+        });
     </script>
 </body>
 </html>

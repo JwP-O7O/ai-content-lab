@@ -2,138 +2,207 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Pixel Grid Game</title>
+<title>Pixel Art Game</title>
 <style>
 body {
     font-family: sans-serif;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    height: 100vh;
-    margin: 0;
     background-color: #f0f0f0;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
 }
 
-#gameContainer {
-    display: grid;
-    border: 2px solid #333;
+#game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     background-color: #fff;
+    border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-top: 20px;
+}
+
+#pixel-grid {
+    display: grid;
+    grid-template-columns: repeat(20, 20px);
+    grid-gap: 1px;
+    border: 1px solid #ccc;
 }
 
 .pixel {
     width: 20px;
     height: 20px;
-    border: 1px solid #ccc;
+    background-color: #eee;
+    border: 1px solid #ddd;
     box-sizing: border-box;
+    cursor: pointer;
+}
+
+#color-palette {
+    display: flex;
+    margin-top: 10px;
+}
+
+.color-swatch {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #999;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+#controls {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
 }
 
 button {
-    padding: 10px 20px;
-    margin: 10px;
-    font-size: 16px;
+    padding: 10px 15px;
     border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    background-color: #4CAF50;
+    background-color: #007bff;
     color: white;
+    border-radius: 4px;
+    cursor: pointer;
     transition: background-color 0.2s ease;
 }
 
 button:hover {
-    background-color: #3e8e41;
+    background-color: #0056b3;
 }
 
-#controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 20px;
+#timer {
+    font-size: 1.2em;
+    margin-top: 10px;
+}
+
+.selected-color {
+    border: 2px solid black;
 }
 </style>
 </head>
 <body>
 
-<h1>Pixel Grid Game</h1>
-
-<div id="gameContainer">
-    <!-- Pixel grid will be generated here -->
-</div>
-
-<div id="controls">
-    <button id="startButton">Start/Stop</button>
+<div id="game-container">
+    <h1>Pixel Art Game</h1>
+    <div id="pixel-grid"></div>
+    <div id="color-palette">
+        <div class="color-swatch" style="background-color: red;" data-color="red"></div>
+        <div class="color-swatch" style="background-color: green;" data-color="green"></div>
+        <div class="color-swatch" style="background-color: blue;" data-color="blue"></div>
+        <div class="color-swatch" style="background-color: yellow;" data-color="yellow"></div>
+        <div class="color-swatch" style="background-color: black;" data-color="black"></div>
+        <div class="color-swatch" style="background-color: white;" data-color="white"></div>
+    </div>
+    <div id="controls">
+        <button id="clear-button">Clear</button>
+        <button id="start-button">Start</button>
+        <button id="reset-button">Reset</button>
+    </div>
+    <div id="timer">Time: 0</div>
 </div>
 
 
 <script>
-const gameContainer = document.getElementById('gameContainer');
-const startButton = document.getElementById('startButton');
+const pixelGrid = document.getElementById('pixel-grid');
+const colorPalette = document.getElementById('color-palette');
+const clearButton = document.getElementById('clear-button');
+const startButton = document.getElementById('start-button');
+const resetButton = document.getElementById('reset-button');
+const timerDisplay = document.getElementById('timer');
 
-let gridWidth = 20;
-let gridHeight = 20;
+let selectedColor = 'black'; // Default selected color
 let pixels = [];
-let gameRunning = false;
-let intervalId;
+let gameInterval;
+let startTime;
+let isGameRunning = false;
 
+// Function to create the pixel grid
 function createGrid() {
-    gameContainer.innerHTML = ''; // Clear existing grid
-    gameContainer.style.gridTemplateColumns = `repeat(${gridWidth}, 1fr)`;
-    gameContainer.style.gridTemplateRows = `repeat(${gridHeight}, 1fr)`;
-
-    pixels = []; // Clear pixel array
-    for (let i = 0; i < gridWidth * gridHeight; i++) {
+    for (let i = 0; i < 20 * 20; i++) {
         const pixel = document.createElement('div');
         pixel.classList.add('pixel');
-        pixel.dataset.index = i; // Store index for later use
-
-        pixel.addEventListener('click', () => {
-            pixel.style.backgroundColor = pixel.style.backgroundColor ? '' : 'blue';
-        });
-
-        gameContainer.appendChild(pixel);
-        pixels.push(pixel);
+        pixel.dataset.index = i;
+        pixelGrid.appendChild(pixel);
+        pixels.push(pixel); // Store the pixel elements
     }
 }
 
+// Function to handle pixel click
+function handlePixelClick(event) {
+    if (!isGameRunning) return; // Prevent painting if game is not running
+    const pixel = event.target;
+    pixel.style.backgroundColor = selectedColor;
+}
 
-function gameLoop() {
-    // Example: Randomly change pixel colors
-    for (let i = 0; i < pixels.length; i++) {
-        if (Math.random() < 0.1) { // 10% chance to change color
-            pixels[i].style.backgroundColor = (pixels[i].style.backgroundColor === 'red') ? '' : 'red';
-        }
-    }
+// Function to handle color selection
+function handleColorClick(event) {
+    const colorSwatch = event.target;
+    selectedColor = colorSwatch.dataset.color;
+
+    // Remove the selected-color class from any previously selected color swatch
+    document.querySelectorAll('.color-swatch').forEach(swatch => {
+        swatch.classList.remove('selected-color');
+    });
+
+    // Add the selected-color class to the clicked color swatch
+    colorSwatch.classList.add('selected-color');
 }
 
 
+// Function to clear the grid
+function clearGrid() {
+    pixels.forEach(pixel => {
+        pixel.style.backgroundColor = '#eee';
+    });
+}
+
+// Function to start the game
 function startGame() {
-    if (!gameRunning) {
-        gameRunning = true;
-        intervalId = setInterval(gameLoop, 100); // Run gameLoop every 100ms
-        startButton.textContent = 'Stop';
-    }
+    isGameRunning = true;
+    startTime = Date.now();
+    gameInterval = setInterval(updateTimer, 1000);
 }
 
+// Function to stop the game (e.g., when the game is won, or reset)
 function stopGame() {
-    if (gameRunning) {
-        gameRunning = false;
-        clearInterval(intervalId);
-        startButton.textContent = 'Start';
-    }
+    isGameRunning = false;
+    clearInterval(gameInterval);
 }
 
-startButton.addEventListener('click', () => {
-    if (gameRunning) {
-        stopGame();
-    } else {
-        startGame();
-    }
-});
+
+// Function to reset the game
+function resetGame() {
+    stopGame();
+    clearGrid();
+    timerDisplay.textContent = 'Time: 0';
+}
+
+// Function to update the timer
+function updateTimer() {
+    if (!isGameRunning) return;
+    const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+    timerDisplay.textContent = `Time: ${elapsedTime}`;
+}
+
+// Event listeners
+pixelGrid.addEventListener('click', handlePixelClick);
+colorPalette.addEventListener('click', handleColorClick);
+clearButton.addEventListener('click', clearGrid);
+startButton.addEventListener('click', startGame);
+resetButton.addEventListener('click', resetGame);
 
 
-createGrid(); // Initial grid creation
+
+// Initialize
+createGrid();
 </script>
+
 </body>
 </html>
 ```
