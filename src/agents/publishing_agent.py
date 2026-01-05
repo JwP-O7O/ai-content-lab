@@ -30,11 +30,18 @@ class PublishingAgent(BaseAgent):
             # Simuleer een asynchrone bewerking
             await asyncio.sleep(1) # Simuleer een netwerkverzoek of lange taak
 
-            # Simuleer succesvolle publicatie
-            result["status"] = ResultStatus.SUCCESS
-            result["message"] = "Publicatie succesvol uitgevoerd."
-            result["details"] = {"published_item_id": "item123"}
-            logger.debug(f"Publicatie details: {result['details']}") # Log de details op debug-niveau
+            # Simuleer succesvolle publicatie, maar met een waarschuwing (bijv. beperkte publicatie)
+            if True: # Simuleer een conditie voor een warning
+                result["status"] = ResultStatus.WARNING
+                result["message"] = "Publicatie deels succesvol, met beperkingen."
+                result["details"] = {"published_item_id": "item123", "limitations": "Sommige items niet gepubliceerd."}
+                logger.warning(f"Publicatie waarschuwing: {result['details']}") # Log de details op warning-niveau
+            else:
+                result["status"] = ResultStatus.SUCCESS
+                result["message"] = "Publicatie succesvol uitgevoerd."
+                result["details"] = {"published_item_id": "item123"}
+                logger.debug(f"Publicatie details: {result['details']}") # Log de details op debug-niveau
+
 
         except ValueError as ve:
             # Specifieke foutafhandeling voor ValueError (bijv. invalid data)
@@ -57,7 +64,7 @@ class PublishingAgent(BaseAgent):
             if result["status"] == ResultStatus.SUCCESS:
                 logger.info(log_message)
             elif result["status"] == ResultStatus.WARNING:
-                logger.warning(log_message)
+                logger.warning(log_message) # Log warning berichten met warning level
             else:
                 logger.error(log_message) # Log error berichten met error level
         return result
