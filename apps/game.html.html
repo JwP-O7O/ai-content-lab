@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Game</title>
+<title>Game Loop Example</title>
 <style>
 body {
     font-family: sans-serif;
@@ -14,31 +14,25 @@ body {
     background-color: #f0f0f0;
 }
 
-#game-container {
+#gameContainer {
     background-color: white;
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     text-align: center;
 }
 
-#game-canvas {
+#gameCanvas {
     border: 1px solid #ccc;
     margin-bottom: 10px;
 }
 
-#score-display {
+#scoreDisplay {
     font-size: 1.2em;
     margin-bottom: 10px;
 }
 
-#game-message {
-    font-weight: bold;
-    color: #e44d26;
-    margin-bottom: 10px;
-}
-
-button {
+#startButton {
     background-color: #4CAF50;
     color: white;
     padding: 10px 20px;
@@ -48,132 +42,88 @@ button {
     font-size: 1em;
 }
 
-button:hover {
+#startButton:hover {
     background-color: #3e8e41;
 }
 </style>
 </head>
 <body>
 
-<div id="game-container">
-    <h1>Simple Game</h1>
-    <canvas id="game-canvas" width="400" height="300"></canvas>
-    <div id="score-display">Score: <span id="score">0</span></div>
-    <div id="game-message"></div>
-    <button id="restart-button">Restart</button>
+<div id="gameContainer">
+    <canvas id="gameCanvas" width="400" height="300"></canvas>
+    <div id="scoreDisplay">Score: <span id="score">0</span></div>
+    <button id="startButton">Start Game</button>
 </div>
 
 <script>
-const canvas = document.getElementById('game-canvas');
+const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreDisplay = document.getElementById('score');
-const gameMessage = document.getElementById('game-message');
-const restartButton = document.getElementById('restart-button');
+const startButton = document.getElementById('startButton');
 
 let score = 0;
-let gameOver = false;
-let gameInterval;
+let gameRunning = false;
+let animationFrameId;
 
-// Game object (example: a simple moving square)
-const player = {
+// Game object (example: a simple square)
+let square = {
     x: 50,
-    y: canvas.height - 30,
-    width: 20,
-    height: 20,
-    speed: 3,
+    y: 50,
+    size: 20,
+    speed: 2,
     color: 'blue'
 };
 
-const enemy = {
-    x: Math.random() * (canvas.width - 20),
-    y: 10,
-    width: 20,
-    height: 20,
-    speed: 2,
-    color: 'red'
-};
-
-
-function drawPlayer() {
-    ctx.fillStyle = player.color;
-    ctx.fillRect(player.x, player.y, player.width, player.height);
+function drawSquare() {
+    ctx.fillStyle = square.color;
+    ctx.fillRect(square.x, square.y, square.size, square.size);
 }
-
-function drawEnemy() {
-    ctx.fillStyle = enemy.color;
-    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-}
-
 
 function updateGame() {
-    if (gameOver) return;
+    // Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    //Enemy movement
-    enemy.y += enemy.speed;
-    if (enemy.y > canvas.height) {
-        enemy.x = Math.random() * (canvas.width - 20);
-        enemy.y = 0;
-        score++;
+    // Update game logic (move the square)
+    square.x += square.speed;
+
+    // Bounce off the edges
+    if (square.x + square.size > canvas.width || square.x < 0) {
+        square.speed = -square.speed;
+        score++; // Increment score on bounce
         scoreDisplay.textContent = score;
     }
 
+    // Draw game elements
+    drawSquare();
 
-    // Collision detection
-    if (player.x < enemy.x + enemy.width &&
-        player.x + player.width > enemy.x &&
-        player.y < enemy.y + enemy.height &&
-        player.y + player.height > enemy.y) {
-            gameOver = true;
-            gameMessage.textContent = "Game Over! Score: " + score;
-            clearInterval(gameInterval);
-    }
+
+    // Request the next frame (game loop)
+    animationFrameId = requestAnimationFrame(updateGame);
 }
-
-
-function drawGame() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
-    drawPlayer();
-    drawEnemy();
-}
-
-
-function gameLoop() {
-    updateGame();
-    drawGame();
-}
-
-
-// Event listeners for player movement (example: left and right)
-document.addEventListener('keydown', (event) => {
-    if (gameOver) return;
-    if (event.key === 'ArrowLeft') {
-        player.x = Math.max(0, player.x - player.speed); // Prevent going off-screen
-    } else if (event.key === 'ArrowRight') {
-        player.x = Math.min(canvas.width - player.width, player.x + player.speed); // Prevent going off-screen
-    }
-});
 
 
 function startGame() {
-    score = 0;
-    scoreDisplay.textContent = score;
-    gameOver = false;
-    gameMessage.textContent = "";
+    if (!gameRunning) {
+        gameRunning = true;
+        score = 0;
+        scoreDisplay.textContent = score;
+        square.x = 50; // Reset square position
+        updateGame();
+        startButton.textContent = "Stop Game";
+    } else {
+        stopGame();
+    }
+}
 
-    player.x = 50;
-    player.y = canvas.height - 30;
-
-    enemy.x = Math.random() * (canvas.width - 20);
-    enemy.y = 10;
-    
-    if (gameInterval) clearInterval(gameInterval);
-    gameInterval = setInterval(gameLoop, 20); // Adjust interval for speed
+function stopGame() {
+    gameRunning = false;
+    cancelAnimationFrame(animationFrameId);
+    startButton.textContent = "Start Game";
 }
 
 
-restartButton.addEventListener('click', startGame);
+startButton.addEventListener('click', startGame);
 
-startGame();
 </script>
 
 </body>
