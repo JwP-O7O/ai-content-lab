@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Game</title>
+<title>Game Loop Example</title>
 <style>
 body {
     font-family: sans-serif;
@@ -14,172 +14,127 @@ body {
     background-color: #f0f0f0;
 }
 
-#game-container {
-    background-color: white;
-    padding: 20px;
+#gameContainer {
+    background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
     text-align: center;
 }
 
-#canvas {
+#gameCanvas {
     border: 1px solid #ccc;
     margin-bottom: 10px;
 }
 
-#score-display {
+#scoreDisplay {
     font-size: 1.2em;
     margin-bottom: 10px;
 }
 
-#start-button, #restart-button {
+#startButton, #stopButton {
     background-color: #4CAF50;
     color: white;
     padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 1em;
+    margin: 5px;
 }
 
-#start-button:hover, #restart-button:hover {
-    background-color: #3e8e41;
+#stopButton {
+    background-color: #f44336;
 }
 
+#startButton:hover, #stopButton:hover {
+    opacity: 0.8;
+}
 </style>
 </head>
 <body>
-    <div id="game-container">
-        <h1>Simple Game</h1>
-        <div id="score-display">Score: 0</div>
-        <canvas id="canvas" width="400" height="300"></canvas>
-        <button id="start-button">Start Game</button>
-        <button id="restart-button" style="display:none;">Restart Game</button>
-    </div>
 
-    <script>
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const scoreDisplay = document.getElementById('score-display');
-        const startButton = document.getElementById('start-button');
-        const restartButton = document.getElementById('restart-button');
+<div id="gameContainer">
+    <h1>Simple Game Loop</h1>
+    <canvas id="gameCanvas" width="400" height="300"></canvas>
+    <div id="scoreDisplay">Score: 0</div>
+    <button id="startButton">Start</button>
+    <button id="stopButton">Stop</button>
+</div>
 
-        let score = 0;
-        let gameRunning = false;
-        let ballX, ballY, ballSpeedX, ballSpeedY, ballSize;
-        let paddleX, paddleWidth, paddleHeight, paddleSpeed;
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
 
-        function resetGame() {
-            score = 0;
-            ballX = canvas.width / 2;
-            ballY = canvas.height / 2;
-            ballSpeedX = 2;
-            ballSpeedY = 2;
-            ballSize = 10;
-            paddleX = canvas.width / 2 - 50;
-            paddleWidth = 100;
-            paddleHeight = 10;
-            paddleSpeed = 5;
-            scoreDisplay.textContent = 'Score: 0';
+    let score = 0;
+    let animationFrameId;
+    let gameRunning = false;
+
+    // Game object (example: a simple square)
+    const gameObject = {
+        x: 50,
+        y: 50,
+        size: 20,
+        color: 'blue',
+        speed: 2, // pixels per frame
+        directionX: 1, // 1 or -1 (right or left)
+        directionY: 1 // 1 or -1 (down or up)
+    };
+
+    function drawGameObject() {
+        ctx.fillStyle = gameObject.color;
+        ctx.fillRect(gameObject.x, gameObject.y, gameObject.size, gameObject.size);
+    }
+
+    function updateGameObject() {
+        // Horizontal movement
+        gameObject.x += gameObject.speed * gameObject.directionX;
+        if (gameObject.x + gameObject.size > canvas.width || gameObject.x < 0) {
+            gameObject.directionX *= -1; // Reverse direction
+            score++; // Increment score on hitting the wall
+        }
+        // Vertical movement
+        gameObject.y += gameObject.speed * gameObject.directionY;
+        if (gameObject.y + gameObject.size > canvas.height || gameObject.y < 0) {
+            gameObject.directionY *= -1; // Reverse direction
         }
 
+        scoreDisplay.textContent = `Score: ${score}`;
+    }
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
 
-            // Draw Ball
-            ctx.beginPath();
-            ctx.arc(ballX, ballY, ballSize, 0, Math.PI * 2);
-            ctx.fillStyle = 'blue';
-            ctx.fill();
-            ctx.closePath();
+    function gameLoop() {
+        if (!gameRunning) return;
 
-            // Draw Paddle
-            ctx.fillStyle = 'black';
-            ctx.fillRect(paddleX, canvas.height - paddleHeight - 10, paddleWidth, paddleHeight);
-        }
+        clearCanvas();
+        updateGameObject();
+        drawGameObject();
 
-
-
-        function update() {
-            if (!gameRunning) return;
-
-            // Ball Movement
-            ballX += ballSpeedX;
-            ballY += ballSpeedY;
-
-            // Ball Collision with Walls
-            if (ballX + ballSize > canvas.width || ballX - ballSize < 0) {
-                ballSpeedX = -ballSpeedX;
-            }
-            if (ballY - ballSize < 0) {
-                ballSpeedY = -ballSpeedY;
-            }
-
-            // Ball collision with paddle
-            if (ballY + ballSize > canvas.height - paddleHeight - 10 &&
-                ballX > paddleX &&
-                ballX < paddleX + paddleWidth) {
-                ballSpeedY = -ballSpeedY;
-                score++;
-                scoreDisplay.textContent = `Score: ${score}`;
-
-                // Increase ball speed
-                if (score % 5 === 0) {
-                    ballSpeedX *= 1.1;
-                    ballSpeedY *= 1.1;
-                }
-            }
+        animationFrameId = requestAnimationFrame(gameLoop); // Request the next frame
+    }
 
 
-            if (ballY + ballSize > canvas.height) {
-                gameOver();
-            }
-
-
-             //Paddle movement (example:  mouse)
-            document.addEventListener('mousemove', (e) => {
-                const rect = canvas.getBoundingClientRect();
-                paddleX = e.clientX - rect.left - paddleWidth / 2;
-
-                // Keep paddle within bounds
-                if (paddleX < 0) {
-                    paddleX = 0;
-                }
-                if (paddleX + paddleWidth > canvas.width) {
-                    paddleX = canvas.width - paddleWidth;
-                }
-
-            });
-
-
-
-            draw();
-        }
-
-        function gameLoop() {
-            update();
-            requestAnimationFrame(gameLoop);
-        }
-
-        function startGame() {
-            resetGame();
+    startButton.addEventListener('click', () => {
+        if (!gameRunning) {
             gameRunning = true;
-            startButton.style.display = 'none';
-            restartButton.style.display = 'inline';
+            score = 0; // Reset the score
             gameLoop();
         }
+    });
 
-        function gameOver() {
+    stopButton.addEventListener('click', () => {
+        if (gameRunning) {
             gameRunning = false;
-            startButton.style.display = 'inline';
-            restartButton.style.display = 'none';
+            cancelAnimationFrame(animationFrameId);
         }
+    });
+</script>
 
-        startButton.addEventListener('click', startGame);
-        restartButton.addEventListener('click', startGame);
-
-    </script>
 </body>
 </html>
 ```
