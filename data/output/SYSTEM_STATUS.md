@@ -3,6 +3,6 @@
 | Metric | Waarde |
 |---|---|
 | **Model** | `Gemini 2.0` |
-| **Cycles** | 4 |
+| **Cycles** | 2 |
 | **Status** | 🧠 LEARNING & OPTIMIZING |
-| **Laatste Actie** | Monitoring... |
+| **Laatste Actie** | 🌐 Web App: voeg_level_sound.html |
