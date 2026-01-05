@@ -2,6 +2,7 @@ import google.generativeai as genai
 import os
 from loguru import logger
 from dotenv import load_dotenv
+import backoff
 
 # Laad de geheime kluis
 load_dotenv()
@@ -65,46 +66,27 @@ class AIService:
         logger.warning(f"🔄 Roteren naar API Key #{self.current_key_index + 1}...")
         self._initialize_connection()
 
+    @backoff.on_exception(backoff.expo,
+                          (Exception,),  # Catch all exceptions (of specifiekere, zoals 'google.api_core.exceptions.ResourceExhausted')
+                          max_tries=3,  # Maximaal aantal pogingen
+                          on_backoff=lambda details: logger.warning(f"🔄  Retry in {details['wait']:0.1f}s, poging {details['tries']} van 3..."))  # Loggen van retries
     async def generate_text(self, prompt):
-        if not self.online: self._initialize_connection()
-        if not self.online: return ""
+        if not self.online:
+            self._initialize_connection()
+        if not self.online:
+            return ""
 
-        # Probeer max 2x per sleutel om loops te voorkomen
-        max_attempts = len(self.api_keys) * 2
-        
-        for attempt in range(max_attempts):
-            try:
-                response = self.model.generate_content(prompt)
-                if response.text:
-                    return response.text.replace("```json", "").replace("```python", "").replace("```html", "").replace("```", "").strip()
-                return "" 
-                
-            except Exception as e:
-                error_msg = str(e)
-                
-                # 403 = LEAKED KEY (Direct roteren en hopen dat de volgende werkt)
-                if "403" in error_msg or "leaked" in error_msg:
-                    logger.error("🚫 Deze sleutel is geblokkeerd/gelekt! Roteren...")
-                    self._rotate_key()
-                    continue
+        try:
+            response = self.model.generate_content(prompt)
+            if response.text:
+                return response.text.replace("", "").replace("", "").replace("", "").replace("", "").strip()
+            return ""
 
-                # 429 = QUOTA OP
-                if "429" in error_msg or "Quota" in error_msg:
-                    self._rotate_key()
-                    continue
-                
-                # 404 = MODEL NIET GEVONDEN
-                if "404" in error_msg or "not found" in error_msg:
-                    # Probeer volgend model in de lijst
-                    try:
-                        curr_idx = self.model_candidates.index(self.active_model_name)
-                        next_idx = (curr_idx + 1) % len(self.model_candidates)
-                        self.active_model_name = self.model_candidates[next_idx]
-                        self.model = genai.GenerativeModel(self.active_model_name)
-                        logger.info(f"👉 Schakelen naar model: {self.active_model_name}")
-                        continue
-                    except: pass
+        except Exception as e:
+            error_msg = str(e)
+            # 403 = LEAKED KEY (Direct roteren)
+            if "403" in error_msg:  # Checken op 403 error
+                self._rotate_key()  # Roteren naar de volgende key
+                raise  # Her-raise de exception om de retry te activeren (belangrijk!)
 
-                logger.error(f"❌ Gemini Error: {e}")
-                return ""
-        return ""
+            raise  # Her-raise andere exceptions om de retry te activeren
