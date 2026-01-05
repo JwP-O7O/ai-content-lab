@@ -2,10 +2,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Game Loop Example</title>
+<title>Speelveld</title>
 <style>
 body {
-    font-family: sans-serif;
+    font-family: Arial, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -14,116 +14,112 @@ body {
     background-color: #f0f0f0;
 }
 
-#gameContainer {
+#game-container {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
 }
 
-#gameCanvas {
-    border: 1px solid #ccc;
-    margin-bottom: 10px;
+#grid-container {
+    display: grid;
+    grid-template-columns: repeat(10, 40px);
+    grid-gap: 5px;
+    margin-top: 10px;
 }
 
-#scoreDisplay {
-    font-size: 1.2em;
-    margin-bottom: 10px;
+.grid-cell {
+    width: 40px;
+    height: 40px;
+    background-color: #eee;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    color: #333;
 }
 
-#startButton, #stopButton {
+.filled {
+    background-color: #4CAF50; /* Groen */
+    color: white;
+}
+
+.empty {
+    background-color: #eee;
+}
+
+button {
     background-color: #4CAF50;
     color: white;
+    padding: 10px 15px;
     border: none;
-    padding: 10px 20px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 4px 2px;
-    cursor: pointer;
     border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 10px;
 }
 
-#stopButton {
-    background-color: #f44336;
+button:hover {
+    background-color: #3e8e41;
 }
-
 </style>
 </head>
 <body>
 
-<div id="gameContainer">
-    <h1>Simple Game Loop</h1>
-    <canvas id="gameCanvas" width="400" height="300"></canvas>
-    <div id="scoreDisplay">Score: 0</div>
-    <button id="startButton">Start</button>
-    <button id="stopButton">Stop</button>
+<div id="game-container">
+    <h1>Speelveld</h1>
+    <div id="grid-container">
+    </div>
+    <button id="fill-button">Vul Speelveld</button>
+    <button id="clear-button">Leeg Speelveld</button>
 </div>
 
 <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const scoreDisplay = document.getElementById('scoreDisplay');
-    const startButton = document.getElementById('startButton');
-    const stopButton = document.getElementById('stopButton');
+const gridContainer = document.getElementById('grid-container');
+const fillButton = document.getElementById('fill-button');
+const clearButton = document.getElementById('clear-button');
+const gridSize = 10;
+let grid = [];
 
-    let score = 0;
-    let isGameRunning = false;
-    let animationFrameId;
-
-    // Game object (example: a simple square)
-    let square = {
-        x: 50,
-        y: 50,
-        size: 20,
-        color: 'blue',
-        speed: 2,
-    };
-
-    function drawSquare() {
-        ctx.fillStyle = square.color;
-        ctx.fillRect(square.x, square.y, square.size, square.size);
+function createGrid() {
+    for (let i = 0; i < gridSize * gridSize; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('grid-cell', 'empty');
+        cell.dataset.index = i;
+        gridContainer.appendChild(cell);
+        grid.push(cell);
     }
+}
 
-    function updateSquare() {
-        square.x += square.speed;
-        if (square.x > canvas.width) {
-            square.x = 0; // Reset position when it goes off screen
-            score++;
-            scoreDisplay.textContent = `Score: ${score}`;
-        }
-    }
-
-
-    function clearCanvas() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-
-    function gameLoop() {
-        if (!isGameRunning) return;
-
-        clearCanvas();
-        updateSquare();
-        drawSquare();
-        animationFrameId = requestAnimationFrame(gameLoop);
-    }
-
-    startButton.addEventListener('click', () => {
-        if (!isGameRunning) {
-            isGameRunning = true;
-            score = 0;
-            scoreDisplay.textContent = `Score: ${score}`;
-            gameLoop();
+function fillGrid() {
+    grid.forEach(cell => {
+        if (Math.random() > 0.6) { // 60% kans op vullen
+            cell.classList.remove('empty');
+            cell.classList.add('filled');
+            cell.textContent = 'X';
+        } else {
+            cell.classList.remove('filled');
+            cell.classList.add('empty');
+            cell.textContent = '';
         }
     });
+}
 
-    stopButton.addEventListener('click', () => {
-        isGameRunning = false;
-        cancelAnimationFrame(animationFrameId);
+function clearGrid() {
+    grid.forEach(cell => {
+        cell.classList.remove('filled');
+        cell.classList.add('empty');
+        cell.textContent = '';
     });
+}
 
+createGrid();
+
+fillButton.addEventListener('click', fillGrid);
+clearButton.addEventListener('click', clearGrid);
 </script>
 </body>
 </html>
