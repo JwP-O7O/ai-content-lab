@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Score</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #70e1f5, #ffd194);
+            color: #333;
+            height: 100vh;
+            overflow: hidden; /* Prevent scrollbars */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            width: 80%;
+            max-width: 600px;
+            height: 80%;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden; /* Ensure content stays within container */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #score-display {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 2em;
+            font-weight: bold;
+            color: #2e8b57;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+
+        .game-element {
+            /* Example styling for game elements */
+            position: absolute;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            #game-container {
+                width: 90%;
+                height: 70%;
+            }
+            #score-display {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="score-display">Score: 0</div>
+        <!-- Game elements would go here, e.g., player, obstacles -->
+        <div class="game-element" style="width: 50px; height: 50px; left: 100px; bottom: 50px; background-color: #e74c3c;"></div>
+    </div>
+
+    <script>
+        let score = 0;
+        const scoreDisplay = document.getElementById('score-display');
+        const scoreIncrementInterval = 1000; // milliseconds - update every second
+
+        function updateScore() {
+            score += 1; // Increment score
+            scoreDisplay.textContent = 'Score: ' + score;
+        }
+
+        // Initially update the score
+        updateScore();
+
+        // Set the score increment interval
+        setInterval(updateScore, scoreIncrementInterval);
+
+    </script>
+</body>
+</html>
