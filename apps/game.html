@@ -5,26 +5,21 @@
 <title>Simple Game</title>
 <style>
 body {
-    font-family: Arial, sans-serif;
+    font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    margin: 0;
+    min-height: 100vh;
     background-color: #f0f0f0;
+    margin: 0;
 }
 
 #game-container {
-    background-color: white;
-    border-radius: 10px;
+    background-color: #fff;
+    border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
-}
-
-#score {
-    font-size: 1.5em;
-    margin-bottom: 10px;
 }
 
 #game-canvas {
@@ -32,17 +27,28 @@ body {
     margin-bottom: 10px;
 }
 
-#controls button {
+#score-display {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+#controls {
+    display: flex;
+    justify-content: center;
+}
+
+button {
     background-color: #4CAF50;
     color: white;
     padding: 10px 20px;
+    margin: 0 10px;
     border: none;
-    border-radius: 5px;
+    border-radius: 4px;
     cursor: pointer;
-    margin: 5px;
+    font-size: 1em;
 }
 
-#controls button:hover {
+button:hover {
     background-color: #3e8e41;
 }
 </style>
@@ -51,7 +57,7 @@ body {
 
 <div id="game-container">
     <h1>Simple Game</h1>
-    <div id="score">Score: <span id="score-value">0</span></div>
+    <div id="score-display">Score: <span id="score">0</span></div>
     <canvas id="game-canvas" width="400" height="300"></canvas>
     <div id="controls">
         <button id="start-button">Start</button>
@@ -60,106 +66,141 @@ body {
 </div>
 
 <script>
-    const canvas = document.getElementById('game-canvas');
-    const ctx = canvas.getContext('2d');
-    const scoreElement = document.getElementById('score-value');
-    const startButton = document.getElementById('start-button');
-    const resetButton = document.getElementById('reset-button');
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const scoreDisplay = document.getElementById('score');
+const startButton = document.getElementById('start-button');
+const resetButton = document.getElementById('reset-button');
 
-    let score = 0;
-    let gameRunning = false;
-    let gameLoopInterval;
+let score = 0;
+let gameStarted = false;
+let gameInterval;
+let playerX = canvas.width / 2;
+let playerY = canvas.height - 20;
+let playerSize = 10;
+let playerSpeed = 5;
+let obstacles = [];
+let obstacleSpeed = 2;
+let obstacleWidth = 20;
+let obstacleHeight = 10;
+let lastObstacleSpawn = 0;
+let obstacleSpawnInterval = 1000; // milliseconds
 
-    // Game state
-    let playerX = 50;
-    let playerY = 150;
-    const playerSize = 20;
-    let targetX = 350;
-    let targetY = 150;
-    const targetSize = 20;
-    const playerSpeed = 5;
+function resetGame() {
+    score = 0;
+    scoreDisplay.textContent = score;
+    obstacles = [];
+    playerX = canvas.width / 2;
+    gameStarted = false;
+    clearInterval(gameInterval);
+    startButton.textContent = "Start";
+    draw(); // Clear the canvas after resetting
+}
 
-    function resetGame() {
-        score = 0;
-        playerX = 50;
-        playerY = 150;
-        targetX = 350;
-        targetY = 150;
-        updateScore();
-        drawGame();
-        clearInterval(gameLoopInterval);
-        gameRunning = false;
+resetButton.addEventListener('click', resetGame);
+
+
+function startGame() {
+    if (!gameStarted) {
+        gameStarted = true;
+        startButton.textContent = "Stop";
+        gameInterval = setInterval(gameLoop, 20); // 20ms = 50fps
+    } else {
+        gameStarted = false;
         startButton.textContent = "Start";
+        clearInterval(gameInterval);
     }
+}
 
-    function updateScore() {
-        scoreElement.textContent = score;
+startButton.addEventListener('click', startGame);
+
+function drawPlayer() {
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(playerX - playerSize/2, playerY - playerSize/2, playerSize, playerSize);
+}
+
+function drawObstacle(obstacle) {
+    ctx.fillStyle = 'red';
+    ctx.fillRect(obstacle.x, obstacle.y, obstacleWidth, obstacleHeight);
+}
+
+function updateObstacles() {
+    for (let i = 0; i < obstacles.length; i++) {
+        obstacles[i].y += obstacleSpeed;
+        if (obstacles[i].y > canvas.height) {
+            obstacles.splice(i, 1);
+            i--;
+        }
     }
+}
 
-    function drawGame() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+function spawnObstacle() {
+    const x = Math.random() * (canvas.width - obstacleWidth);
+    obstacles.push({ x: x, y: 0 });
+}
 
-        // Draw player
-        ctx.fillStyle = 'blue';
-        ctx.fillRect(playerX, playerY, playerSize, playerSize);
 
-        // Draw target
-        ctx.fillStyle = 'red';
-        ctx.fillRect(targetX, targetY, targetSize, targetSize);
+function checkCollision() {
+    for (const obstacle of obstacles) {
+        if (
+            playerX + playerSize/2 > obstacle.x &&
+            playerX - playerSize/2 < obstacle.x + obstacleWidth &&
+            playerY + playerSize/2 > obstacle.y &&
+            playerY - playerSize/2 < obstacle.y + obstacleHeight
+        ) {
+            resetGame();
+        }
     }
+}
 
-    function movePlayer() {
-        if (gameRunning) {
-            // Basic movement - example: move right
-            playerX += playerSpeed;
-            if (playerX > canvas.width) {
-              playerX = 0;
-            }
 
-            // Check for collision
-            if (playerX < targetX + targetSize &&
-                playerX + playerSize > targetX &&
-                playerY < targetY + targetSize &&
-                playerY + playerSize > targetY) {
-                score++;
-                updateScore();
-                // Randomly reposition target
-                targetX = Math.random() * (canvas.width - targetSize);
-                targetY = Math.random() * (canvas.height - targetSize);
-            }
+function updateScore() {
+    score++;
+    scoreDisplay.textContent = score;
+}
 
-            drawGame();
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawPlayer();
+    for (const obstacle of obstacles) {
+        drawObstacle(obstacle);
+    }
+}
+
+
+function gameLoop() {
+    if(gameStarted) {
+        if (Date.now() - lastObstacleSpawn > obstacleSpawnInterval) {
+            spawnObstacle();
+            lastObstacleSpawn = Date.now();
         }
 
+        updateObstacles();
+        checkCollision();
+        updateScore();
+        draw();
     }
+}
 
 
-    function startGameLoop() {
-        gameLoopInterval = setInterval(movePlayer, 30); // Adjust interval for speed
-    }
-
-    function stopGameLoop() {
-        clearInterval(gameLoopInterval);
-    }
-
-
-    startButton.addEventListener('click', () => {
-        if (!gameRunning) {
-            gameRunning = true;
-            startButton.textContent = "Stop";
-            startGameLoop();
-        } else {
-            gameRunning = false;
-            startButton.textContent = "Start";
-            stopGameLoop();
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') {
+        playerX -= playerSpeed;
+        if (playerX - playerSize/2 < 0) {
+            playerX = playerSize/2;
         }
+    } else if (e.key === 'ArrowRight') {
+        playerX += playerSpeed;
+        if (playerX + playerSize/2 > canvas.width) {
+            playerX = canvas.width - playerSize/2;
+        }
+    }
+});
 
-    });
 
-    resetButton.addEventListener('click', resetGame);
 
-    resetGame(); // Initialize the game on page load
 </script>
+
 </body>
 </html>
 ```
