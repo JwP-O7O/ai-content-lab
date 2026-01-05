@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PHOENIX OS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #09090b; color: #e4e4e7; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; }
+        .navbar { background: #18181b; border-bottom: 1px solid #333; }
+        .navbar-brand { color: #00ff9d !important; font-weight: bold; }
+        .nav-link.active { color: #00ff9d !important; border-bottom: 2px solid #00ff9d !important; }
+        .nav-link { color: #aaa; }
+        
+        #chat-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { padding: 10px 15px; border-radius: 12px; max-width: 85%; }
+        .msg-ai { background: #18181b; border-left: 3px solid #00ff9d; align-self: flex-start; }
+        .msg-user { background: #00ff9d; color: #000; align-self: flex-end; }
+        
+        .input-area { padding: 15px; background: #18181b; display: flex; gap: 10px; }
+        input { background: #000; border: 1px solid #333; color: white; flex: 1; padding: 10px; border-radius: 20px; }
+        
+        .agent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; }
+        .agent-card { background: #18181b; border: 1px solid #333; padding: 15px; text-align: center; border-radius: 10px; }
+        .agent-card:active { transform: scale(0.95); background: #222; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand">
+        <div class="container-fluid">
+            <span class="navbar-brand">PHOENIX</span>
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link active" href="#" onclick="showTab('chat')">CHAT</a></li>
+                <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('agents')">AGENTS</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div id="chat-view" style="flex: 1; display: flex; flex-direction: column;">
+        <div id="chat-container">
+            <div class="msg msg-ai">Verbinding hersteld. Ik luister.</div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="cmdInput" placeholder="Typ opdracht...">
+            <button class="btn btn-success" onclick="sendCmd()">➤</button>
+        </div>
+    </div>
+
+    <div id="agents-view" style="display: none; flex: 1; overflow-y: auto;">
+        <div class="agent-grid">
+            <div class="agent-card" onclick="quickCmd('WEB: Bouw een game')">
+                <h1>🌐</h1><h5>Web Architect</h5><small>Bouw Apps</small>
+            </div>
+            <div class="agent-card" onclick="quickCmd('SYSTEM: Status Report')">
+                <h1>🔧</h1><h5>System Ops</h5><small>Status Check</small>
+            </div>
+            <div class="agent-card" onclick="quickCmd('RESEARCH: Zoek AI nieuws')">
+                <h1>🌍</h1><h5>Researcher</h5><small>Zoek Info</small>
+            </div>
+            <div class="agent-card" style="border-color: red;" onclick="quickCmd('SYSTEM: HERSTART')">
+                <h1>☠️</h1><h5>RESET</h5><small>Herstarten</small>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tab) {
+            document.getElementById('chat-view').style.display = tab === 'chat' ? 'flex' : 'none';
+            document.getElementById('agents-view').style.display = tab === 'agents' ? 'block' : 'none';
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        async function sendCmd() {
+            const input = document.getElementById('cmdInput');
+            const val = input.value.trim();
+            if (!val) return;
+            
+            addMsg(val, 'user');
+            input.value = '';
+            
+            try {
+                await fetch('/send', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({command: val})
+                });
+            } catch(e) {
+                alert("Fout: Kan server niet bereiken. Draait chat_bridge.py wel?");
+            }
+        }
+
+        function quickCmd(cmd) {
+            showTab('chat');
+            document.getElementById('cmdInput').value = cmd;
+            sendCmd();
+        }
+
+        function addMsg(text, type) {
+            const div = document.createElement('div');
+            div.className = 'msg msg-' + type;
+            div.innerText = text;
+            const container = document.getElementById('chat-container');
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        setInterval(async () => {
+            try {
+                // Simpele logica om logs op te halen
+                const res = await fetch('/poll'); 
+                const data = await res.json();
+                if (data.lines) {
+                    data.lines.forEach(l => {
+                        if (!l.includes("Cycle")) addMsg(l.split("-").pop(), 'ai');
+                    });
+                }
+            } catch(e) {}
+        }, 3000);
+    </script>
+</body>
+</html>
