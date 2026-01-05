@@ -2,9 +2,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Game Loop Example</title>
+<title>Simple Game</title>
 <style>
-  body {
+body {
     font-family: sans-serif;
     display: flex;
     justify-content: center;
@@ -12,27 +12,27 @@
     height: 100vh;
     margin: 0;
     background-color: #f0f0f0;
-  }
+}
 
-  #gameContainer {
+#game-container {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
-  }
+}
 
-  #gameCanvas {
+#game-board {
     border: 1px solid #ccc;
     margin-bottom: 10px;
-  }
+}
 
-  #scoreDisplay {
+#score-display {
     font-size: 1.2em;
     margin-bottom: 10px;
-  }
+}
 
-  button {
+button {
     background-color: #4CAF50;
     color: white;
     padding: 10px 20px;
@@ -40,81 +40,136 @@
     border-radius: 4px;
     cursor: pointer;
     font-size: 1em;
-  }
+}
 
-  button:hover {
+button:hover {
     background-color: #3e8e41;
-  }
+}
 </style>
 </head>
 <body>
 
-<div id="gameContainer">
-    <h1>Simple Game Loop</h1>
-    <div id="scoreDisplay">Score: <span id="score">0</span></div>
-    <canvas id="gameCanvas" width="300" height="200"></canvas>
-    <button id="startButton">Start</button>
+<div id="game-container">
+    <h1>Simple Game</h1>
+    <div id="score-display">Score: <span id="score">0</span></div>
+    <canvas id="game-board" width="300" height="300"></canvas>
+    <button id="start-button">Start Game</button>
 </div>
 
 <script>
-    const canvas = document.getElementById('gameCanvas');
+    const canvas = document.getElementById('game-board');
     const ctx = canvas.getContext('2d');
     const scoreDisplay = document.getElementById('score');
-    const startButton = document.getElementById('startButton');
+    const startButton = document.getElementById('start-button');
 
     let score = 0;
-    let gameRunning = false;
-    let x = 50;
-    let y = 50;
-    let dx = 2; // horizontal speed
-    let dy = 2; // vertical speed
+    let gameInterval;
+    let isGameRunning = false;
+    let playerX = canvas.width / 2;
+    let playerY = canvas.height - 20; // Start the player near the bottom
+    let enemyX = Math.random() * canvas.width;
+    let enemyY = 0; // Start enemies at the top
+    const playerSize = 10;
+    const enemySize = 10;
+    const playerSpeed = 5; // Adjust the speed
+    let enemySpeed = 2; // Initial enemy speed
 
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height); // clear the canvas
-
-        // Draw a simple shape (e.g., a rectangle)
+    function drawPlayer() {
         ctx.fillStyle = 'blue';
-        ctx.fillRect(x, y, 20, 20);
+        ctx.fillRect(playerX - playerSize / 2, playerY - playerSize / 2, playerSize, playerSize);
+    }
 
-         // Bounce the shape off the walls
-        if (x + 20 > canvas.width || x < 0) {
-            dx = -dx;
-        }
-        if (y + 20 > canvas.height || y < 0) {
-            dy = -dy;
-        }
-
-        x += dx;
-        y += dy;
+    function drawEnemy() {
+        ctx.fillStyle = 'red';
+        ctx.fillRect(enemyX - enemySize / 2, enemyY - enemySize / 2, enemySize, enemySize);
     }
 
     function updateScore() {
-        score++;
         scoreDisplay.textContent = score;
     }
 
 
-    function gameLoop() {
-        if (!gameRunning) return; // Stop the loop if the game isn't running
-
-        draw();
+    function resetGame() {
+        clearInterval(gameInterval);
+        isGameRunning = false;
+        startButton.textContent = 'Start Game';
+        score = 0;
         updateScore();
-        requestAnimationFrame(gameLoop); // Request the next frame
+        playerX = canvas.width / 2;
+        playerY = canvas.height - 20;
+        enemyX = Math.random() * canvas.width;
+        enemyY = 0;
+        enemySpeed = 2; // Reset enemy speed
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
     }
 
 
-    startButton.addEventListener('click', () => {
-        if (!gameRunning) {
-            gameRunning = true;
-            score = 0;
-            scoreDisplay.textContent = score;
-            gameLoop();
-            startButton.textContent = "Stop";
-        } else {
-            gameRunning = false;
-            startButton.textContent = "Start";
+    function gameOver() {
+        resetGame();
+        alert('Game Over! Your score: ' + score);
+    }
+
+
+    function checkCollision() {
+      const dx = playerX - enemyX;
+      const dy = playerY - enemyY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < playerSize / 2 + enemySize / 2) {
+            gameOver();
+        }
+    }
+
+
+
+    function gameLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Player movement - keep player within bounds
+        if (keys['ArrowLeft'] && playerX > playerSize / 2) {
+            playerX -= playerSpeed;
+        }
+        if (keys['ArrowRight'] && playerX < canvas.width - playerSize / 2) {
+            playerX += playerSpeed;
         }
 
+
+        // Enemy movement
+        enemyY += enemySpeed;
+        if (enemyY > canvas.height) {
+            enemyX = Math.random() * canvas.width;
+            enemyY = 0;
+            score++;
+            updateScore();
+            // Increase enemy speed gradually
+            enemySpeed += 0.1;
+        }
+
+        drawPlayer();
+        drawEnemy();
+        checkCollision();
+    }
+
+
+    let keys = {};
+
+    document.addEventListener('keydown', (e) => {
+        keys[e.key] = true;
+    });
+
+    document.addEventListener('keyup', (e) => {
+        keys[e.key] = false;
+    });
+
+
+    startButton.addEventListener('click', () => {
+        if (!isGameRunning) {
+            isGameRunning = true;
+            startButton.textContent = 'Stop Game';
+            gameInterval = setInterval(gameLoop, 20); // Adjust interval for speed
+        } else {
+            resetGame();
+        }
     });
 
 </script>
