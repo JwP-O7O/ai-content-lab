@@ -2,36 +2,44 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Game Loop Example</title>
+<title>Simple Game</title>
 <style>
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
-    margin: 0;
-    padding: 0;
+    font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
 }
 
-#gameContainer {
-    background-color: white;
+#game-container {
+    background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     padding: 20px;
     text-align: center;
-    width: 400px;
 }
 
-#gameCanvas {
+#game-board {
+    margin-top: 20px;
     border: 1px solid #ccc;
-    margin-bottom: 10px;
 }
 
-#scoreDisplay {
-    font-size: 1.2em;
-    margin-bottom: 10px;
+.cell {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #eee;
+    display: inline-block;
+    text-align: center;
+    font-size: 24px;
+    line-height: 40px;
+    cursor: pointer;
+}
+
+.cell.active {
+    background-color: #e0e0e0;
 }
 
 button {
@@ -41,81 +49,115 @@ button {
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 1em;
+    font-size: 16px;
+    margin-top: 10px;
 }
 
 button:hover {
     background-color: #3e8e41;
 }
+
+#score {
+    margin-top: 10px;
+    font-size: 18px;
+}
 </style>
 </head>
 <body>
 
-<div id="gameContainer">
-    <h1>Game Loop Example</h1>
-    <canvas id="gameCanvas" width="300" height="150"></canvas>
-    <div id="scoreDisplay">Score: 0</div>
-    <button id="startButton">Start Game</button>
+<div id="game-container">
+    <h1>Simple Game</h1>
+    <p>Click the cells!</p>
+    <div id="game-board"></div>
+    <div id="score">Score: <span id="score-value">0</span></div>
+    <button id="start-button">Start Game</button>
 </div>
 
-
 <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const scoreDisplay = document.getElementById('scoreDisplay');
-    const startButton = document.getElementById('startButton');
+    const gameBoard = document.getElementById('game-board');
+    const scoreValue = document.getElementById('score-value');
+    const startButton = document.getElementById('start-button');
 
+    let gridSize = 5;
+    let cells = [];
     let score = 0;
+    let activeCellIndex = -1;
+    let gameInterval;
     let gameRunning = false;
-    let requestId;
 
-    function resetGame() {
-        score = 0;
-        scoreDisplay.textContent = 'Score: 0';
-        // Reset game state here. For example:
-        // x = canvas.width / 2;
-        // y = canvas.height / 2;
+
+    function createBoard() {
+        gameBoard.innerHTML = '';
+        cells = [];
+        for (let i = 0; i < gridSize * gridSize; i++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.dataset.index = i;
+            cell.addEventListener('click', handleCellClick);
+            gameBoard.appendChild(cell);
+            cells.push(cell);
+        }
+        gameBoard.style.width = `${gridSize * 42}px`; // Adjust width with cell and border
     }
 
-    function update() {
+    function getRandomCellIndex() {
+        return Math.floor(Math.random() * cells.length);
+    }
+
+    function activateRandomCell() {
+        if (activeCellIndex !== -1) {
+            cells[activeCellIndex].classList.remove('active');
+        }
+
+        activeCellIndex = getRandomCellIndex();
+        cells[activeCellIndex].classList.add('active');
+    }
+
+    function handleCellClick(event) {
         if (!gameRunning) return;
-
-        // Game logic goes here
-        score++;
-        scoreDisplay.textContent = 'Score: ' + score;
-
-        // Example:  Draw a simple shape
-        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
-
-        ctx.fillStyle = 'blue';
-        ctx.fillRect(canvas.width / 2 - 20, canvas.height / 2 - 20, 40, 40);
-
-
-
+        const clickedIndex = parseInt(event.target.dataset.index);
+        if (clickedIndex === activeCellIndex) {
+            score++;
+            scoreValue.textContent = score;
+            activateRandomCell();
+        } else {
+            gameOver();
+        }
     }
 
-
-
-    function gameLoop() {
-        update();
-        requestId = requestAnimationFrame(gameLoop);
+    function startGame() {
+        if(gameRunning) return;
+        score = 0;
+        scoreValue.textContent = score;
+        gameRunning = true;
+        startButton.textContent = "Stop Game";
+        createBoard();
+        activateRandomCell();
+        gameInterval = setInterval(activateRandomCell, 1000); // Change active cell every 1 second
     }
 
+    function gameOver() {
+        gameRunning = false;
+        startButton.textContent = "Start Game";
+        clearInterval(gameInterval);
+        alert(`Game Over! Final Score: ${score}`);
+        // Optionally reset the game here if needed.
+    }
 
     startButton.addEventListener('click', () => {
-        if (!gameRunning) {
-            gameRunning = true;
-            resetGame();
-            gameLoop();
-            startButton.textContent = "Stop Game";
+        if(gameRunning) {
+          gameOver();
         } else {
-            gameRunning = false;
-            cancelAnimationFrame(requestId);
-            startButton.textContent = "Start Game";
+          startGame();
         }
+
     });
 
+
+
+    createBoard();
 </script>
+
 </body>
 </html>
 ```
