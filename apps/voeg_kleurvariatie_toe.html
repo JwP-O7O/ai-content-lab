@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vallende Sterren</title>
+    <title>Falling Stars with Color</title>
     <style>
         body {
-            background-color: #111;
-            overflow: hidden;
             margin: 0;
+            overflow: hidden;
+            background-color: #000;
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
-        .sky {
+        #container {
             position: relative;
             width: 100%;
             height: 100%;
@@ -23,48 +23,49 @@
 
         .star {
             position: absolute;
-            width: 2px;
-            height: 2px;
             background-color: white;
             border-radius: 50%;
             animation: fall linear infinite;
         }
 
         @keyframes fall {
-            0% {
-                transform-origin: top;
-            }
-            100% {
-                transform: translateY(100vh) translateX(random(100vw));
-            }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .star {
-                animation-play-state: paused;
+            to {
+                transform: translateY(100vh);
             }
         }
     </style>
 </head>
 <body>
-    <div class="sky"></div>
+    <div id="container"></div>
     <script>
-        const sky = document.querySelector('.sky');
-        const colors = ['white', 'yellow', 'lightblue', 'lightgreen', 'pink'];
-        const numStars = 100;
+        const container = document.getElementById('container');
+        const numStars = 150; // Increased star count
 
         function getRandomColor() {
+            const colors = ['#FFD700', '#ADD8E6', '#FFA07A', '#90EE90', '#DA70D6'];
             return colors[Math.floor(Math.random() * colors.length)];
         }
 
         function createStar() {
             const star = document.createElement('div');
+            const size = Math.random() * 3 + 1; // Varying sizes
+            const speed = Math.random() * 2 + 1; // Varying speed
+            const color = getRandomColor();
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+            star.style.left = `${Math.random() * 100}vw`;
+            star.style.top = `${Math.random() * -100}px`; // Start above
+            star.style.backgroundColor = color;
+            star.style.animationDuration = `${speed * 3}s`; // Vary animation duration
             star.classList.add('star');
-            star.style.left = Math.random() * 100 + 'vw';
-            star.style.top = Math.random() * 50 + 'vh'; // start positie hoger
-            star.style.backgroundColor = getRandomColor();
-            star.style.animationDuration = Math.random() * 2 + 1 + 's';
-            sky.appendChild(star);
+            container.appendChild(star);
+
+            star.addEventListener('animationiteration', () => {
+                star.style.left = `${Math.random() * 100}vw`; // Reset horizontal position
+                star.style.top = `${Math.random() * -10}px`;   // Reset to top, some with offset
+                star.style.animationDuration = `${Math.random() * 3 + 1}s`;
+                star.style.backgroundColor = getRandomColor();
+            });
         }
 
         for (let i = 0; i < numStars; i++) {
