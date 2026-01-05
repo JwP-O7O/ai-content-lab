@@ -74,14 +74,18 @@ class MemoryLoader:
         threading.Thread(target=load_task, daemon=True).start()
 
 
-    def load_memory(self):
+    def load_memory(self, timeout=5):  # Voeg timeout parameter toe
         self._load_memory_async()
-        self._memory_loading_complete.wait()
-
+        if not self._memory_loading_complete.wait(timeout): #Gebruik timeout
+            logging.error(f"Memory loading timed out after {timeout} seconds.")
+            with self._memory_loading_lock:
+                self._memory = None  # Reset memory om onverwachte resultaten te voorkomen
+            return None  # Of gooi een custom exception: raise MemoryLoadingTimeoutError()
         with self._memory_loading_lock:
             return self._memory
 
     def get_memory(self):
-        if self._memory is None:
-            self.load_memory()
-        return self._memory
+        with self._memory_loading_lock:
+            if self._memory is None:
+                self.load_memory()
+            return self._memory
