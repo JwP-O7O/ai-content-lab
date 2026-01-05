@@ -5,4 +5,4 @@
 | **Model** | `Gemini 2.0` |
 | **Cycles** | 1 |
 | **Internet** | 🌍 CONNECTED |
-| **Laatste Actie** | 🛠️ Systeem geüpgraded |
+| **Laatste Actie** | Monitoring... |
