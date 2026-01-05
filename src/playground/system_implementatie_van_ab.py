@@ -70,20 +70,30 @@ class ABTestingAgent:
 
     def get_results(self):
         """
-        Gets the number of successes per variation.
+        Gets the results including conversion rates per variation.
 
         Returns:
-            dict: A dictionary where keys are variation names and values are the number of successes.
+            dict: A dictionary where keys are variation names and values are dictionaries
+                  containing 'successes', 'tests', and 'conversion_rate'.
         """
-        logging.info(f"Returning results: {self.results}")
-        return self.results
+        results = {}
+        conversion_rates = self.get_conversion_rates()
+        for variation in self.variations:
+            results[variation] = {
+                'successes': self.results[variation],
+                'tests': self.test_counts[variation],
+                'conversion_rate': conversion_rates.get(variation, 0) # Use .get() to handle potential issues.
+            }
+        logging.info(f"Returning results: {results}")
+        return results
+
 
     def get_conversion_rates(self):
         """
         Calculates and returns the conversion rates for each variation.
 
         Returns:
-            dict: A dictionary where keys are variation names and values are the conversion rates (as percentages).
+            dict: A dictionary where keys are variation names and values are the conversion rates.
         """
         conversion_rates = {}
         for variation in self.variations:
@@ -143,7 +153,8 @@ class TestABTestingAgent(unittest.TestCase):
 
     def test_get_results(self):
         self.agent.record_result("A", True)
-        self.assertEqual(self.agent.get_results(), {"A": 1, "B": 0})
+        expected_results = {'A': {'successes': 1, 'tests': 1, 'conversion_rate': 100.0}, 'B': {'successes': 0, 'tests': 0, 'conversion_rate': 0.0}}
+        self.assertEqual(self.agent.get_results(), expected_results)
 
     def test_get_conversion_rates(self):
         self.assertEqual(self.agent.get_conversion_rates(), {"A": 0.0, "B": 0.0})
