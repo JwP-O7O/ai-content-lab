@@ -10,11 +10,12 @@
             background: linear-gradient(to bottom, #1e3c72, #2a5298);
             color: #fff;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             min-height: 100vh;
             margin: 0;
             overflow: hidden;
+            padding-top: 20px;
         }
 
         .container {
@@ -22,6 +23,7 @@
             position: relative;
             width: 300px;
             height: 300px;
+            margin-bottom: 20px;
         }
 
         .moon {
@@ -60,6 +62,56 @@
             color: #ddd;
         }
 
+        .timeline-container {
+            width: 80%;
+            max-width: 600px;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .timeline-line {
+            width: 100%;
+            height: 4px;
+            background-color: #ddd;
+            position: relative;
+        }
+
+        .timeline-marker {
+            width: 10px;
+            height: 10px;
+            background-color: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: -3px;
+            left: 0;
+            transform: translateX(-50%);
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .timeline-marker:hover {
+            background-color: #bbb;
+        }
+
+
+        .phase-description {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.1);
+            width: 80%;
+            max-width: 600px;
+            text-align: left;
+        }
+
+        .phase-description h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+
         @media (max-width: 600px) {
             .container {
                 width: 250px;
@@ -74,6 +126,18 @@
             .phase-name {
                 font-size: 1em;
             }
+            .timeline-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .timeline-line {
+                width: 80%;
+            }
+
+            .phase-description {
+                width: 90%;
+            }
         }
     </style>
 </head>
@@ -84,7 +148,67 @@
         <div class="phase-name">New Moon</div>
     </div>
 
+    <div class="timeline-container">
+        <div class="timeline-line">
+            <div class="timeline-marker" data-phase="0"></div>
+            <div class="timeline-marker" data-phase="0.125"></div>
+            <div class="timeline-marker" data-phase="0.25"></div>
+            <div class="timeline-marker" data-phase="0.375"></div>
+            <div class="timeline-marker" data-phase="0.5"></div>
+            <div class="timeline-marker" data-phase="0.625"></div>
+            <div class="timeline-marker" data-phase="0.75"></div>
+            <div class="timeline-marker" data-phase="0.875"></div>
+        </div>
+    </div>
+
+    <div class="phase-description">
+        <h3>New Moon</h3>
+        <p>The Moon is not visible because it is between the Earth and the Sun. The side of the Moon facing us is not lit by the Sun.</p>
+    </div>
+
     <script>
+        const phaseDescriptions = {
+            "0": {
+                name: "New Moon",
+                description: "The Moon is not visible because it is between the Earth and the Sun. The side of the Moon facing us is not lit by the Sun."
+            },
+            "0.125": {
+                name: "Waxing Crescent",
+                description: "A small sliver of the Moon becomes visible as it begins to move away from the Sun in the sky."
+            },
+            "0.25": {
+                name: "First Quarter",
+                description: "Half of the Moon is illuminated. We see the right half of the Moon lit up."
+            },
+            "0.375": {
+                name: "Waxing Gibbous",
+                description: "More than half of the Moon is illuminated, and the lit portion is growing."
+            },
+            "0.5": {
+                name: "Full Moon",
+                description: "The entire face of the Moon is illuminated by the Sun. It rises at sunset and sets at sunrise."
+            },
+            "0.625": {
+                name: "Waning Gibbous",
+                description: "More than half of the Moon is illuminated, but the lit portion is shrinking."
+            },
+            "0.75": {
+                name: "Last Quarter",
+                description: "Half of the Moon is illuminated. We see the left half of the Moon lit up."
+            },
+            "0.875": {
+                name: "Waning Crescent",
+                description: "A small sliver of the Moon is visible as it moves towards the New Moon phase again."
+            }
+        };
+
+
+        const moon = document.querySelector('.moon');
+        const shadowElement = document.querySelector('.shadow');
+        const phaseNameElement = document.querySelector('.phase-name');
+        const timelineMarkers = document.querySelectorAll('.timeline-marker');
+        const phaseDescriptionElement = document.querySelector('.phase-description');
+
         function getMoonPhase() {
             const now = new Date();
             const startOfCycle = new Date(now.getFullYear(), 0, 1);
@@ -93,40 +217,66 @@
             return phase;
         }
 
-        function updateMoonPhase() {
-            const phase = getMoonPhase();
-            const shadowElement = document.querySelector('.shadow');
-            const phaseNameElement = document.querySelector('.phase-name');
+        function updateMoonPhase(manualPhase = null) {
+            let phase = manualPhase !== null ? manualPhase : getMoonPhase();
             let rotationAngle = phase * 360;
 
             shadowElement.style.transform = `translate(-50%, -50%) rotate(${rotationAngle}deg)`;
 
             let phaseName = "";
-            if (phase < 0.05) {
-                phaseName = "New Moon";
-            } else if (phase < 0.20) {
-                phaseName = "Waxing Crescent";
-            } else if (phase < 0.25) {
-                phaseName = "First Quarter";
-            } else if (phase < 0.45) {
-                phaseName = "Waxing Gibbous";
-            } else if (phase < 0.55) {
-                phaseName = "Full Moon";
-            } else if (phase < 0.75) {
-                phaseName = "Waning Gibbous";
-            } else if (phase < 0.80) {
-                phaseName = "Last Quarter";
+            let description = "";
+
+            if (phase >= 0 && phase < 0.0625) {
+                phaseName = phaseDescriptions["0"].name;
+                description = phaseDescriptions["0"].description;
+            } else if (phase < 0.1875) {
+                phaseName = phaseDescriptions["0.125"].name;
+                description = phaseDescriptions["0.125"].description;
+            } else if (phase < 0.3125) {
+                phaseName = phaseDescriptions["0.25"].name;
+                description = phaseDescriptions["0.25"].description;
+            } else if (phase < 0.4375) {
+                phaseName = phaseDescriptions["0.375"].name;
+                description = phaseDescriptions["0.375"].description;
+            } else if (phase < 0.5625) {
+                phaseName = phaseDescriptions["0.5"].name;
+                description = phaseDescriptions["0.5"].description;
+            } else if (phase < 0.6875) {
+                phaseName = phaseDescriptions["0.625"].name;
+                description = phaseDescriptions["0.625"].description;
+            } else if (phase < 0.8125) {
+                phaseName = phaseDescriptions["0.75"].name;
+                description = phaseDescriptions["0.75"].description;
             } else {
-                phaseName = "Waning Crescent";
+                phaseName = phaseDescriptions["0.875"].name;
+                description = phaseDescriptions["0.875"].description;
             }
 
 
             phaseNameElement.textContent = phaseName;
+            phaseDescriptionElement.innerHTML = `<h3>${phaseName}</h3><p>${description}</p>`;
 
+            // Update Timeline
+            timelineMarkers.forEach(marker => {
+                const markerPhase = parseFloat(marker.dataset.phase);
+                if (Math.abs(phase - markerPhase) < 0.0625) {
+                    marker.style.backgroundColor = '#aaa';
+                } else {
+                    marker.style.backgroundColor = '#fff';
+                }
+            });
         }
 
         updateMoonPhase();
         setInterval(updateMoonPhase, 60000); // Update every minute
+
+        // Timeline interaction
+        timelineMarkers.forEach(marker => {
+            marker.addEventListener('click', () => {
+                const selectedPhase = parseFloat(marker.dataset.phase);
+                updateMoonPhase(selectedPhase);
+            });
+        });
     </script>
 </body>
 </html>
