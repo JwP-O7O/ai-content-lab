@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Game Loop Example</title>
+<title>Simple Game</title>
 <style>
 body {
     font-family: sans-serif;
@@ -14,106 +14,172 @@ body {
     background-color: #f0f0f0;
 }
 
-#gameContainer {
-    background-color: #fff;
+#game-container {
+    background-color: white;
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     text-align: center;
 }
 
-#gameCanvas {
+#canvas {
     border: 1px solid #ccc;
     margin-bottom: 10px;
 }
 
-#scoreDisplay {
+#score-display {
     font-size: 1.2em;
     margin-bottom: 10px;
 }
 
-#startButton, #stopButton {
+#start-button, #restart-button {
     background-color: #4CAF50;
     color: white;
-    padding: 10px 15px;
+    padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     font-size: 1em;
-    margin: 5px;
 }
 
-#startButton:hover, #stopButton:hover {
+#start-button:hover, #restart-button:hover {
     background-color: #3e8e41;
 }
 
-#stopButton {
-    background-color: #f44336;
-}
-
-#stopButton:hover {
-    background-color: #da190b;
-}
 </style>
 </head>
 <body>
+    <div id="game-container">
+        <h1>Simple Game</h1>
+        <div id="score-display">Score: 0</div>
+        <canvas id="canvas" width="400" height="300"></canvas>
+        <button id="start-button">Start Game</button>
+        <button id="restart-button" style="display:none;">Restart Game</button>
+    </div>
 
-<div id="gameContainer">
-    <h1>Simple Game Loop</h1>
-    <div id="scoreDisplay">Score: <span id="score">0</span></div>
-    <canvas id="gameCanvas" width="300" height="150"></canvas>
-    <button id="startButton">Start</button>
-    <button id="stopButton">Stop</button>
-</div>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score-display');
+        const startButton = document.getElementById('start-button');
+        const restartButton = document.getElementById('restart-button');
 
-<script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const scoreDisplay = document.getElementById('score');
-    const startButton = document.getElementById('startButton');
-    const stopButton = document.getElementById('stopButton');
+        let score = 0;
+        let gameRunning = false;
+        let ballX, ballY, ballSpeedX, ballSpeedY, ballSize;
+        let paddleX, paddleWidth, paddleHeight, paddleSpeed;
 
-    let score = 0;
-    let gameRunning = false;
-    let animationFrameId;
-
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'blue';
-        ctx.fillRect(10 + score, 50, 20, 20); // Example: Moving rectangle
-    }
-
-    function update() {
-        score += 1; // Example: Increment the score
-        scoreDisplay.textContent = score;
-    }
-
-
-    function gameLoop() {
-        if (!gameRunning) return;
-
-        update();
-        draw();
-        animationFrameId = requestAnimationFrame(gameLoop);
-    }
-
-
-    startButton.addEventListener('click', () => {
-        if (!gameRunning) {
-            gameRunning = true;
+        function resetGame() {
             score = 0;
-            scoreDisplay.textContent = score;
+            ballX = canvas.width / 2;
+            ballY = canvas.height / 2;
+            ballSpeedX = 2;
+            ballSpeedY = 2;
+            ballSize = 10;
+            paddleX = canvas.width / 2 - 50;
+            paddleWidth = 100;
+            paddleHeight = 10;
+            paddleSpeed = 5;
+            scoreDisplay.textContent = 'Score: 0';
+        }
+
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Ball
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, ballSize, 0, Math.PI * 2);
+            ctx.fillStyle = 'blue';
+            ctx.fill();
+            ctx.closePath();
+
+            // Draw Paddle
+            ctx.fillStyle = 'black';
+            ctx.fillRect(paddleX, canvas.height - paddleHeight - 10, paddleWidth, paddleHeight);
+        }
+
+
+
+        function update() {
+            if (!gameRunning) return;
+
+            // Ball Movement
+            ballX += ballSpeedX;
+            ballY += ballSpeedY;
+
+            // Ball Collision with Walls
+            if (ballX + ballSize > canvas.width || ballX - ballSize < 0) {
+                ballSpeedX = -ballSpeedX;
+            }
+            if (ballY - ballSize < 0) {
+                ballSpeedY = -ballSpeedY;
+            }
+
+            // Ball collision with paddle
+            if (ballY + ballSize > canvas.height - paddleHeight - 10 &&
+                ballX > paddleX &&
+                ballX < paddleX + paddleWidth) {
+                ballSpeedY = -ballSpeedY;
+                score++;
+                scoreDisplay.textContent = `Score: ${score}`;
+
+                // Increase ball speed
+                if (score % 5 === 0) {
+                    ballSpeedX *= 1.1;
+                    ballSpeedY *= 1.1;
+                }
+            }
+
+
+            if (ballY + ballSize > canvas.height) {
+                gameOver();
+            }
+
+
+             //Paddle movement (example:  mouse)
+            document.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                paddleX = e.clientX - rect.left - paddleWidth / 2;
+
+                // Keep paddle within bounds
+                if (paddleX < 0) {
+                    paddleX = 0;
+                }
+                if (paddleX + paddleWidth > canvas.width) {
+                    paddleX = canvas.width - paddleWidth;
+                }
+
+            });
+
+
+
+            draw();
+        }
+
+        function gameLoop() {
+            update();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            resetGame();
+            gameRunning = true;
+            startButton.style.display = 'none';
+            restartButton.style.display = 'inline';
             gameLoop();
         }
-    });
 
-    stopButton.addEventListener('click', () => {
-        gameRunning = false;
-        cancelAnimationFrame(animationFrameId);
-    });
+        function gameOver() {
+            gameRunning = false;
+            startButton.style.display = 'inline';
+            restartButton.style.display = 'none';
+        }
 
-</script>
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', startGame);
 
+    </script>
 </body>
 </html>
 ```
