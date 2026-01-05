@@ -15,24 +15,48 @@ body {
 }
 
 #game-container {
-    background-color: #fff;
+    background-color: white;
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     text-align: center;
 }
 
-#game-canvas {
-    border: 1px solid #ccc;
-    margin-bottom: 10px;
-}
-
-#score-display {
+#score {
     font-size: 1.2em;
     margin-bottom: 10px;
 }
 
-#start-button, #restart-button {
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(3, 80px); /* Adjusted for a 3x3 grid */
+    grid-gap: 10px;
+    margin-bottom: 10px;
+}
+
+.cell {
+    width: 80px; /* Adjusted cell size */
+    height: 80px; /* Adjusted cell size */
+    background-color: #eee;
+    border-radius: 4px;
+    font-size: 3em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.cell:hover {
+    background-color: #ddd;
+}
+
+#message {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+#reset-button {
     background-color: #4CAF50;
     color: white;
     padding: 10px 20px;
@@ -40,9 +64,10 @@ body {
     border-radius: 4px;
     cursor: pointer;
     font-size: 1em;
+    transition: background-color 0.2s ease;
 }
 
-#start-button:hover, #restart-button:hover {
+#reset-button:hover {
     background-color: #3e8e41;
 }
 </style>
@@ -50,157 +75,100 @@ body {
 <body>
 
 <div id="game-container">
-    <h1>Simple Game</h1>
-    <div id="score-display">Score: <span id="score">0</span></div>
-    <canvas id="game-canvas" width="400" height="300"></canvas>
-    <button id="start-button">Start Game</button>
-    <button id="restart-button" style="display:none;">Restart Game</button>
+    <h1>Tic-Tac-Toe</h1>
+    <div id="score">Score: 0</div>
+    <div id="game-board">
+        <div class="cell" data-index="0"></div>
+        <div class="cell" data-index="1"></div>
+        <div class="cell" data-index="2"></div>
+        <div class="cell" data-index="3"></div>
+        <div class="cell" data-index="4"></div>
+        <div class="cell" data-index="5"></div>
+        <div class="cell" data-index="6"></div>
+        <div class="cell" data-index="7"></div>
+        <div class="cell" data-index="8"></div>
+    </div>
+    <div id="message"></div>
+    <button id="reset-button">Reset</button>
 </div>
 
 <script>
-const canvas = document.getElementById('game-canvas');
-const ctx = canvas.getContext('2d');
+const cells = document.querySelectorAll('.cell');
+const message = document.getElementById('message');
+const resetButton = document.getElementById('reset-button');
 const scoreDisplay = document.getElementById('score');
-const startButton = document.getElementById('start-button');
-const restartButton = document.getElementById('restart-button');
 
-let score = 0;
-let gameRunning = false;
-let gameLoopInterval;
+let currentPlayer = 'X';
+let gameBoard = ['', '', '', '', '', '', '', '', ''];
+let gameActive = true;
+let score = 0; // Initialize score
 
-// Game object (example: a simple square)
-let player = {
-    x: canvas.width / 2 - 10,
-    y: canvas.height - 30,
-    width: 20,
-    height: 20,
-    speed: 5
+// Function to check for a winner
+const checkWinner = () => {
+    const winPatterns = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+        [0, 4, 8], [2, 4, 6]             // Diagonals
+    ];
+
+    for (const pattern of winPatterns) {
+        const [a, b, c] = pattern;
+        if (gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) {
+            return gameBoard[a]; // Return the winning player ('X' or 'O')
+        }
+    }
+    return null; // No winner
 };
 
-let enemies = [];
-const enemySpeed = 2;
-const enemySpawnInterval = 2000; // milliseconds
+// Function to check for a draw
+const checkDraw = () => {
+    return !gameBoard.includes("");
+};
 
-function resetGame() {
-    score = 0;
-    scoreDisplay.textContent = score;
-    player.x = canvas.width / 2 - 10;
-    enemies = [];
-    clearInterval(gameLoopInterval);
-    gameRunning = false;
-    startButton.style.display = 'inline';
-    restartButton.style.display = 'none';
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
-}
+const handleCellClick = (event) => {
+    const index = event.target.dataset.index;
 
+    if (gameBoard[index] !== '' || !gameActive) {
+        return;
+    }
 
-function startGame() {
-    resetGame(); // Ensure game is reset at start
-    gameRunning = true;
-    startButton.style.display = 'none';
-    restartButton.style.display = 'inline';
-    gameLoopInterval = setInterval(gameLoop, 20); // 50 FPS
-    spawnEnemy(); // Start spawning enemies
-}
+    gameBoard[index] = currentPlayer;
+    event.target.textContent = currentPlayer;
+    event.target.classList.add(currentPlayer); // Add class for styling
 
+    const winner = checkWinner();
+    if (winner) {
+        message.textContent = `Player ${winner} wins!`;
+        gameActive = false;
+        if (winner === 'X') {
+            score++;
+            scoreDisplay.textContent = `Score: ${score}`;
+        }
+    } else if (checkDraw()) {
+        message.textContent = "It's a draw!";
+        gameActive = false;
+    } else {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        message.textContent = `Player ${currentPlayer}'s turn`;
+    }
+};
 
-function gameLoop() {
-    if (!gameRunning) return;
+const resetGame = () => {
+    currentPlayer = 'X';
+    gameBoard = ['', '', '', '', '', '', '', '', ''];
+    gameActive = true;
+    message.textContent = '';
 
-    // Clear the canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Update game elements
-    updatePlayer();
-    updateEnemies();
-    checkCollisions();
-
-    // Draw game elements
-    drawPlayer();
-    drawEnemies();
-    updateScore();
-}
-
-function updateScore() {
-    scoreDisplay.textContent = score;
-}
-
-function updatePlayer() {
-    // Example:  Implement player movement.  Here, we'll keep the player stationary.
-    //  In a real game, you'd handle keyboard input to move the player.
-}
-
-function drawPlayer() {
-    ctx.fillStyle = 'blue';
-    ctx.fillRect(player.x, player.y, player.width, player.height);
-}
-
-function spawnEnemy() {
-    if (!gameRunning) return;
-
-    const enemyWidth = 20;
-    const enemyHeight = 20;
-    const enemyX = Math.random() * (canvas.width - enemyWidth);
-
-    enemies.push({
-        x: enemyX,
-        y: 0,
-        width: enemyWidth,
-        height: enemyHeight
+    cells.forEach(cell => {
+        cell.textContent = '';
+        cell.classList.remove('X', 'O'); // Remove player classes
     });
-    setTimeout(spawnEnemy, enemySpawnInterval);
-}
+};
 
-function updateEnemies() {
-    for (let i = 0; i < enemies.length; i++) {
-        enemies[i].y += enemySpeed;
-
-        // Remove enemies that go off-screen
-        if (enemies[i].y > canvas.height) {
-            enemies.splice(i, 1);
-            i--;  // Adjust index since we removed an element
-        }
-    }
-}
-
-
-function drawEnemies() {
-    for (let i = 0; i < enemies.length; i++) {
-        ctx.fillStyle = 'red';
-        ctx.fillRect(enemies[i].x, enemies[i].y, enemies[i].width, enemies[i].height);
-    }
-}
-
-
-
-function checkCollisions() {
-    for (let i = 0; i < enemies.length; i++) {
-        if (
-            player.x < enemies[i].x + enemies[i].width &&
-            player.x + player.width > enemies[i].x &&
-            player.y < enemies[i].y + enemies[i].height &&
-            player.y + player.height > enemies[i].y
-        ) {
-            // Collision detected!
-            gameOver();
-            return; // Exit the loop, no need to check further collisions.
-        }
-    }
-}
-
-
-function gameOver() {
-    gameRunning = false;
-    clearInterval(gameLoopInterval);
-    alert(`Game Over! Your score: ${score}`);
-    startButton.style.display = 'inline';
-    restartButton.style.display = 'none';
-    // Optionally:  Reset the game state (score, positions, etc.)
-}
-
-startButton.addEventListener('click', startGame);
-restartButton.addEventListener('click', startGame);
+cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+resetButton.addEventListener('click', resetGame);
 </script>
+
 </body>
 </html>
 ```
