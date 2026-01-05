@@ -2,154 +2,139 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Pixelverwijdering</title>
+<title>Game Loop Example</title>
 <style>
 body {
     font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    background-color: #f0f0f0;
+    height: 100vh;
     margin: 0;
+    background-color: #f0f0f0;
 }
 
-#game-container {
+#gameContainer {
     background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     text-align: center;
 }
 
-#game-canvas {
+#gameCanvas {
     border: 1px solid #ccc;
     margin-bottom: 10px;
 }
 
-button {
-    background-color: #4CAF50;
-    color: white;
+#scoreDisplay {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+#startButton, #stopButton {
     padding: 10px 20px;
+    font-size: 1em;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 16px;
     margin: 5px;
 }
 
-button:hover {
-    background-color: #3e8e41;
+#startButton {
+    background-color: #4CAF50;
+    color: white;
 }
 
-#score {
-    font-size: 18px;
-    margin-bottom: 10px;
+#stopButton {
+    background-color: #f44336;
+    color: white;
 }
 </style>
 </head>
 <body>
-<div id="game-container">
-    <h1>Pixelverwijdering Game</h1>
-    <div id="score">Score: 0</div>
-    <canvas id="game-canvas" width="400" height="400"></canvas>
-    <button id="startButton">Starten</button>
-    <button id="stopButton">Stoppen</button>
-    <script>
-        const canvas = document.getElementById('game-canvas');
-        const ctx = canvas.getContext('2d');
-        const startButton = document.getElementById('startButton');
-        const stopButton = document.getElementById('stopButton');
-        const scoreDisplay = document.getElementById('score');
 
-        let pixels = [];
-        let score = 0;
-        let gameRunning = false;
-        let animationFrameId;
+<div id="gameContainer">
+    <h1>Simple Game Loop</h1>
+    <div id="scoreDisplay">Score: <span id="score">0</span></div>
+    <canvas id="gameCanvas" width="300" height="200"></canvas>
+    <button id="startButton">Start</button>
+    <button id="stopButton">Stop</button>
+</div>
 
-        // Pixel class
-        class Pixel {
-            constructor(x, y, color) {
-                this.x = x;
-                this.y = y;
-                this.color = color;
-                this.size = 10;
-            }
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('score');
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
 
-            draw() {
-                ctx.fillStyle = this.color;
-                ctx.fillRect(this.x, this.y, this.size, this.size);
-            }
+    let score = 0;
+    let gameRunning = false;
+    let animationFrameId;
+
+    // Game variables
+    let x = 50;
+    let y = 50;
+    let dx = 2; // horizontal speed
+    let dy = 2; // vertical speed
+    const circleRadius = 10;
+
+
+    function drawCircle() {
+        ctx.beginPath();
+        ctx.arc(x, y, circleRadius, 0, Math.PI * 2);
+        ctx.fillStyle = 'blue';
+        ctx.fill();
+    }
+
+
+    function update() {
+        if (!gameRunning) return;
+
+        // Clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Update position
+        x += dx;
+        y += dy;
+
+        // Bounce off the walls
+        if (x + circleRadius > canvas.width || x - circleRadius < 0) {
+            dx = -dx;
+            score++;
+            scoreDisplay.textContent = score;
+        }
+        if (y + circleRadius > canvas.height || y - circleRadius < 0) {
+            dy = -dy;
+            score++;
+            scoreDisplay.textContent = score;
         }
 
+        drawCircle();
 
-        function generatePixel() {
-            const x = Math.floor(Math.random() * (canvas.width / 10)) * 10;
-            const y = Math.floor(Math.random() * (canvas.height / 10)) * 10;
-            const colors = ['red', 'green', 'blue', 'yellow', 'purple'];
-            const color = colors[Math.floor(Math.random() * colors.length)];
-            return new Pixel(x, y, color);
+        animationFrameId = requestAnimationFrame(update);
+    }
+
+
+
+    startButton.addEventListener('click', () => {
+        if (!gameRunning) {
+            gameRunning = true;
+            score = 0;
+            scoreDisplay.textContent = score;
+            update();
         }
+    });
 
-
-
-        function drawPixels() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            for (const pixel of pixels) {
-                pixel.draw();
-            }
-        }
-
-        function updateGame() {
-          if (!gameRunning) return;
-
-          if (Math.random() < 0.05) { // Adjust frequency
-              pixels.push(generatePixel());
-          }
-
-          drawPixels();
-          animationFrameId = requestAnimationFrame(updateGame);
-        }
-
-        function startGame() {
-            if (!gameRunning) {
-                gameRunning = true;
-                score = 0;
-                scoreDisplay.textContent = 'Score: ' + score;
-                pixels = []; // Clear pixels
-                updateGame();
-            }
-        }
-
-        function stopGame() {
+    stopButton.addEventListener('click', () => {
+        if (gameRunning) {
             gameRunning = false;
             cancelAnimationFrame(animationFrameId);
         }
+    });
 
-
-        canvas.addEventListener('click', (event) => {
-            if (!gameRunning) return;
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = event.clientX - rect.left;
-            const mouseY = event.clientY - rect.top;
-
-            for (let i = pixels.length - 1; i >= 0; i--) {
-                const pixel = pixels[i];
-                if (mouseX >= pixel.x && mouseX <= pixel.x + pixel.size &&
-                    mouseY >= pixel.y && mouseY <= pixel.y + pixel.size) {
-                    pixels.splice(i, 1);
-                    score++;
-                    scoreDisplay.textContent = 'Score: ' + score;
-                    break;
-                }
-            }
-        });
-
-
-        startButton.addEventListener('click', startGame);
-        stopButton.addEventListener('click', stopGame);
-    </script>
-</div>
+</script>
 </body>
 </html>
 ```
