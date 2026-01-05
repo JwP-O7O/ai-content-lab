@@ -9,8 +9,8 @@ sys.path.append(os.getcwd())
 # --- VEILIGE IMPORT ZONE ---
 try:
     from src.ui_engine import UIEngine
-    from src.dependency_manager import DependencyManager # <--- DE DOKTER
-    
+    from src.dependency_manager import DependencyManager
+
     # Agents
     from src.autonomous_agents.execution.git_publisher import GitPublisher
     from src.autonomous_agents.execution.github_listener import GitHubListener
@@ -18,39 +18,46 @@ try:
     from src.autonomous_agents.execution.web_architect import WebArchitect
     from src.autonomous_agents.execution.visionary_agent import VisionaryAgent
     from src.autonomous_agents.execution.research_agent import ResearchAgent
-    
+
     # Planning & Validatie
     from src.autonomous_agents.planning.evolutionary_agent import EvolutionaryAgent
     from src.autonomous_agents.planning.system_optimizer import SystemOptimizer
     from src.autonomous_agents.planning.staffing_agent import StaffingAgent
     from src.autonomous_agents.validation.qa_agent import QualityAssuranceAgent
     from src.autonomous_agents.learning.brain import GlobalBrain
-    
+
 except ImportError as e:
     # 🚑 HIER GRIJPT DE DOKTER IN
-    # Omdat DependencyManager misschien zelf nog niet geladen is, 
+    # Omdat DependencyManager misschien zelf nog niet geladen is,
     # proberen we hem lokaal te laden of vallen we terug op simpele logica.
     try:
         from src.dependency_manager import DependencyManager
         if DependencyManager.heal(e):
-            sys.exit(0) # Herstart is in gang gezet
-    except:
+            sys.exit(0)  # Herstart is in gang gezet
+    except ImportError:  # Changed to catch ImportError specifically
         # Als zelfs de dokter niet geladen kan worden
         print(f"CRITICAL BOOT ERROR: {e}")
         # Probeer de 'ratelimit' fix specifiek als fallback
         if "ratelimit" in str(e):
             os.system("pip install ratelimit")
             os.execv(sys.executable, [sys.executable] + sys.argv)
-    sys.exit(1)
+        sys.exit(1)  # Ensure proper exit in case of crucial failure
+
+    except Exception as e: # Catch any other exceptions during dependency heal
+        print(f"UNEXPECTED ERROR DURING DEPENDENCY HEAL: {e}")
+        sys.exit(1)
+
+
 
 # --- EINDE IMPORT ZONE ---
+
 
 class TermuxMasterOrchestrator:
     def __init__(self):
         self.is_running = False
         self.cycle_count = 0
         self.ui = UIEngine()
-        
+
         # WORKFORCE INIT
         self.publisher = GitPublisher()
         self.listener = GitHubListener()
@@ -58,7 +65,7 @@ class TermuxMasterOrchestrator:
         self.web_architect = WebArchitect()
         self.visionary = VisionaryAgent()
         self.researcher = ResearchAgent()
-        
+
         # MANAGEMENT INIT
         self.evolutionary = EvolutionaryAgent()
         self.optimizer = SystemOptimizer()
@@ -69,24 +76,33 @@ class TermuxMasterOrchestrator:
     async def run_improvement_cycle(self):
         self.cycle_count += 1
         self.ui.log_cycle(self.cycle_count)
-        
+
         last_action = "Monitoring..."
         needs_restart = False
-        
+
         try:
             # 1. MANAGEMENT TAKEN
-            if self.cycle_count % 15 == 0: await self.staffing.evaluate_team_needs()
-            if self.cycle_count % 8 == 0: await self.optimizer.optimize_system()
-            if self.cycle_count % 3 == 0: await self.evolutionary.propose_improvement()
+            if self.cycle_count % 15 == 0:
+                await self.staffing.evaluate_team_needs()
+            if self.cycle_count % 8 == 0:
+                await self.optimizer.optimize_system()
+            if self.cycle_count % 5 == 0:
+                await self.qa.perform_quality_assurance() # added a new task to improve quality of work
+            
+            # Additional logic can be added here to call the GlobalBrain
+            # to learn and adapt, or to initiate a restart based on some condition.
+            # Example:
+            if self.cycle_count % 20 == 0:
+                await self.brain.learn_from_feedback()
 
             # 2. ORDERS UITVOEREN
             orders = await self.listener.check_for_orders()
-            
+
             if orders.get("status") == "new_tasks":
                 for task in orders['tasks']:
                     title = task['title']
                     res = None
-                    
+
                     # A. RESEARCH
                     if "RESEARCH:" in title.upper():
                         self.ui.log_task("RESEARCH", title, "🕵️ Deep Search...")
@@ -118,16 +134,18 @@ class TermuxMasterOrchestrator:
                         last_action = "✅ Taak Uitgevoerd"
 
         except Exception as e:
-            # Vang fouten tijdens de runtime ook op!
-            self.ui.log_error(f"Runtime Fout: {e}")
-            # Is het een import error die tijdens runtime ontstond? (bijv. in een sub-functie)
-            if "No module named" in str(e):
-                DependencyManager.heal(e)
-
-        if needs_restart:
-            self.ui.log_task("SYSTEM", "HERSTART", "♻️ Nieuwe functionaliteit laden...")
-            await asyncio.sleep(3)
-            sys.exit(0)
+            logger.error(f"Cycle {self.cycle_count} failed: {e}")
+            # Consider adding logic here for error handling, such as:
+            # - logging the error to a file
+            # - attempting to restart the failing agent
+            # - potentially restarting the entire orchestrator
+        finally:
+            self.ui.log_status(last_action)
+            if needs_restart:
+                # Optionally add logic here for a graceful shutdown
+                # and restart of the entire orchestration process.
+                print("Restarting...")
+                os.execv(sys.executable, [sys.executable] + sys.argv) # Simple Restart.  Consider more graceful approach.
 
     async def run_autonomous_loop(self):
         self.is_running = True
