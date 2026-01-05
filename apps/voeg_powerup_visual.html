@@ -3,147 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Power-up Visual Effect</title>
+    <title>Power-up Visual Effects</title>
     <style>
         body {
-            font-family: sans-serif;
-            background-color: #222;
-            color: #fff;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            margin: 0;
-            overflow: hidden; /* Prevent scrollbars */
         }
 
-        #game-container {
-            position: relative;
+        .container {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
             width: 80%;
             max-width: 400px;
-            height: 300px;
-            background-color: #333;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-            overflow: hidden; /* Clip power-up effect */
         }
 
-        #player {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 30px;
-            height: 30px;
-            background-color: #007bff;
-            border-radius: 50%;
+        h1 {
+            color: #333;
         }
 
-        #power-up {
-            position: absolute;
-            top: 50px;
-            left: 50px;
-            width: 20px;
-            height: 20px;
-            background-color: #ffc107;
-            border-radius: 50%;
+        .power-up-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px;
             cursor: pointer;
+            border-radius: 5px;
+            border: none;
+            transition: background-color 0.3s ease;
         }
 
-        .powerup-effect {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            pointer-events: none; /* Make effect clickable*/
+        .power-up-button:hover {
+            background-color: #3e8e41;
         }
 
-        .powerup-effect::before,
-        .powerup-effect::after {
-            content: '';
+        .visual-effect {
+            position: fixed;
+            pointer-events: none;
+        }
+
+        .sparkle {
             position: absolute;
+            background-color: rgba(255, 255, 255, 0.8);
             border-radius: 50%;
-            opacity: 0;
-            animation: powerupEffect 1s ease-out forwards;
+            animation: sparkle-animation 1s ease-out forwards;
         }
 
-        .powerup-effect::before {
-            width: 100px;
-            height: 100px;
-            background-color: rgba(255, 255, 255, 0.3);
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .powerup-effect::after {
-            width: 50px;
-            height: 50px;
-            background-color: rgba(255, 255, 0, 0.5);
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            animation-delay: 0.2s;
-        }
-
-
-        @keyframes powerupEffect {
-            0% {
+        @keyframes sparkle-animation {
+            from {
+                opacity: 1;
+                transform: scale(0);
+            }
+            to {
                 opacity: 0;
-                transform: translate(-50%, -50%) scale(0);
-            }
-            50% {
-                opacity: 0.5;
-            }
-            100% {
-                opacity: 0;
-                transform: translate(-50%, -50%) scale(2);
+                transform: scale(2);
             }
         }
 
-        @media (max-width: 600px) {
-            #game-container {
-                width: 90%;
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            border-radius: 50%;
+            animation: confetti-animation 2s ease-out forwards;
+        }
+
+        @keyframes confetti-animation {
+            from {
+                opacity: 1;
+                transform: translate(0, 0) rotate(0deg);
+            }
+            to {
+                opacity: 0;
+                transform: translate(random( -100px, 100px), 200px) rotate(360deg);
             }
         }
     </style>
 </head>
 <body>
-    <div id="game-container">
-        <div id="player"></div>
-        <div id="power-up" onclick="collectPowerUp()"></div>
-        <div id="effect-container" class="powerup-effect"></div>
+    <div class="container">
+        <h1>Power-up Visual Effects</h1>
+        <button class="power-up-button" onclick="activatePowerUp('sparkle')">Sparkle</button>
+        <button class="power-up-button" onclick="activatePowerUp('confetti')">Confetti</button>
     </div>
 
     <script>
-        function collectPowerUp() {
-            const powerUp = document.getElementById('power-up');
-            const effectContainer = document.getElementById('effect-container');
-            const gameContainer = document.getElementById('game-container');
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
 
-
-            // Visueel effect
-            effectContainer.style.display = 'block';
-            effectContainer.style.animation = 'none'; // Reset animation
+        function createSparkle(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.classList.add('visual-effect', 'sparkle');
+            sparkle.style.left = x + 'px';
+            sparkle.style.top = y + 'px';
+            sparkle.style.width = '10px';
+            sparkle.style.height = '10px';
+            document.body.appendChild(sparkle);
             setTimeout(() => {
-                effectContainer.style.animation = null;
-            }, 10);
+                sparkle.remove();
+            }, 1000);
+        }
+
+        function createConfetti(x, y) {
+            const confetti = document.createElement('div');
+            confetti.classList.add('visual-effect', 'confetti');
+            confetti.style.left = x + 'px';
+            confetti.style.top = y + 'px';
+            confetti.style.backgroundColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
+            document.body.appendChild(confetti);
             setTimeout(() => {
-                effectContainer.style.display = 'none';
-            }, 1000); // Effect duration
+                confetti.remove();
+            }, 2000);
+        }
 
+        function activatePowerUp(type) {
+            const button = document.querySelector('.power-up-button');
+            const buttonRect = button.getBoundingClientRect();
+            const centerX = buttonRect.left + buttonRect.width / 2;
+            const centerY = buttonRect.top + buttonRect.height / 2;
 
-            // Power-up logica (verplaatsen naar willekeurige locatie)
-            const gameWidth = gameContainer.offsetWidth;
-            const gameHeight = gameContainer.offsetHeight;
-            const powerUpSize = powerUp.offsetWidth;
-
-            const newX = Math.random() * (gameWidth - powerUpSize);
-            const newY = Math.random() * (gameHeight - powerUpSize);
-
-            powerUp.style.left = `${newX}px`;
-            powerUp.style.top = `${newY}px`;
+            if (type === 'sparkle') {
+                for (let i = 0; i < 20; i++) {
+                    setTimeout(() => {
+                        createSparkle(centerX + getRandomInt(-20, 20), centerY + getRandomInt(-20, 20));
+                    }, i * 50);
+                }
+            } else if (type === 'confetti') {
+                for (let i = 0; i < 50; i++) {
+                    setTimeout(() => {
+                        createConfetti(centerX + getRandomInt(-50, 50), centerY + getRandomInt(-50, 50));
+                    }, i * 100);
+                }
+            }
         }
     </script>
 </body>
