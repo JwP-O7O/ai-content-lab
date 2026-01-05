@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maanfase Info</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #1e1e2e;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            background: #282c33;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        input[type="range"] {
+            width: 80%;
+            margin-top: 20px;
+            background-color: #44475a;
+            border-radius: 5px;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #bd93f9;
+            cursor: pointer;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #bd93f9;
+            cursor: pointer;
+        }
+        #tooltip {
+            background-color: #bd93f9;
+            color: #282c33;
+            padding: 10px;
+            border-radius: 5px;
+            position: absolute;
+            z-index: 1000;
+            display: none;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 600px) {
+            input[type="range"] {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Maanfase</h1>
+        <input type="range" id="moonSlider" min="0" max="100" value="0">
+        <div id="tooltip"></div>
+    </div>
+
+    <script>
+        const moonSlider = document.getElementById('moonSlider');
+        const tooltip = document.getElementById('tooltip');
+
+        const moonPhases = [
+            { name: "Nieuwe Maan", description: "De maan is onzichtbaar." },
+            { name: "Wassende Halve Maan", description: "Een klein deel van de maan is zichtbaar." },
+            { name: "Eerste Kwartier", description: "De rechterhelft van de maan is zichtbaar." },
+            { name: "Wassende Gibbeuze Maan", description: "Meer dan de helft van de maan is zichtbaar." },
+            { name: "Volle Maan", description: "De hele maan is zichtbaar." },
+            { name: "Afnemende Gibbeuze Maan", description: "Meer dan de helft van de maan is zichtbaar, maar afnemend." },
+            { name: "Laatste Kwartier", description: "De linkerhelft van de maan is zichtbaar." },
+            { name: "Afnemende Halve Maan", description: "Een klein deel van de maan is zichtbaar." }
+        ];
+
+        function getMoonPhase(value) {
+            const phaseIndex = Math.round(value / 100 * 7);
+            return moonPhases[phaseIndex];
+        }
+
+        function showTooltip(event) {
+            const value = moonSlider.value;
+            const phase = getMoonPhase(value);
+            tooltip.textContent = `${phase.name}: ${phase.description}`;
+            tooltip.style.display = 'block';
+            tooltip.style.left = `${event.clientX - tooltip.offsetWidth / 2}px`;
+            tooltip.style.top = `${event.clientY - 40}px`;
+        }
+
+
+        function hideTooltip() {
+            tooltip.style.display = 'none';
+        }
+
+
+        moonSlider.addEventListener('mousemove', showTooltip);
+        moonSlider.addEventListener('mouseleave', hideTooltip);
+
+    </script>
+</body>
+</html>
