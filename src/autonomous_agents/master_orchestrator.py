@@ -13,7 +13,7 @@ try:
     from src.autonomous_agents.execution.web_architect import WebArchitect
     from src.autonomous_agents.execution.visionary_agent import VisionaryAgent
     
-    # NIEUWE MODULES
+    # SLIMME MODULES
     from src.autonomous_agents.planning.evolutionary_agent import EvolutionaryAgent
     from src.autonomous_agents.planning.system_optimizer import SystemOptimizer
     from src.autonomous_agents.learning.brain import GlobalBrain
@@ -26,16 +26,17 @@ class TermuxMasterOrchestrator:
         self.is_running = False
         self.cycle_count = 0
         
+        # TEAM
         self.publisher = GitPublisher()
         self.listener = GitHubListener()
         self.architect = FeatureArchitect()
         self.web_architect = WebArchitect()
         self.visionary = VisionaryAgent()
         
-        # SLIMME AGENTS
+        # BRAIN & OPTIMIZER
         self.evolutionary = EvolutionaryAgent()
-        self.optimizer = SystemOptimizer() # De Monteur
-        self.brain = GlobalBrain()         # Het Geheugen
+        self.optimizer = SystemOptimizer()
+        self.brain = GlobalBrain()
 
     async def _update_remote_status(self, last_action):
         try:
@@ -52,9 +53,10 @@ class TermuxMasterOrchestrator:
         self.cycle_count += 1
         logger.info(f"--- 🔄 Cycle #{self.cycle_count} ---")
         last_action = "Monitoring..."
+        needs_restart = False  # Vlaggetje voor herstart
         
-        # 1. ZELF-OPTIMALISATIE (Elke 4 cycles)
-        if self.cycle_count % 4 == 0:
+        # 1. ZELF-OPTIMALISATIE (Elke 5 cycles)
+        if self.cycle_count % 5 == 0:
             await self.optimizer.optimize_system()
             
         # 2. EVOLUTIE (Elke 3 cycles)
@@ -66,24 +68,25 @@ class TermuxMasterOrchestrator:
         if orders.get("status") == "new_tasks":
             for task in orders['tasks']:
                 
-                # A. SYSTEM & CODE TAAK (Python)
+                # A. SYSTEM & CODE TAAK (HIER ZIT DE HERSTART)
                 if "SYSTEM:" in task['title'].upper() or "CODE:" in task['title'].upper():
                     logger.info(f"⚙️ Systeem Taak: {task['title']}")
-                    # Geef het brein context mee!
                     context = self.brain.get_context()
                     full_prompt = f"{task['title']} {task['body']}\n\nCONTEXT:\n{context}"
                     
                     res = await self.architect.build_feature(full_prompt)
                     if res['status'] == 'built':
                         await self.publisher.publish_changes()
-                        task['issue_obj'].create_comment(f"✅ **Systeem Update Uitgevoerd**\nBestand: `{res['file']}`")
+                        task['issue_obj'].create_comment(f"✅ **Systeem Update Uitgevoerd**\nBestand: `{res['file']}`\n\n*Het systeem herstart nu om de wijzigingen toe te passen...* 🔄")
                         task['issue_obj'].edit(state='closed')
                         
-                        # LEERMOMENT
                         self.brain.add_lesson("successful_patterns", f"Python fix voor {task['title']}")
-                        last_action = "🛠️ Systeem geüpgraded"
+                        last_action = "🛠️ Systeem geüpgraded (Auto-Restart)"
+                        
+                        # ZET VLAG OP TRUE: We hebben onze eigen code veranderd!
+                        needs_restart = True
 
-                # B. WEB TAAK
+                # B. WEB TAAK (Geen herstart nodig, is html)
                 elif "WEB:" in task['title'].upper():
                     logger.info(f"🌐 Web Taak: {task['title']}")
                     res = await self.web_architect.build_website(f"{task['title']} {task['body']}")
@@ -111,9 +114,16 @@ class TermuxMasterOrchestrator:
         if last_action != "Monitoring...":
             logger.success(f"📡 {last_action}")
 
+        # DE HERSTART LOGICA
+        if needs_restart:
+            logger.warning("♻️ SYSTEEM UPDATE GEDETECTEERD! HERSTARTEN IN 3 SECONDEN...")
+            await asyncio.sleep(3)
+            logger.info("👋 Tot zo!")
+            sys.exit(0) # Dit stopt het script, keep_alive.sh start het weer op
+
     async def run_autonomous_loop(self):
         self.is_running = True
-        logger.info("🧠 All In AI - ZELF-LEREND SYSTEEM ONLINE")
+        logger.info("🧠 All In AI - ZELF-LEREND & AUTO-RESTART ONLINE")
         while self.is_running:
             try:
                 await self.run_improvement_cycle()
