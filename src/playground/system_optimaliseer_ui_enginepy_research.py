@@ -2,6 +2,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.theme import Theme
 from datetime import datetime
+from typing import Tuple, Literal
 
 # Aangepast kleurenpalet voor "Neon Cyberpunk" look
 custom_theme = Theme({
@@ -19,18 +20,24 @@ custom_theme = Theme({
 console = Console(theme=custom_theme)
 
 class UIEngine:
-    def header(self, title):
+    def header(self, title: str) -> None:
         """Prints a header with a centered title."""
-        console.print(f"\n[bold white]╔{'═'*48}╗[/]")  # Vereenvoudigd met f-strings
-        console.print(f"[bold white]║ {title.center(48)} ║[/]")
-        console.print(f"[bold white]╚{'═'*48}╝[/]\n")
+        try:
+            console.print(f"\n[bold white]╔{'═'*48}╗[/]")
+            console.print(f"[bold white]║ {title.center(48)} ║[/]")
+            console.print(f"[bold white]╚{'═'*48}╝[/]\n")
+        except Exception as e:
+            console.print(f"[bold red]❌ ERROR in header:[/]\n{e}")
 
-    def log_cycle(self, number):
+    def log_cycle(self, number: int) -> None:
         """Logs the cycle number with a timestamp."""
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        console.rule(f"[bold white]🔄 CYCLE #{number} | {timestamp}[/]", style="white")
+        try:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            console.rule(f"[bold white]🔄 CYCLE #{number} | {timestamp}[/]", style="white")
+        except Exception as e:
+            console.print(f"[bold red]❌ ERROR in log_cycle:[/]\n{e}")
 
-    def _get_task_style(self, task_type):
+    def _get_task_style(self, task_type: str) -> Tuple[str, str, str]:
         """Helper function to determine the style, icon, and border style for a task."""
         task_type = task_type.upper()
         if "WEB" in task_type:
@@ -46,26 +53,38 @@ class UIEngine:
         else:
             return "white", "📝", "white"
 
-    def log_task(self, type, title, status):
+    def log_task(self, type: str, title: str, status: str) -> None:
         """Logs a task with a colored panel."""
-        style, icon, border_style = self._get_task_style(type)
-        content = f"[{style}]{icon} {title}[/]\n[dim white]{status}[/]"
-        panel = Panel(
-            content,
-            title=f"[bold {border_style}]{type.upper()}[/]",
-            border_style=border_style,
-            expand=False,
-        )
-        console.print(panel)
+        try:
+            style, icon, border_style = self._get_task_style(type)
+            content = f"[{style}]{icon} {title}[/]\n[dim white]{status}[/]"
+            panel = Panel(
+                content,
+                title=f"[bold {border_style}]{type.upper()}[/]",
+                border_style=border_style,
+                expand=False,
+            )
+            console.print(panel)
+        except Exception as e:
+            console.print(f"[bold red]❌ ERROR in log_task:[/]\n{e}")
 
-    def log_success(self, message):
+    def log_success(self, message: str) -> None:
         """Logs a success message."""
-        console.print(f"[bold green]✔ SUCCESS:[/][green] {message}[/]")
+        try:
+            console.print(f"[bold green]✔ SUCCESS:[/][green] {message}[/]")
+        except Exception as e:
+            console.print(f"[bold red]❌ ERROR in log_success:[/]\n{e}")
 
-    def log_error(self, message):
+    def log_error(self, message: str) -> None:
         """Logs an error message."""
-        console.print(Panel(f"[bold red]❌ ERROR:[/]\n{message}", border_style="red"))
+        try:
+            console.print(Panel(f"[bold red]❌ ERROR:[/]\n{message}", border_style="red"))
+        except Exception as e:
+            console.print(f"[bold red]❌ ERROR in log_error:[/]\n{e}")
 
-    def log_info(self, message):
+    def log_info(self, message: str) -> None:
         """Logs an informational message."""
-        console.print(f"[dim cyan]ℹ {message}[/]")
+        try:
+            console.print(f"[dim cyan]ℹ {message}[/]")
+        except Exception as e:
+            console.print(f"[bold red]❌ ERROR in log_info:[/]\n{e}")
