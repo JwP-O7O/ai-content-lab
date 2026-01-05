@@ -2,167 +2,174 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Speelveld Implementatie</title>
+<title>Pixel Grid Game</title>
 <style>
 body {
     font-family: sans-serif;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     height: 100vh;
     margin: 0;
     background-color: #f0f0f0;
 }
 
 #game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 2px solid #333;
     background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
-    text-align: center;
+    border-radius: 10px;
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
 }
 
-#game-board {
+#pixel-grid {
     display: grid;
-    grid-template-columns: repeat(10, 40px);
-    grid-gap: 2px;
-    margin-top: 20px;
+    grid-template-columns: repeat(20, 20px);
+    grid-gap: 1px;
+    margin-bottom: 10px;
 }
 
-.cell {
-    width: 40px;
-    height: 40px;
+.pixel {
+    width: 20px;
+    height: 20px;
     background-color: #eee;
     border: 1px solid #ccc;
     cursor: pointer;
+}
+
+.pixel.active {
+    background-color: #007bff; /* Example active color */
+}
+
+#controls {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 20px;
-    user-select: none;
-}
-
-.cell.filled {
-    background-color: #4CAF50; /* Green */
-    color: white;
-}
-
-#game-controls {
-    margin-top: 20px;
+    gap: 10px;
+    margin-bottom: 10px;
 }
 
 button {
-    background-color: #008CBA;
-    color: white;
     padding: 10px 20px;
+    font-size: 1em;
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
     cursor: pointer;
-    font-size: 16px;
-    margin: 5px;
+    transition: background-color 0.2s ease;
 }
 
 button:hover {
-    background-color: #0077a0;
+    background-color: #0056b3;
 }
 
 #score {
-    margin-top: 10px;
-    font-weight: bold;
+    font-size: 1.2em;
+    margin-bottom: 10px;
 }
+
+#message {
+    font-size: 1.2em;
+    color: green;
+    margin-bottom: 10px;
+}
+
 </style>
 </head>
 <body>
+
     <div id="game-container">
-        <h1>Speelveld Implementatie</h1>
-        <div id="game-board">
-        </div>
-        <div id="game-controls">
-            <button id="start-button">Start Nieuw Spel</button>
+        <h1>Pixel Grid Game</h1>
+        <div id="score">Score: <span id="score-value">0</span></div>
+        <div id="message"></div>
+        <div id="pixel-grid"></div>
+        <div id="controls">
+            <button id="start-button">Start</button>
             <button id="reset-button">Reset</button>
         </div>
-        <div id="score">Score: <span id="score-value">0</span></div>
     </div>
 
-    <script>
-    const gameBoard = document.getElementById('game-board');
+
+<script>
+    const gridContainer = document.getElementById('pixel-grid');
     const startButton = document.getElementById('start-button');
     const resetButton = document.getElementById('reset-button');
-    const scoreValue = document.getElementById('score-value');
+    const scoreElement = document.getElementById('score-value');
+    const messageElement = document.getElementById('message');
 
-    let boardSize = 10;
-    let board = [];
+    const gridSize = 20;
+    let grid = [];
     let score = 0;
-    let gameRunning = false;
-    let intervalId;
+    let gameInterval;
+    let targetPixel;
 
-    function createBoard() {
-        for (let i = 0; i < boardSize * boardSize; i++) {
-            const cell = document.createElement('div');
-            cell.classList.add('cell');
-            cell.dataset.index = i;
-            gameBoard.appendChild(cell);
+    // Initialize grid
+    function initializeGrid() {
+        grid = [];
+        gridContainer.innerHTML = '';
+        for (let i = 0; i < gridSize * gridSize; i++) {
+            const pixel = document.createElement('div');
+            pixel.classList.add('pixel');
+            pixel.dataset.index = i;
+            gridContainer.appendChild(pixel);
+            grid.push(pixel);
         }
     }
 
+    function getRandomIndex() {
+        return Math.floor(Math.random() * gridSize * gridSize);
+    }
 
-    function initializeBoard() {
-        board = Array(boardSize * boardSize).fill(0);
-        score = 0;
-        scoreValue.textContent = score;
-        gameRunning = false;
-        clearInterval(intervalId);
-        gameBoard.innerHTML = '';
-        createBoard();
-        addClickHandlers();
+    function chooseTargetPixel() {
+        if (targetPixel) {
+            targetPixel.classList.remove('active');
+        }
+        const randomIndex = getRandomIndex();
+        targetPixel = grid[randomIndex];
+        targetPixel.classList.add('active');
     }
 
 
-    function addClickHandlers() {
-        const cells = document.querySelectorAll('.cell');
-        cells.forEach(cell => {
-            cell.addEventListener('click', () => {
-                if (!gameRunning) return;
-                const index = parseInt(cell.dataset.index);
-                if (board[index] === 0) {
-                    board[index] = 1;
-                    cell.classList.add('filled');
-                    score++;
-                    scoreValue.textContent = score;
-                } else {
-                    board[index] = 0;
-                    cell.classList.remove('filled');
-                    score--;
-                    scoreValue.textContent = score;
-                }
-            });
-        });
+    function updateScore() {
+        scoreElement.textContent = score;
+    }
+
+    function gameLoop() {
+        //Game logic here - nothing yet, as we only need to add an active pixel.
+        chooseTargetPixel();
     }
 
 
     function startGame() {
-        gameRunning = true;
         score = 0;
-        scoreValue.textContent = score;
-        // Optionally, reset the board here if needed.
-        const cells = document.querySelectorAll('.cell');
-        cells.forEach(cell => {
-            cell.classList.remove('filled');
-        });
+        updateScore();
+        messageElement.textContent = '';
+        initializeGrid();
+        chooseTargetPixel();
+        gameInterval = setInterval(gameLoop, 1000); // Calls gameLoop every 1 second
+        startButton.disabled = true;
     }
 
     function resetGame() {
-        initializeBoard();
-        startGame();
+        clearInterval(gameInterval);
+        startButton.disabled = false;
+        messageElement.textContent = 'Game reset.';
+        if (targetPixel) {
+            targetPixel.classList.remove('active');
+        }
+        score = 0;
+        updateScore();
     }
-
 
     startButton.addEventListener('click', startGame);
     resetButton.addEventListener('click', resetGame);
 
-    initializeBoard(); // Initial setup
+    initializeGrid(); // Initial grid setup on page load.
 
-    </script>
+</script>
 </body>
 </html>
 ```
