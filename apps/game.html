@@ -2,10 +2,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Game Loop Example</title>
+<title>Undo Game Example</title>
 <style>
 body {
-    font-family: sans-serif;
+    font-family: Arial, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -14,135 +14,197 @@ body {
     background-color: #f0f0f0;
 }
 
-#gameContainer {
+.container {
     background-color: #fff;
+    padding: 20px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
     text-align: center;
 }
 
-#gameCanvas {
-    border: 1px solid #ccc;
-    margin-bottom: 10px;
+#gameBoard {
+    display: grid;
+    grid-template-columns: repeat(3, 80px);
+    grid-gap: 5px;
+    margin-bottom: 15px;
 }
 
-#scoreDisplay {
-    font-size: 1.2em;
-    margin-bottom: 10px;
+.cell {
+    width: 80px;
+    height: 80px;
+    background-color: #eee;
+    border-radius: 4px;
+    font-size: 3em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
 }
 
-#startButton, #stopButton {
+.cell:hover {
+    background-color: #ddd;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 1em;
     background-color: #4CAF50;
     color: white;
-    padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 1em;
-    margin: 5px;
+    margin-top: 10px;
 }
 
-#stopButton {
-    background-color: #f44336;
+button:hover {
+    background-color: #3e8e41;
 }
 
-#startButton:hover, #stopButton:hover {
-    opacity: 0.8;
+#status {
+    margin-top: 10px;
+    font-weight: bold;
 }
 </style>
 </head>
 <body>
 
-<div id="gameContainer">
-    <h1>Simple Game Loop</h1>
-    <canvas id="gameCanvas" width="400" height="300"></canvas>
-    <div id="scoreDisplay">Score: 0</div>
-    <button id="startButton">Start</button>
-    <button id="stopButton">Stop</button>
+<div class="container">
+    <h1>Tic-Tac-Toe</h1>
+    <div id="gameBoard">
+        <div class="cell" data-index="0"></div>
+        <div class="cell" data-index="1"></div>
+        <div class="cell" data-index="2"></div>
+        <div class="cell" data-index="3"></div>
+        <div class="cell" data-index="4"></div>
+        <div class="cell" data-index="5"></div>
+        <div class="cell" data-index="6"></div>
+        <div class="cell" data-index="7"></div>
+        <div class="cell" data-index="8"></div>
+    </div>
+    <div id="status"></div>
+    <button id="undoButton" disabled>Undo</button>
+    <button id="resetButton">Reset</button>
 </div>
 
-
 <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const scoreDisplay = document.getElementById('scoreDisplay');
-    const startButton = document.getElementById('startButton');
-    const stopButton = document.getElementById('stopButton');
+const cells = document.querySelectorAll('.cell');
+const statusDisplay = document.getElementById('status');
+const undoButton = document.getElementById('undoButton');
+const resetButton = document.getElementById('resetButton');
 
-    let score = 0;
-    let gameRunning = false;
-    let animationFrameId;
+let currentPlayer = 'X';
+let gameBoard = ['', '', '', '', '', '', '', '', ''];
+let gameActive = true;
+let movesHistory = [];
 
-    // Game variables
-    let x = 50;
-    let y = 50;
-    let dx = 2; // horizontal speed
-    let dy = 2; // vertical speed
-    const circleRadius = 20;
+const winningConditions = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6]
+];
 
-    function drawCircle() {
-        ctx.beginPath();
-        ctx.arc(x, y, circleRadius, 0, Math.PI * 2);
-        ctx.fillStyle = 'blue';
-        ctx.fill();
+function handleCellClick(clickedCellEvent) {
+    const clickedCell = clickedCellEvent.target;
+    const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
+
+    if (gameBoard[clickedCellIndex] !== '' || !gameActive) {
+        return;
     }
 
+    placeMark(clickedCell, clickedCellIndex);
+    checkGameResult();
+    switchTurn();
+    updateStatusDisplay();
 
-    function update() {
-        // Clear the canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    movesHistory.push({ board: [...gameBoard], currentPlayer: currentPlayer });
+    undoButton.disabled = false;
+}
 
-        // Update position
-        x += dx;
-        y += dy;
+function placeMark(cell, index) {
+    gameBoard[index] = currentPlayer;
+    cell.textContent = currentPlayer;
+}
 
-        // Bounce off the walls
-        if (x + circleRadius > canvas.width || x - circleRadius < 0) {
-            dx = -dx;
-            score++; // Increase score on each bounce
-            updateScoreDisplay();
+function switchTurn() {
+    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+}
+
+function checkGameResult() {
+    let roundWon = false;
+    for (let i = 0; i <= 7; i++) {
+        const winCondition = winningConditions[i];
+        const a = gameBoard[winCondition[0]];
+        const b = gameBoard[winCondition[1]];
+        const c = gameBoard[winCondition[2]];
+        if (a === '' || b === '' || c === '') {
+            continue;
         }
-        if (y + circleRadius > canvas.height || y - circleRadius < 0) {
-            dy = -dy;
-            score++;
-            updateScoreDisplay();
-        }
-
-        // Draw the circle
-        drawCircle();
-
-        // Request the next frame if the game is running
-        if (gameRunning) {
-            animationFrameId = requestAnimationFrame(update);
-        }
-    }
-
-
-    function updateScoreDisplay() {
-        scoreDisplay.textContent = 'Score: ' + score;
-    }
-
-
-    function startGame() {
-        if (!gameRunning) {
-            gameRunning = true;
-            score = 0; // Reset score when starting
-            updateScoreDisplay();
-            update(); // Start the game loop
+        if (a === b && b === c) {
+            roundWon = true;
+            break;
         }
     }
 
-    function stopGame() {
-        gameRunning = false;
-        cancelAnimationFrame(animationFrameId); // Stop the animation frame
+    if (roundWon) {
+        statusDisplay.textContent = `Player ${currentPlayer} has won!`;
+        gameActive = false;
+        return;
     }
 
+    let roundDraw = !gameBoard.includes('');
+    if (roundDraw) {
+        statusDisplay.textContent = 'Game ended in a draw!';
+        gameActive = false;
+        return;
+    }
+}
 
-    startButton.addEventListener('click', startGame);
-    stopButton.addEventListener('click', stopGame);
+
+function updateStatusDisplay() {
+    statusDisplay.textContent = `Player ${currentPlayer}'s turn`;
+}
+
+function handleUndoClick() {
+    if (movesHistory.length === 0) return;
+
+    const lastMove = movesHistory.pop();
+    gameBoard = [...lastMove.board];
+    currentPlayer = lastMove.currentPlayer;
+    gameActive = true;
+    undoButton.disabled = movesHistory.length === 0;
+
+    cells.forEach((cell, index) => {
+        cell.textContent = gameBoard[index];
+    });
+
+    updateStatusDisplay();
+}
+
+function handleResetGame() {
+    gameBoard = ['', '', '', '', '', '', '', '', ''];
+    currentPlayer = 'X';
+    gameActive = true;
+    movesHistory = [];
+    statusDisplay.textContent = "Player X's turn";
+    undoButton.disabled = true;
+
+    cells.forEach(cell => {
+        cell.textContent = '';
+    });
+}
+
+
+cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+undoButton.addEventListener('click', handleUndoClick);
+resetButton.addEventListener('click', handleResetGame);
+
+updateStatusDisplay();
 </script>
-
 </body>
 </html>
 ```
