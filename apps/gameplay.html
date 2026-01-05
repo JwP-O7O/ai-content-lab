@@ -2,161 +2,197 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Game</title>
+<title>Pixel Game</title>
 <style>
 body {
     font-family: sans-serif;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     height: 100vh;
     margin: 0;
     background-color: #f0f0f0;
 }
 
-#game-container {
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    text-align: center;
+#pixel-grid-container {
+    border: 2px solid #333;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-#canvas {
+.pixel-row {
+    display: flex;
+}
+
+.pixel {
+    width: 20px;
+    height: 20px;
     border: 1px solid #ccc;
-    margin-bottom: 10px;
+    box-sizing: border-box;
+    cursor: pointer;
 }
 
-#score {
-    font-size: 1.2em;
-    margin-bottom: 10px;
+.pixel.active {
+    background-color: #ff0000; /* Red color for active pixels */
+}
+
+#controls {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
 }
 
 button {
+    padding: 10px 20px;
+    font-size: 16px;
     background-color: #4CAF50;
     color: white;
-    padding: 10px 20px;
     border: none;
-    border-radius: 4px;
     cursor: pointer;
-    font-size: 1em;
+    border-radius: 5px;
 }
 
 button:hover {
     background-color: #3e8e41;
 }
+
+#score {
+    margin-top: 20px;
+    font-size: 1.2em;
+}
 </style>
 </head>
 <body>
 
-<div id="game-container">
-    <h1>Simple Game</h1>
-    <canvas id="canvas" width="400" height="300"></canvas>
-    <div id="score">Score: 0</div>
-    <button id="startButton">Start Game</button>
+<h1>Pixel Game</h1>
+
+<div id="pixel-grid-container">
+    </div>
+
+<div id="controls">
+    <button id="start-button">Start</button>
+    <button id="reset-button">Reset</button>
 </div>
 
+<div id="score">Score: <span id="score-value">0</span></div>
+
 <script>
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const scoreDisplay = document.getElementById('score');
-const startButton = document.getElementById('startButton');
+const gridContainer = document.getElementById('pixel-grid-container');
+const startButton = document.getElementById('start-button');
+const resetButton = document.getElementById('reset-button');
+const scoreValue = document.getElementById('score-value');
 
+const gridSize = 20; // Size of the grid (gridSize x gridSize)
+let pixelGrid = [];
+let gameInterval;
 let score = 0;
-let gameRunning = false;
-let playerX = canvas.width / 2;
-let playerY = canvas.height - 30;
-let playerWidth = 20;
-let playerHeight = 20;
-let enemyX = Math.random() * (canvas.width - 20);
-let enemyY = 0;
-let enemyWidth = 20;
-let enemyHeight = 20;
-let enemySpeed = 2;
+let isGameRunning = false;
 
-
-function drawPlayer() {
-    ctx.fillStyle = 'blue';
-    ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
+// Function to generate a random color
+function getRandomColor() {
+  const letters = '0123456789ABCDEF';
+  let color = '#';
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
 }
 
-function drawEnemy() {
-    ctx.fillStyle = 'red';
-    ctx.fillRect(enemyX, enemyY, enemyWidth, enemyHeight);
+// Function to create a pixel element
+function createPixel(row, col) {
+  const pixel = document.createElement('div');
+  pixel.classList.add('pixel');
+  pixel.dataset.row = row;
+  pixel.dataset.col = col;
+  pixel.addEventListener('click', () => pixelClick(row, col));
+  return pixel;
 }
 
-function updateScore() {
-    scoreDisplay.textContent = 'Score: ' + score;
-}
-
-function resetGame() {
-    score = 0;
-    updateScore();
-    playerX = canvas.width / 2;
-    enemyX = Math.random() * (canvas.width - 20);
-    enemyY = 0;
-    enemySpeed = 2;
-}
-
-function gameOver() {
-    gameRunning = false;
-    alert('Game Over! Your score: ' + score);
-    resetGame();
-    startButton.textContent = "Start Game";
-}
-
-
-function checkCollision() {
-    if (playerX < enemyX + enemyWidth &&
-        playerX + playerWidth > enemyX &&
-        playerY < enemyY + enemyHeight &&
-        playerY + playerHeight > enemyY) {
-        gameOver();
+// Function to initialize the grid
+function initializeGrid() {
+  for (let row = 0; row < gridSize; row++) {
+    const rowDiv = document.createElement('div');
+    rowDiv.classList.add('pixel-row');
+    pixelGrid[row] = [];
+    for (let col = 0; col < gridSize; col++) {
+      const pixel = createPixel(row, col);
+      pixelGrid[row][col] = pixel;
+      rowDiv.appendChild(pixel);
     }
+    gridContainer.appendChild(rowDiv);
+  }
 }
 
-function gameLoop() {
-    if (!gameRunning) return;
+// Function to randomly activate pixels
+function activateRandomPixels() {
+  if (!isGameRunning) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < 3; i++) { // Activate 3 pixels at a time
+    const row = Math.floor(Math.random() * gridSize);
+    const col = Math.floor(Math.random() * gridSize);
 
-    //Enemy movement
-    enemyY += enemySpeed;
-    if (enemyY > canvas.height) {
-        enemyY = 0;
-        enemyX = Math.random() * (canvas.width - 20);
+    // Ensure the pixel isn't already active
+    if (!pixelGrid[row][col].classList.contains('active')) {
+      pixelGrid[row][col].classList.add('active');
+      pixelGrid[row][col].style.backgroundColor = getRandomColor();
+    }
+  }
+}
+
+
+// Function to handle pixel clicks
+function pixelClick(row, col) {
+    if (!isGameRunning) return;
+
+    const pixel = pixelGrid[row][col];
+    if (pixel.classList.contains('active')) {
+        pixel.classList.remove('active');
+        pixel.style.backgroundColor = ''; // Reset background color
         score++;
-        updateScore();
-        enemySpeed += 0.2; // Increase speed
+        scoreValue.textContent = score;
     }
-
-    drawPlayer();
-    drawEnemy();
-    checkCollision();
-
-    requestAnimationFrame(gameLoop);
 }
 
-document.addEventListener('keydown', (e) => {
-    if (!gameRunning) return;
 
-    if (e.key === 'ArrowLeft' && playerX > 0) {
-        playerX -= 10;
-    } else if (e.key === 'ArrowRight' && playerX < canvas.width - playerWidth) {
-        playerX += 10;
+// Function to start the game loop
+function startGame() {
+    if (isGameRunning) return;
+    isGameRunning = true;
+    score = 0;
+    scoreValue.textContent = score;
+
+    for (let row = 0; row < gridSize; row++) {
+      for (let col = 0; col < gridSize; col++) {
+          pixelGrid[row][col].classList.remove('active');
+          pixelGrid[row][col].style.backgroundColor = '';
+      }
     }
-});
 
 
-startButton.addEventListener('click', () => {
-    if (!gameRunning) {
-        gameRunning = true;
-        startButton.textContent = "Playing...";
-        resetGame();
-        gameLoop();
+    gameInterval = setInterval(activateRandomPixels, 1000); // Activate pixels every 1 second
+}
+
+// Function to reset the game
+function resetGame() {
+    clearInterval(gameInterval);
+    isGameRunning = false;
+    score = 0;
+    scoreValue.textContent = score;
+
+    for (let row = 0; row < gridSize; row++) {
+        for (let col = 0; col < gridSize; col++) {
+            pixelGrid[row][col].classList.remove('active');
+            pixelGrid[row][col].style.backgroundColor = '';
+        }
     }
-});
+}
 
+// Initialize the game
+initializeGrid();
+
+// Event listeners
+startButton.addEventListener('click', startGame);
+resetButton.addEventListener('click', resetGame);
 </script>
 </body>
 </html>
