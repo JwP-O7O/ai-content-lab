@@ -6,12 +6,12 @@
 <style>
 body {
     font-family: sans-serif;
-    background-color: #f0f0f0;
-    margin: 0;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
 }
 
 #game-container {
@@ -32,7 +32,7 @@ body {
     margin-bottom: 10px;
 }
 
-button {
+#start-button, #restart-button {
     background-color: #4CAF50;
     color: white;
     padding: 10px 20px;
@@ -42,17 +42,18 @@ button {
     font-size: 1em;
 }
 
-button:hover {
+#start-button:hover, #restart-button:hover {
     background-color: #3e8e41;
 }
 </style>
 </head>
 <body>
+
 <div id="game-container">
-    <h1>Simple Game</h1>
     <canvas id="game-canvas" width="400" height="300"></canvas>
     <div id="score-display">Score: 0</div>
     <button id="start-button">Start Game</button>
+    <button id="restart-button" style="display:none;">Restart Game</button>
 </div>
 
 <script>
@@ -60,146 +61,102 @@ const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 const scoreDisplay = document.getElementById('score-display');
 const startButton = document.getElementById('start-button');
+const restartButton = document.getElementById('restart-button');
 
 let score = 0;
 let gameRunning = false;
-let playerX = canvas.width / 2;
-let playerY = canvas.height - 20;
-let playerWidth = 20;
-let playerHeight = 20;
-let obstacles = [];
-let obstacleSpeed = 2;
-let lastObstacleTime = 0;
-const obstacleInterval = 1500; // milliseconds
+let circleX, circleY, circleRadius;
+let targetX, targetY, targetRadius;
+
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 function resetGame() {
     score = 0;
     scoreDisplay.textContent = 'Score: 0';
-    playerX = canvas.width / 2;
-    obstacles = [];
-    obstacleSpeed = 2;
+    circleX = canvas.width / 2;
+    circleY = canvas.height / 2;
+    circleRadius = 15;
+    generateTarget();
 }
 
-function drawPlayer() {
+
+function generateTarget() {
+    targetRadius = 10;
+    targetX = getRandomInt(targetRadius, canvas.width - targetRadius);
+    targetY = getRandomInt(targetRadius, canvas.height - targetRadius);
+}
+
+
+function drawCircle() {
+    ctx.beginPath();
+    ctx.arc(circleX, circleY, circleRadius, 0, 2 * Math.PI);
     ctx.fillStyle = 'blue';
-    ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
+    ctx.fill();
+    ctx.closePath();
 }
 
-
-function drawObstacle(obstacle) {
+function drawTarget() {
+    ctx.beginPath();
+    ctx.arc(targetX, targetY, targetRadius, 0, 2 * Math.PI);
     ctx.fillStyle = 'red';
-    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+    ctx.fill();
+    ctx.closePath();
 }
 
-function updateObstacles() {
-    for (let i = 0; i < obstacles.length; i++) {
-        obstacles[i].y += obstacleSpeed;
-        if (obstacles[i].y > canvas.height) {
-            obstacles.splice(i, 1);
-            i--; // Adjust index after removing an element
-        }
+function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function updateGame() {
+    if (!gameRunning) return;
+
+    clearCanvas();
+    drawCircle();
+    drawTarget();
+
+    const dx = circleX - targetX;
+    const dy = circleY - targetY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < circleRadius + targetRadius) {
+        score++;
+        scoreDisplay.textContent = 'Score: ' + score;
+        generateTarget();
     }
-}
-
-function generateObstacle() {
-    const obstacleWidth = 30;
-    const obstacleHeight = 15;
-    const x = Math.random() * (canvas.width - obstacleWidth);
-    obstacles.push({
-        x: x,
-        y: -obstacleHeight, // Start above the canvas
-        width: obstacleWidth,
-        height: obstacleHeight
-    });
-}
-
-
-function checkCollision() {
-    for (let i = 0; i < obstacles.length; i++) {
-        const obstacle = obstacles[i];
-        if (
-            playerX < obstacle.x + obstacle.width &&
-            playerX + playerWidth > obstacle.x &&
-            playerY < obstacle.y + obstacle.height &&
-            playerY + playerHeight > obstacle.y
-        ) {
-            gameOver();
-        }
-    }
-}
-
-
-
-function gameOver() {
-    gameRunning = false;
-    startButton.textContent = 'Start Game';
-    alert(`Game Over! Your score: ${score}`);
-    resetGame();
-    // No need to clear canvas here; it'll be cleared on the next game loop if started
-}
-
-
-function updateScore() {
-    score++;
-    scoreDisplay.textContent = `Score: ${score}`;
-    if (score % 10 === 0) { // Increase speed every 10 points
-        obstacleSpeed += 0.5;
-    }
-
 }
 
 function gameLoop() {
-    if (!gameRunning) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    drawPlayer();
-    updateObstacles();
-    for (const obstacle of obstacles) {
-        drawObstacle(obstacle);
-    }
-    checkCollision();
-
-    const now = Date.now();
-    if (now - lastObstacleTime > obstacleInterval) {
-        generateObstacle();
-        lastObstacleTime = now;
-    }
-
-    if (gameRunning) {
-        updateScore();
-    }
-
+    updateGame();
     requestAnimationFrame(gameLoop);
 }
 
-document.addEventListener('keydown', (e) => {
+function startGame() {
+    gameRunning = true;
+    startButton.style.display = 'none';
+    restartButton.style.display = 'inline-block';
+    resetGame();
+    gameLoop();
+}
+
+function restartGame() {
+    gameRunning = true;
+    resetGame();
+}
+
+
+
+canvas.addEventListener('mousemove', (e) => {
     if (!gameRunning) return;
-    if (e.key === 'ArrowLeft') {
-        playerX -= 10;
-        if (playerX < 0) {
-            playerX = 0;
-        }
-    } else if (e.key === 'ArrowRight') {
-        playerX += 10;
-        if (playerX > canvas.width - playerWidth) {
-            playerX = canvas.width - playerWidth;
-        }
-    }
+    const rect = canvas.getBoundingClientRect();
+    circleX = e.clientX - rect.left;
+    circleY = e.clientY - rect.top;
 });
 
+startButton.addEventListener('click', startGame);
+restartButton.addEventListener('click', restartGame);
 
-startButton.addEventListener('click', () => {
-    if (gameRunning) {
-        gameRunning = false;
-        startButton.textContent = 'Start Game';
-    } else {
-        gameRunning = true;
-        startButton.textContent = 'Stop Game';
-        resetGame(); // Reset before starting a new game
-        requestAnimationFrame(gameLoop);
-    }
-});
 </script>
 </body>
 </html>
