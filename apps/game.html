@@ -9,15 +9,15 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    margin: 0;
+    min-height: 100vh;
     background-color: #f0f0f0;
+    margin: 0;
 }
 
-#gameContainer {
-    background-color: #fff;
+#game-container {
+    background-color: white;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
 }
@@ -27,9 +27,9 @@ body {
     margin-bottom: 10px;
 }
 
-#score {
-    font-size: 1.2em;
-    margin-bottom: 10px;
+#status {
+    margin-top: 10px;
+    font-size: 1.1em;
 }
 
 button {
@@ -45,86 +45,75 @@ button {
 button:hover {
     background-color: #3e8e41;
 }
-
-.hidden {
-    display: none;
-}
 </style>
 </head>
 <body>
 
-<div id="gameContainer">
+<div id="game-container">
     <h1>Game Loop Example</h1>
     <canvas id="canvas" width="400" height="300"></canvas>
-    <div id="score">Score: 0</div>
-    <button id="startButton">Start Game</button>
-    <button id="stopButton" class="hidden">Stop Game</button>
+    <div id="status">Press Start to Begin</div>
+    <button id="startButton">Start</button>
 </div>
 
 <script>
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const scoreElement = document.getElementById('score');
-    const startButton = document.getElementById('startButton');
-    const stopButton = document.getElementById('stopButton');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const statusElement = document.getElementById('status');
+const startButton = document.getElementById('startButton');
 
-    let score = 0;
-    let gameRunning = false;
-    let animationFrameId;
+let gameRunning = false;
+let startTime;
+let lastTime = 0;
+let x = 50;
+let y = 50;
+let velocityX = 2;
+let velocityY = 2;
 
-    // Game variables - example: a simple moving rectangle
-    let rectX = 50;
-    let rectY = 50;
-    let rectSpeed = 2;
+function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
 
+function draw() {
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(x, y, 20, 20);
+}
 
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+function update(deltaTime) {
+    x += velocityX * deltaTime / 16;
+    y += velocityY * deltaTime / 16;
 
-        // Draw the moving rectangle
-        ctx.fillStyle = 'blue';
-        ctx.fillRect(rectX, rectY, 30, 30);
-
-        // Update rectangle position
-        rectX += rectSpeed;
-        if (rectX > canvas.width || rectX < 0) {
-            rectSpeed = -rectSpeed;
-        }
-
-
-        // Optional: Example interaction - Increase score on click
-        canvas.addEventListener('click', (event) => {
-                score++;
-                scoreElement.textContent = `Score: ${score}`;
-        });
+    if (x + 20 > canvas.width || x < 0) {
+        velocityX = -velocityX;
     }
-
-    function gameLoop() {
-        if (!gameRunning) return;
-
-        draw();
-        animationFrameId = requestAnimationFrame(gameLoop); // Request the next frame
+    if (y + 20 > canvas.height || y < 0) {
+        velocityY = -velocityY;
     }
+}
+
+function gameLoop(currentTime) {
+    if (!gameRunning) return;
+
+    const deltaTime = currentTime - lastTime;
+    lastTime = currentTime;
+
+    clearCanvas();
+    update(deltaTime);
+    draw();
+
+    requestAnimationFrame(gameLoop);
+}
 
 
-    function startGame() {
-        score = 0;
-        scoreElement.textContent = `Score: ${score}`;
-        gameRunning = true;
-        startButton.classList.add('hidden');
-        stopButton.classList.remove('hidden');
-        gameLoop(); // Start the loop
-    }
+function startGame() {
+    gameRunning = true;
+    statusElement.textContent = "Game Running...";
+    startTime = performance.now();
+    lastTime = 0;
+    requestAnimationFrame(gameLoop);
+}
 
-    function stopGame() {
-        gameRunning = false;
-        cancelAnimationFrame(animationFrameId);
-        startButton.classList.remove('hidden');
-        stopButton.classList.add('hidden');
-    }
-
-    startButton.addEventListener('click', startGame);
-    stopButton.addEventListener('click', stopGame);
+startButton.addEventListener('click', startGame);
 
 </script>
 </body>
