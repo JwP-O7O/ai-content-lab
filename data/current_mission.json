@@ -1,8 +1,0 @@
-{
-    "title": "Pixel Puzzle Pop",
-    "filename": "pixel_puzzle_pop.html",
-    "description": "Een verslavende puzzelgame waarbij je groepen van dezelfde kleur pixels wegklikt. De game eindigt wanneer het speelveld vol is. Je scoort punten door grote groepen pixels tegelijk te verwijderen. Er is een scorebord en een 'undo' knop voor een beperkt aantal keren.",
-    "style": "Minimalistisch. Een grid van gekleurde pixels, met duidelijke kleurcontrasten. De UI is eenvoudig en strak. De focus ligt op de gameplay, dus geen overbodige effecten.",
-    "status": "active",
-    "progress": 0
-}
