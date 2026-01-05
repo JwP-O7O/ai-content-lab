@@ -2,155 +2,194 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Pixel Game</title>
+<title>Memory Game</title>
 <style>
 body {
-    font-family: sans-serif;
+    font-family: Arial, sans-serif;
     display: flex;
-    flex-direction: column;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     height: 100vh;
     margin: 0;
     background-color: #f0f0f0;
 }
 
-#game-container {
-    border: 2px solid #333;
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     background-color: #fff;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
 }
 
-#pixel-canvas {
+#game-board {
     display: grid;
-    /* Adjust grid size dynamically in JavaScript */
+    grid-template-columns: repeat(4, 80px); /* Adjust as needed */
+    grid-gap: 10px;
+    margin-bottom: 20px;
 }
 
-.pixel {
-    width: 20px; /* Initial pixel size */
-    height: 20px;
-    border: 1px solid #ddd;
-    box-sizing: border-box;
+.card {
+    width: 80px;
+    height: 80px;
+    background-color: #ccc;
+    border-radius: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2em;
     cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
-.pixel.filled {
-    background-color: #007bff; /* Default filled color */
+.card.flipped {
+    background-color: #add8e6; /* Light blue */
+    color: black;
 }
+
+.card.matched {
+    background-color: #90ee90; /* Light green */
+    pointer-events: none; /* Disable clicks on matched cards */
+}
+
 
 button {
-    margin: 10px;
     padding: 10px 20px;
-    font-size: 16px;
-    background-color: #28a745;
+    font-size: 1em;
+    background-color: #4CAF50;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color 0.3s ease;
 }
 
 button:hover {
-    background-color: #218838;
+    background-color: #3e8e41;
 }
 
-#controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 20px;
+#game-over-message {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+    text-align: center;
 }
 
-#color-picker {
-    margin-right: 10px;
+#score {
+    font-size: 1.2em;
+    margin-bottom: 10px;
 }
 </style>
 </head>
 <body>
-    <h1>Pixel Game</h1>
-
-    <div id="controls">
-        <input type="color" id="color-picker" value="#007bff">
-        <button id="clear-button">Clear</button>
-        <button id="random-button">Random</button>
+    <div class="container">
+        <h1>Memory Game</h1>
+        <div id="score">Score: 0</div>
+        <div id="game-board"></div>
+        <div id="game-over-message" style="display:none;">Game Over!</div>
+        <button id="restart-button" onclick="restartGame()">Restart</button>
     </div>
 
-    <div id="game-container">
-        <div id="pixel-canvas">
-            <!-- Pixels will be dynamically added here -->
-        </div>
-    </div>
+    <script>
+        const cardValues = [];
+        const cardElements = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let score = 0;
 
+        const gameBoard = document.getElementById('game-board');
+        const gameOverMessage = document.getElementById('game-over-message');
+        const scoreDisplay = document.getElementById('score');
 
-<script>
-    const pixelCanvas = document.getElementById('pixel-canvas');
-    const clearButton = document.getElementById('clear-button');
-    const randomButton = document.getElementById('random-button');
-    const colorPicker = document.getElementById('color-picker');
-    let selectedColor = colorPicker.value;
+        function initializeGame() {
+            // Generate card values
+            const values = [];
+            for (let i = 1; i <= 8; i++) {
+                values.push(i, i);
+            }
+            // Shuffle the values
+            values.sort(() => Math.random() - 0.5);
 
-    const gridSize = 32; // Default grid size
-    let pixels = []; // Array to hold pixel elements
-
-    // Function to generate a random hex color
-    function getRandomColor() {
-        const letters = '0123456789ABCDEF';
-        let color = '#';
-        for (let i = 0; i < 6; i++) {
-            color += letters[Math.floor(Math.random() * 16)];
+            // Create cards
+            values.forEach((value, index) => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.value = value;
+                card.dataset.index = index; // Store the original index for easy lookup
+                card.addEventListener('click', flipCard);
+                gameBoard.appendChild(card);
+                cardValues.push(value);
+                cardElements.push(card);
+            });
         }
-        return color;
-    }
 
 
-    function createPixelElement() {
-        const pixel = document.createElement('div');
-        pixel.classList.add('pixel');
-        pixel.addEventListener('click', () => {
-            pixel.style.backgroundColor = selectedColor;
-            pixel.classList.add('filled');
-        });
-        return pixel;
-    }
+        function flipCard() {
+            if (flippedCards.length < 2 && !this.classList.contains('flipped') && !this.classList.contains('matched')) {
+                this.classList.add('flipped');
+                const value = this.dataset.value;
+                flippedCards.push({ card: this, value: value });
 
 
-    function initializeGrid() {
-        pixelCanvas.innerHTML = ''; // Clear existing pixels
-        pixelCanvas.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
-        pixelCanvas.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
-
-        pixels = []; // Reset the pixels array
-        for (let i = 0; i < gridSize * gridSize; i++) {
-            const pixel = createPixelElement();
-            pixelCanvas.appendChild(pixel);
-            pixels.push(pixel); // Add pixel to the array
+                if (flippedCards.length === 2) {
+                    setTimeout(checkMatch, 1000); // Check for match after a short delay
+                }
+            }
         }
-    }
 
 
-    function clearCanvas() {
-        pixels.forEach(pixel => {
-            pixel.style.backgroundColor = '';
-            pixel.classList.remove('filled');
-        });
-    }
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            if (card1.value === card2.value) {
+                // Match!
+                card1.card.classList.add('matched');
+                card2.card.classList.add('matched');
+                matchedPairs++;
+                score += 10;
+                updateScore();
+            } else {
+                // No match
+                card1.card.classList.remove('flipped');
+                card2.card.classList.remove('flipped');
+                score -= 2;
+                updateScore();
+            }
+            flippedCards = []; // Reset flipped cards
+            if (matchedPairs === 8) {
+                gameOver();
+            }
+        }
 
-    function fillRandomColors() {
-        pixels.forEach(pixel => {
-            pixel.style.backgroundColor = getRandomColor();
-            pixel.classList.add('filled');
-        });
-    }
+        function updateScore() {
+            scoreDisplay.textContent = `Score: ${score}`;
+        }
 
-    colorPicker.addEventListener('change', (event) => {
-        selectedColor = event.target.value;
-    });
+        function gameOver() {
+            gameOverMessage.style.display = 'block';
+            // Disable card clicks (optional, since matched cards are already disabled)
+            cardElements.forEach(card => card.removeEventListener('click', flipCard));
+        }
 
-    clearButton.addEventListener('click', clearCanvas);
-    randomButton.addEventListener('click', fillRandomColors);
+        function restartGame() {
+            // Clear the board
+            gameBoard.innerHTML = '';
+            cardValues.length = 0;
+            cardElements.length = 0;
+            flippedCards = [];
+            matchedPairs = 0;
+            score = 0;
+            updateScore();
+            gameOverMessage.style.display = 'none';
 
-    initializeGrid(); // Initialize the grid when the page loads
-</script>
+            // Re-initialize the game
+            initializeGame();
+        }
+
+
+        // Initialize the game when the page loads
+        initializeGame();
+    </script>
 </body>
 </html>
 ```
