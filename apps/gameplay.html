@@ -1,0 +1,168 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Simple Game</title>
+<style>
+body {
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+
+#game-container {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+#game-canvas {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+}
+
+#score {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+#controls {
+    display: flex;
+    justify-content: center;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 0 5px;
+}
+
+button:hover {
+    background-color: #3e8e41;
+}
+</style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>Simple Game</h1>
+    <canvas id="game-canvas" width="400" height="300"></canvas>
+    <div id="score">Score: 0</div>
+    <div id="controls">
+        <button id="start-button">Start</button>
+        <button id="reset-button">Reset</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const scoreElement = document.getElementById('score');
+    const startButton = document.getElementById('start-button');
+    const resetButton = document.getElementById('reset-button');
+
+    let score = 0;
+    let gameRunning = false;
+    let circleX, circleY, circleRadius;
+    let targetX, targetY, targetRadius;
+    let animationFrameId;
+
+    function resetGame() {
+        score = 0;
+        scoreElement.textContent = 'Score: 0';
+        gameRunning = false;
+        startButton.textContent = "Start";
+        cancelAnimationFrame(animationFrameId);
+        initializeGame(); // Re-initialize game elements on reset
+    }
+
+    function initializeGame() {
+        circleRadius = 15;
+        circleX = canvas.width / 2;
+        circleY = canvas.height / 2;
+
+        targetRadius = 20;
+        targetX = Math.random() * (canvas.width - 2 * targetRadius) + targetRadius;
+        targetY = Math.random() * (canvas.height - 2 * targetRadius) + targetRadius;
+    }
+
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw the moving circle (player)
+        ctx.beginPath();
+        ctx.arc(circleX, circleY, circleRadius, 0, Math.PI * 2);
+        ctx.fillStyle = 'blue';
+        ctx.fill();
+        ctx.closePath();
+
+        // Draw the target circle
+        ctx.beginPath();
+        ctx.arc(targetX, targetY, targetRadius, 0, Math.PI * 2);
+        ctx.fillStyle = 'red';
+        ctx.fill();
+        ctx.closePath();
+    }
+
+
+    function update() {
+        if (!gameRunning) return;
+
+        // Simple movement - make it follow the mouse (or touch)
+        canvas.addEventListener('mousemove', (e) => {
+          const rect = canvas.getBoundingClientRect();
+          circleX = e.clientX - rect.left;
+          circleY = e.clientY - rect.top;
+        });
+
+      // Simple collision detection
+        const dx = circleX - targetX;
+        const dy = circleY - targetY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < circleRadius + targetRadius) {
+            score++;
+            scoreElement.textContent = `Score: ${score}`;
+
+            // Reset target position
+            targetX = Math.random() * (canvas.width - 2 * targetRadius) + targetRadius;
+            targetY = Math.random() * (canvas.height - 2 * targetRadius) + targetRadius;
+        }
+
+
+        draw();
+        animationFrameId = requestAnimationFrame(update);
+    }
+
+
+
+    startButton.addEventListener('click', () => {
+        gameRunning = !gameRunning;
+        startButton.textContent = gameRunning ? "Pause" : "Start";
+        if (gameRunning) {
+            update();
+        } else {
+            cancelAnimationFrame(animationFrameId);
+        }
+    });
+
+    resetButton.addEventListener('click', resetGame);
+
+    initializeGame();
+    draw();  // Initial draw
+
+</script>
+</body>
+</html>
+```
