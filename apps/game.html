@@ -2,153 +2,102 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Game Loop Example</title>
+<title>Pixel Game</title>
 <style>
 body {
     font-family: sans-serif;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     min-height: 100vh;
-    background-color: #f0f0f0;
     margin: 0;
+    background-color: #f0f0f0;
 }
 
-#game-container {
+#gameContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
-    text-align: center;
 }
 
-#game-canvas {
+#pixelCanvas {
     border: 1px solid #ccc;
-    margin-bottom: 10px;
 }
 
-#score {
-    font-size: 1.2em;
-    margin-bottom: 10px;
+.pixel {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    border: 1px solid #eee;
+    box-sizing: border-box;
 }
 
-#start-button, #reset-button {
+.filled {
+    background-color: #3498db; /* Blue */
+}
+
+button {
     background-color: #4CAF50;
+    border: none;
     color: white;
     padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 10px;
     cursor: pointer;
-    font-size: 1em;
-    margin: 5px;
-}
-
-#start-button:hover, #reset-button:hover {
-    background-color: #3e8e41;
-}
-
-#debug-info {
-    font-size: 0.8em;
-    color: #888;
-    margin-top: 10px;
+    border-radius: 4px;
 }
 </style>
 </head>
 <body>
 
-<div id="game-container">
-    <h1>Simple Game Loop</h1>
-    <canvas id="game-canvas" width="400" height="300"></canvas>
-    <div id="score">Score: 0</div>
-    <button id="start-button">Start</button>
-    <button id="reset-button">Reset</button>
-    <div id="debug-info"></div>
+<div id="gameContainer">
+    <h1>Pixel Game</h1>
+    <canvas id="pixelCanvas" width="400" height="400"></canvas>
+    <button id="fillButton">Fill Canvas</button>
+    <button id="clearButton">Clear Canvas</button>
 </div>
 
 <script>
-const canvas = document.getElementById('game-canvas');
-const ctx = canvas.getContext('2d');
-const scoreDisplay = document.getElementById('score');
-const startButton = document.getElementById('start-button');
-const resetButton = document.getElementById('reset-button');
-const debugInfo = document.getElementById('debug-info');
-
-let score = 0;
-let gameRunning = false;
-let animationFrameId;
-let lastUpdate = 0;
+    const canvas = document.getElementById('pixelCanvas');
+    const ctx = canvas.getContext('2d');
+    const fillButton = document.getElementById('fillButton');
+    const clearButton = document.getElementById('clearButton');
+    const pixelSize = 20;
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const rows = canvasHeight / pixelSize;
+    const cols = canvasWidth / pixelSize;
 
 
-function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function drawCircle(x, y, radius, color) {
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, 2 * Math.PI);
-    ctx.fillStyle = color;
-    ctx.fill();
-}
-
-
-function clearCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-
-function update(deltaTime) {
-    // Example game logic
-    // Clear the canvas
-    clearCanvas();
-
-    // Draw a moving circle
-    let circleX = (Date.now() / 10) % canvas.width;
-    let circleY = getRandomInt(0, canvas.height);
-    drawCircle(circleX, circleY, 20, 'blue');
-    score += deltaTime * 0.01;
-    scoreDisplay.textContent = 'Score: ' + Math.floor(score);
-
-}
-
-
-function gameLoop(timestamp) {
-    const deltaTime = timestamp - lastUpdate;
-    lastUpdate = timestamp;
-
-    if (gameRunning) {
-        update(deltaTime);
-        animationFrameId = requestAnimationFrame(gameLoop);
+    function drawPixel(x, y, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
     }
-}
 
-
-function startGame() {
-    if (!gameRunning) {
-        gameRunning = true;
-        score = 0;
-        scoreDisplay.textContent = 'Score: 0';
-        lastUpdate = performance.now();
-        animationFrameId = requestAnimationFrame(gameLoop);
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     }
-}
 
 
-function resetGame() {
-    stopGame();
-    score = 0;
-    scoreDisplay.textContent = 'Score: 0';
-    clearCanvas();
-}
+    function fillCanvas() {
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          drawPixel(x, y, '#3498db');
+        }
+      }
+    }
 
 
-function stopGame() {
-    gameRunning = false;
-    cancelAnimationFrame(animationFrameId);
-}
-
-
-startButton.addEventListener('click', startGame);
-resetButton.addEventListener('click', resetGame);
+    clearButton.addEventListener('click', clearCanvas);
+    fillButton.addEventListener('click', fillCanvas);
 </script>
 
 </body>
