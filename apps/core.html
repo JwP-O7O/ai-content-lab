@@ -1,0 +1,193 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Simple Game</title>
+<style>
+body {
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+
+#game-container {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+}
+
+#game-canvas {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+button:hover {
+    background-color: #3e8e41;
+}
+
+#score {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+</style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>Simple Game</h1>
+    <div id="score">Score: 0</div>
+    <canvas id="game-canvas" width="400" height="300"></canvas>
+    <button id="start-button">Start Game</button>
+</div>
+
+<script>
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const scoreDisplay = document.getElementById('score');
+const startButton = document.getElementById('start-button');
+
+let score = 0;
+let gameRunning = false;
+let playerX = canvas.width / 2;
+let playerY = canvas.height - 20;
+let enemyX;
+let enemyY = 10;
+let enemySpeed = 2;
+const playerWidth = 20;
+const playerHeight = 20;
+let enemyWidth = 20;
+let enemyHeight = 20;
+let gameOver = false;
+
+function drawPlayer() {
+    ctx.fillStyle = '#007bff';
+    ctx.fillRect(playerX - playerWidth / 2, playerY - playerHeight, playerWidth, playerHeight);
+}
+
+
+function drawEnemy() {
+    ctx.fillStyle = 'red';
+    ctx.fillRect(enemyX - enemyWidth / 2, enemyY, enemyWidth, enemyHeight);
+}
+
+
+function updateScore() {
+    scoreDisplay.textContent = `Score: ${score}`;
+}
+
+function resetGame() {
+    score = 0;
+    updateScore();
+    playerX = canvas.width / 2;
+    enemyY = 10;
+    enemySpeed = 2;
+    gameOver = false;
+    gameLoop(); // Restart the game loop
+}
+
+
+function getRandomX() {
+    return Math.random() * (canvas.width - 20) + 10; // Avoids spawning at the edge
+}
+
+
+function checkCollision() {
+    if (
+        playerX + playerWidth / 2 > enemyX - enemyWidth / 2 &&
+        playerX - playerWidth / 2 < enemyX + enemyWidth / 2 &&
+        playerY < enemyY + enemyHeight &&
+        playerY + playerHeight > enemyY
+    ) {
+        gameOver = true;
+        alert(`Game Over! Final Score: ${score}`);
+        startButton.textContent = "Restart Game";
+        gameRunning = false;
+    }
+}
+
+
+function gameLoop() {
+    if (!gameRunning) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawPlayer();
+    drawEnemy();
+
+    //Enemy movement
+    enemyY += enemySpeed;
+    if (enemyY > canvas.height) {
+        enemyX = getRandomX();
+        enemyY = 10;
+        enemySpeed += 0.2; // increase speed gradually
+        score++;
+        updateScore();
+    }
+
+
+    checkCollision();
+
+    if (!gameOver) {
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+
+function startGame() {
+    if (!gameRunning) {
+        gameRunning = true;
+        startButton.textContent = "Pause Game";
+        enemyX = getRandomX();
+        gameLoop();
+    } else {
+        gameRunning = false;
+        startButton.textContent = "Start Game";
+    }
+
+}
+
+startButton.addEventListener('click', () => {
+    if (gameOver) {
+        resetGame();
+    } else {
+        startGame();
+    }
+
+});
+
+document.addEventListener('keydown', (e) => {
+    if (!gameRunning) return; // Prevent movement when game is not running
+    if (e.key === 'ArrowLeft') {
+        playerX -= 10;
+        if (playerX < playerWidth / 2) {
+            playerX = playerWidth / 2;
+        }
+    } else if (e.key === 'ArrowRight') {
+        playerX += 10;
+        if (playerX > canvas.width - playerWidth / 2) {
+            playerX = canvas.width - playerWidth / 2;
+        }
+    }
+});
+
+
+</script>
+</body>
+</html>
+```
