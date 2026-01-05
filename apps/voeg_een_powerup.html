@@ -68,24 +68,27 @@
         /* Power-up Alert Styling */
         #powerupAlert {
             position: absolute;
-            top: -10px; /* Adjust as needed */
+            top: 20px; /* Adjust as needed */
             left: 50%;
             transform: translateX(-50%);
-            background-color: #d4edda;
-            color: #155724;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 1em;
+            background-color: #c8e6c9;
+            color: #1b5e20;
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-size: 1.1em;
             opacity: 0;
-            transition: opacity 0.3s ease, top 0.3s ease;
+            transition: opacity 0.4s ease, top 0.4s ease, transform 0.4s ease;
             z-index: 10; /* Ensure it's on top */
-            border: 1px solid #c3e6cb;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            border: 1px solid #a5d6a7;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            /* Initially hidden off-screen */
+            transform: translateX(-50%) translateY(-20px);
         }
 
         #powerupAlert.active {
             opacity: 1;
-            top: 0px; /* Adjust as needed */
+            top: 20px; /* Adjust as needed */
+            transform: translateX(-50%) translateY(0); /* Slide in */
         }
 
         @media (max-width: 600px) {
@@ -100,6 +103,11 @@
             button {
                 padding: 12px 25px;
                 font-size: 1em;
+            }
+
+            #powerupAlert {
+                font-size: 1em;
+                padding: 10px 20px;
             }
         }
     </style>
