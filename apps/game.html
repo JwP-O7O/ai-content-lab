@@ -5,24 +5,25 @@
 <title>Game Loop Example</title>
 <style>
 body {
-    font-family: sans-serif;
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    margin: 0;
+    padding: 0;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    margin: 0;
-    background-color: #f0f0f0;
+    min-height: 100vh;
 }
 
 #gameContainer {
-    background-color: white;
-    padding: 20px;
+    background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
     text-align: center;
 }
 
-#gameCanvas {
+#canvas {
     border: 1px solid #ccc;
     margin-bottom: 10px;
 }
@@ -35,11 +36,14 @@ body {
 #startButton {
     background-color: #4CAF50;
     color: white;
-    padding: 10px 20px;
     border: none;
-    border-radius: 4px;
-    cursor: pointer;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
     font-size: 1em;
+    cursor: pointer;
+    border-radius: 4px;
 }
 
 #startButton:hover {
@@ -50,23 +54,24 @@ body {
 <body>
 
 <div id="gameContainer">
-    <canvas id="gameCanvas" width="400" height="300"></canvas>
-    <div id="scoreDisplay">Score: <span id="scoreValue">0</span></div>
+    <h1>Simple Game Loop</h1>
+    <canvas id="canvas" width="400" height="300"></canvas>
+    <div id="scoreDisplay">Score: 0</div>
     <button id="startButton">Start Game</button>
 </div>
 
 <script>
-const canvas = document.getElementById('gameCanvas');
+const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const scoreDisplay = document.getElementById('scoreValue');
+const scoreDisplay = document.getElementById('scoreDisplay');
 const startButton = document.getElementById('startButton');
 
 let score = 0;
 let gameRunning = false;
 let animationFrameId;
 
-// Game object - example (could be anything, e.g., a moving square)
-const gameObject = {
+// Game object (example: a simple square)
+let square = {
     x: 50,
     y: 50,
     size: 20,
@@ -74,54 +79,56 @@ const gameObject = {
     color: 'blue'
 };
 
-function draw() {
-    // Clear the canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function drawSquare() {
+    ctx.fillStyle = square.color;
+    ctx.fillRect(square.x, square.y, square.size, square.size);
+}
 
-    // Draw the game object
-    ctx.fillStyle = gameObject.color;
-    ctx.fillRect(gameObject.x, gameObject.y, gameObject.size, gameObject.size);
-
-    // Example: Move the game object
-    gameObject.x += gameObject.speed;
-
-    // Bounce off the walls
-    if (gameObject.x + gameObject.size > canvas.width || gameObject.x < 0) {
-        gameObject.speed = -gameObject.speed;
-        score++; // Example: Increment score on bounce
-        scoreDisplay.textContent = score;
+function updateSquare() {
+    square.x += square.speed;
+    if (square.x > canvas.width) {
+        square.x = 0;
+        score++;
+        scoreDisplay.textContent = 'Score: ' + score;
     }
 }
 
+
+function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
 function gameLoop() {
-    if (!gameRunning) return; // Stop the loop if the game isn't running
-    draw();
+    if (!gameRunning) return;
+
+    clearCanvas();
+    updateSquare();
+    drawSquare();
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
 function startGame() {
     if (!gameRunning) {
         gameRunning = true;
-        score = 0; // Reset score on start
-        scoreDisplay.textContent = score;
-        animationFrameId = requestAnimationFrame(gameLoop);
-        startButton.textContent = "Stop Game";
-    } else {
-        stopGame();
+        score = 0;
+        scoreDisplay.textContent = 'Score: 0';
+        square.x = 50;
+        cancelAnimationFrame(animationFrameId); //stop any existing animation
+        gameLoop();
     }
 }
+
 
 function stopGame() {
     gameRunning = false;
     cancelAnimationFrame(animationFrameId);
-    startButton.textContent = "Start Game";
 }
 
 
 startButton.addEventListener('click', startGame);
 
-
 </script>
+
 </body>
 </html>
 ```
