@@ -2,6 +2,6 @@
 | Metric | Waarde |
 |---|---|
 | **Model** | `Gemini 2.0` |
-| **Cycles** | 10 |
+| **Cycles** | 1 |
 | **Status** | 🟢 ONLINE |
-| **Actie** | 🛠️ Systeem geüpgraded |
+| **Actie** | 🌐 Web App: sterren_met_kleur.html |
