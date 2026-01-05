@@ -2,16 +2,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Game</title>
+<title>Game Loop</title>
 <style>
 body {
     font-family: sans-serif;
+    background-color: #f0f0f0;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
     margin: 0;
-    background-color: #f0f0f0;
 }
 
 #game-container {
@@ -22,17 +22,18 @@ body {
     text-align: center;
 }
 
-#score {
-    font-size: 1.2em;
+#game-canvas {
+    border: 1px solid #ccc;
     margin-bottom: 10px;
 }
 
-#game-canvas {
-    border: 1px solid #ccc;
-    background-color: #eee;
+#status {
+    margin-top: 10px;
+    font-size: 1.2em;
+    color: #333;
 }
 
-#start-button {
+button {
     background-color: #4CAF50;
     color: white;
     padding: 10px 20px;
@@ -42,222 +43,67 @@ body {
     font-size: 1em;
 }
 
-#start-button:hover {
+button:hover {
     background-color: #3e8e41;
-}
-
-#game-over {
-    display: none;
-    margin-top: 20px;
-    font-size: 1.2em;
-    color: red;
 }
 </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="score">Score: 0</div>
+    <h1>Game Loop Demo</h1>
     <canvas id="game-canvas" width="400" height="300"></canvas>
-    <button id="start-button">Start Game</button>
-    <div id="game-over">Game Over!</div>
+    <div id="status"></div>
+    <button id="startButton">Start</button>
 </div>
 
 <script>
-    const canvas = document.getElementById('game-canvas');
-    const ctx = canvas.getContext('2d');
-    const scoreElement = document.getElementById('score');
-    const startButton = document.getElementById('start-button');
-    const gameOverElement = document.getElementById('game-over');
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const statusElement = document.getElementById('status');
+const startButton = document.getElementById('startButton');
 
-    let score = 0;
-    let gameInterval;
-    let isGameRunning = false;
+let gameRunning = false;
+let frameCount = 0;
+let animationFrameId;
 
-    // Ball properties
-    let ballX = canvas.width / 2;
-    let ballY = canvas.height - 30;
-    let ballRadius = 10;
-    let ballSpeedX = 2;
-    let ballSpeedY = -2;
+function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
 
-    // Paddle properties
-    let paddleHeight = 10;
-    let paddleWidth = 75;
-    let paddleX = (canvas.width - paddleWidth) / 2;
+function draw() {
+    clearCanvas();
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(50 + frameCount, 50, 50, 50);
+}
 
-    // Brick properties
-    const brickRowCount = 3;
-    const brickColumnCount = 5;
-    const brickWidth = 75;
-    const brickHeight = 20;
-    const brickPadding = 10;
-    const brickOffsetTop = 30;
-    const brickOffsetLeft = 30;
-    let bricks = [];
 
-    // Initialize bricks
-    function initializeBricks() {
-        for (let c = 0; c < brickColumnCount; c++) {
-            bricks[c] = [];
-            for (let r = 0; r < brickRowCount; r++) {
-                bricks[c][r] = { x: 0, y: 0, status: 1 };
-            }
-        }
+function update() {
+    frameCount++;
+    if (frameCount > 350) {
+        frameCount = 0;
     }
-
-    initializeBricks();
-
-
-    function drawBall() {
-        ctx.beginPath();
-        ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
-        ctx.fillStyle = "#0095DD";
-        ctx.fill();
-        ctx.closePath();
-    }
-
-    function drawPaddle() {
-        ctx.beginPath();
-        ctx.rect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
-        ctx.fillStyle = "#0095DD";
-        ctx.fill();
-        ctx.closePath();
-    }
-
-    function drawBricks() {
-        for (let c = 0; c < brickColumnCount; c++) {
-            for (let r = 0; r < brickRowCount; r++) {
-                if (bricks[c][r].status === 1) {
-                    const brickX = (c * (brickWidth + brickPadding)) + brickOffsetLeft;
-                    const brickY = (r * (brickHeight + brickPadding)) + brickOffsetTop;
-                    bricks[c][r].x = brickX;
-                    bricks[c][r].y = brickY;
-                    ctx.beginPath();
-                    ctx.rect(brickX, brickY, brickWidth, brickHeight);
-                    ctx.fillStyle = "#0095DD";
-                    ctx.fill();
-                    ctx.closePath();
-                }
-            }
-        }
-    }
+}
 
 
-    function collisionDetection() {
-        for (let c = 0; c < brickColumnCount; c++) {
-            for (let r = 0; r < brickRowCount; r++) {
-                const b = bricks[c][r];
-                if (b.status === 1) {
-                    if (ballX > b.x && ballX < b.x + brickWidth && ballY > b.y && ballY < b.y + brickHeight) {
-                        ballSpeedY = -ballSpeedY;
-                        b.status = 0;
-                        score++;
-                        scoreElement.textContent = `Score: ${score}`;
-                        if (score === brickRowCount * brickColumnCount) {
-                            gameOver("You Win!");
-                        }
-                    }
-                }
-            }
-        }
-    }
+function gameLoop() {
+    if (!gameRunning) return;
 
+    update();
+    draw();
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
 
+function startGame() {
+    gameRunning = true;
+    statusElement.textContent = "Game started!";
+    startButton.disabled = true;
+    gameLoop();
+}
 
-    function gameOver(message) {
-        clearInterval(gameInterval);
-        isGameRunning = false;
-        gameOverElement.textContent = message;
-        gameOverElement.style.display = 'block';
-        startButton.textContent = "Restart Game";
-    }
-
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawBricks();
-        drawBall();
-        drawPaddle();
-        collisionDetection();
-
-        // Bounce off walls
-        if (ballX + ballSpeedX > canvas.width - ballRadius || ballX + ballSpeedX < ballRadius) {
-            ballSpeedX = -ballSpeedX;
-        }
-        if (ballY + ballSpeedY < ballRadius) {
-            ballSpeedY = -ballSpeedY;
-        } else if (ballY + ballSpeedY > canvas.height - ballRadius) {
-            if (ballX > paddleX && ballX < paddleX + paddleWidth) {
-                ballSpeedY = -ballSpeedY;
-            } else {
-                gameOver("Game Over");
-            }
-        }
-
-        ballX += ballSpeedX;
-        ballY += ballSpeedY;
-
-        // Paddle movement (basic)
-        if (rightPressed && paddleX < canvas.width - paddleWidth) {
-            paddleX += 7;
-        } else if (leftPressed && paddleX > 0) {
-            paddleX -= 7;
-        }
-    }
-
-
-    function startGame() {
-        if (isGameRunning) return; // Prevent multiple game starts
-
-        // Reset game state
-        score = 0;
-        scoreElement.textContent = "Score: 0";
-        ballX = canvas.width / 2;
-        ballY = canvas.height - 30;
-        ballSpeedX = 2;
-        ballSpeedY = -2;
-        paddleX = (canvas.width - paddleWidth) / 2;
-        initializeBricks();
-        gameOverElement.style.display = 'none';
-        startButton.textContent = "Pause Game";
-        isGameRunning = true;
-
-        gameInterval = setInterval(draw, 10);
-    }
-
-
-
-    startButton.addEventListener('click', () => {
-        if (!isGameRunning) {
-            startGame();
-        } else {
-            clearInterval(gameInterval);
-            isGameRunning = false;
-            startButton.textContent = "Resume Game";
-        }
-    });
-
-    let rightPressed = false;
-    let leftPressed = false;
-
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "Right" || e.key === "ArrowRight") {
-            rightPressed = true;
-        } else if (e.key === "Left" || e.key === "ArrowLeft") {
-            leftPressed = true;
-        }
-    });
-
-    document.addEventListener("keyup", (e) => {
-        if (e.key === "Right" || e.key === "ArrowRight") {
-            rightPressed = false;
-        } else if (e.key === "Left" || e.key === "ArrowLeft") {
-            leftPressed = false;
-        }
-    });
-
-
+startButton.addEventListener('click', startGame);
 </script>
+
 </body>
 </html>
 ```
