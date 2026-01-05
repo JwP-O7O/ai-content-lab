@@ -2,10 +2,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Speelveld Vullen & Verwijderen</title>
+<title>Game Loop Example</title>
 <style>
 body {
-    font-family: Arial, sans-serif;
+    font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -14,7 +14,7 @@ body {
     background-color: #f0f0f0;
 }
 
-#game-container {
+#gameContainer {
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -22,111 +22,125 @@ body {
     text-align: center;
 }
 
-#game-board {
-    display: grid;
-    grid-template-columns: repeat(8, 50px);
-    grid-gap: 5px;
-    margin-top: 20px;
-}
-
-.cell {
-    width: 50px;
-    height: 50px;
-    background-color: #eee;
+#gameCanvas {
     border: 1px solid #ccc;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 20px;
-    cursor: pointer;
-    border-radius: 4px;
+    margin-bottom: 10px;
 }
 
-.cell.filled {
+#scoreDisplay {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+#startButton, #stopButton {
     background-color: #4CAF50;
-    color: white;
-}
-
-.cell.empty {
-    background-color: #eee;
-    color: black;
-}
-
-#controls {
-    margin-top: 20px;
-}
-
-button {
-    background-color: #008CBA;
     color: white;
     padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    margin: 0 10px;
+    font-size: 1em;
+    margin: 5px;
 }
 
-button:hover {
-    background-color: #0077a0;
+#stopButton {
+    background-color: #f44336;
 }
 
+#startButton:hover, #stopButton:hover {
+    opacity: 0.8;
+}
 </style>
 </head>
 <body>
 
-<div id="game-container">
-    <h1>Speelveld</h1>
-    <div id="game-board">
-        <!-- Game board cells will be generated here -->
-    </div>
-    <div id="controls">
-        <button id="fill-board">Vul Speelveld</button>
-        <button id="clear-board">Leeg Speelveld</button>
-    </div>
+<div id="gameContainer">
+    <h1>Simple Game Loop</h1>
+    <canvas id="gameCanvas" width="400" height="300"></canvas>
+    <div id="scoreDisplay">Score: 0</div>
+    <button id="startButton">Start</button>
+    <button id="stopButton">Stop</button>
 </div>
 
+
 <script>
-const gameBoard = document.getElementById('game-board');
-const fillButton = document.getElementById('fill-board');
-const clearButton = document.getElementById('clear-board');
-const boardSize = 8;
-let cells = [];
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
 
-function createBoard() {
-    for (let i = 0; i < boardSize * boardSize; i++) {
-        const cell = document.createElement('div');
-        cell.classList.add('cell', 'empty');
-        cell.dataset.index = i;
-        gameBoard.appendChild(cell);
-        cells.push(cell);
+    let score = 0;
+    let gameRunning = false;
+    let animationFrameId;
+
+    // Game variables
+    let x = 50;
+    let y = 50;
+    let dx = 2; // horizontal speed
+    let dy = 2; // vertical speed
+    const circleRadius = 20;
+
+    function drawCircle() {
+        ctx.beginPath();
+        ctx.arc(x, y, circleRadius, 0, Math.PI * 2);
+        ctx.fillStyle = 'blue';
+        ctx.fill();
     }
-}
 
-function fillBoard() {
-    cells.forEach(cell => {
-        if (Math.random() > 0.5) { // 50% chance to fill
-            cell.classList.remove('empty');
-            cell.classList.add('filled');
-            cell.textContent = 'X';
-        } else {
-            cell.classList.remove('filled');
-            cell.classList.add('empty');
-            cell.textContent = '';
+
+    function update() {
+        // Clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Update position
+        x += dx;
+        y += dy;
+
+        // Bounce off the walls
+        if (x + circleRadius > canvas.width || x - circleRadius < 0) {
+            dx = -dx;
+            score++; // Increase score on each bounce
+            updateScoreDisplay();
         }
-    });
-}
+        if (y + circleRadius > canvas.height || y - circleRadius < 0) {
+            dy = -dy;
+            score++;
+            updateScoreDisplay();
+        }
 
-function clearBoard() {
-    cells.forEach(cell => {
-        cell.classList.remove('filled');
-        cell.classList.add('empty');
-        cell.textContent = '';
-    });
-}
+        // Draw the circle
+        drawCircle();
 
-createBoard();
-fillButton.addEventListener('click', fillBoard);
-clearButton.addEventListener('click', clearBoard);
+        // Request the next frame if the game is running
+        if (gameRunning) {
+            animationFrameId = requestAnimationFrame(update);
+        }
+    }
+
+
+    function updateScoreDisplay() {
+        scoreDisplay.textContent = 'Score: ' + score;
+    }
+
+
+    function startGame() {
+        if (!gameRunning) {
+            gameRunning = true;
+            score = 0; // Reset score when starting
+            updateScoreDisplay();
+            update(); // Start the game loop
+        }
+    }
+
+    function stopGame() {
+        gameRunning = false;
+        cancelAnimationFrame(animationFrameId); // Stop the animation frame
+    }
+
+
+    startButton.addEventListener('click', startGame);
+    stopButton.addEventListener('click', stopGame);
 </script>
 
 </body>
