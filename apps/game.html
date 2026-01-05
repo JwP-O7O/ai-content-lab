@@ -2,238 +2,112 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Game</title>
+<title>Game Speelveld</title>
 <style>
 body {
     font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    margin: 0;
+    min-height: 100vh;
     background-color: #f0f0f0;
+    margin: 0;
 }
 
 #game-container {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
 }
 
-#game-canvas {
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(10, 40px);
+    grid-gap: 5px;
+    margin-top: 20px;
+}
+
+.cell {
+    width: 40px;
+    height: 40px;
+    background-color: #eee;
     border: 1px solid #ccc;
-    margin-bottom: 10px;
-}
-
-#score-display {
-    font-size: 1.2em;
-    margin-bottom: 10px;
-}
-
-#controls {
     display: flex;
     justify-content: center;
-}
-
-button {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
+    align-items: center;
+    font-size: 20px;
     cursor: pointer;
-    margin: 0 5px;
+    border-radius: 4px;
 }
 
-button:hover {
-    background-color: #3e8e41;
+.cell.active {
+    background-color: #b0e2ff;
+}
+
+#score {
+    margin-top: 10px;
+    font-size: 1.2em;
 }
 </style>
 </head>
 <body>
 
 <div id="game-container">
-    <h1>Simple Game</h1>
-    <canvas id="game-canvas" width="400" height="300"></canvas>
-    <div id="score-display">Score: <span id="score">0</span></div>
-    <div id="controls">
-        <button id="start-button">Start</button>
-        <button id="reset-button">Reset</button>
-    </div>
+    <h1>Game Speelveld</h1>
+    <div id="game-board"></div>
+    <div id="score">Score: 0</div>
 </div>
 
 <script>
-const canvas = document.getElementById('game-canvas');
-const ctx = canvas.getContext('2d');
+const gameBoard = document.getElementById('game-board');
 const scoreDisplay = document.getElementById('score');
-const startButton = document.getElementById('start-button');
-const resetButton = document.getElementById('reset-button');
-
 let score = 0;
-let gameRunning = false;
-let startTime;
-let animationFrameId;
+let gridSize = 10;
+let gameBoardData = [];
 
-// Game state
-let playerX = canvas.width / 2;
-let playerY = canvas.height - 30; // Position the player near the bottom
-const playerWidth = 20;
-const playerHeight = 20;
-const playerSpeed = 5;
-
-let obstacles = [];
-const obstacleWidth = 30;
-const obstacleHeight = 15;
-const obstacleSpeed = 2; // Speed of the falling obstacles
-let obstacleSpawnInterval = 1000; // Time in milliseconds between obstacle spawns
-let lastObstacleSpawn = 0;
-let obstacleCount = 0; //Track number of obstacles that have passed player.
-
-
-// Helper function to generate a random number
-function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-
-function resetGame() {
-    score = 0;
-    scoreDisplay.textContent = score;
-    obstacles = [];
-    playerX = canvas.width / 2;
-    lastObstacleSpawn = 0;
-    obstacleCount = 0;
-    gameRunning = false;
-    cancelAnimationFrame(animationFrameId); // Stop the animation
-    updateUI();
-
-}
-
-function startGame() {
-    if (!gameRunning) {
-        gameRunning = true;
-        startTime = Date.now();
-        animate(); // Start the game loop
+function initializeGameBoard() {
+    gameBoardData = [];
+    for (let i = 0; i < gridSize * gridSize; i++) {
+        gameBoardData.push(0); // 0 = leeg, 1 = actief
     }
 }
 
-function updateUI() {
-    startButton.textContent = gameRunning ? "Pause" : "Start";
-}
 
-function handleInput(event) {
-    if(!gameRunning) return;
-
-    if (event.key === 'ArrowLeft') {
-        playerX -= playerSpeed;
-    } else if (event.key === 'ArrowRight') {
-        playerX += playerSpeed;
-    }
-
-    // Keep player within bounds
-    playerX = Math.max(0, Math.min(playerX, canvas.width - playerWidth));
-
-}
-
-document.addEventListener('keydown', handleInput);
-startButton.addEventListener('click', () => {
-    if (gameRunning) {
-        gameRunning = false;
-        cancelAnimationFrame(animationFrameId);
-        updateUI();
-
-    } else {
-        startGame();
-        updateUI();
-    }
-});
-
-
-resetButton.addEventListener('click', resetGame);
-
-
-function spawnObstacle() {
-    const x = getRandomInt(0, canvas.width - obstacleWidth);
-    obstacles.push({
-        x: x,
-        y: -obstacleHeight,  // Start above the canvas
-        width: obstacleWidth,
-        height: obstacleHeight
+function renderGameBoard() {
+    gameBoard.innerHTML = '';
+    gameBoardData.forEach((cellValue, index) => {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        if (cellValue === 1) {
+            cell.classList.add('active');
+        }
+        cell.dataset.index = index;
+        cell.addEventListener('click', cellClickHandler);
+        gameBoard.appendChild(cell);
     });
 }
 
-function drawPlayer() {
-    ctx.fillStyle = 'blue';
-    ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
-}
-
-
-function drawObstacles() {
-    ctx.fillStyle = 'red';
-    obstacles.forEach(obstacle => {
-        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-    });
-}
-
-function updateObstacles() {
-    for (let i = obstacles.length - 1; i >= 0; i--) {
-        obstacles[i].y += obstacleSpeed;
-
-        // Collision detection
-        if (
-            playerX < obstacles[i].x + obstacles[i].width &&
-            playerX + playerWidth > obstacles[i].x &&
-            playerY < obstacles[i].y + obstacles[i].height &&
-            playerY + playerHeight > obstacles[i].y
-        ) {
-            resetGame(); // Game over on collision
-            return; // Exit function so obstacles don't update further
-        }
-
-
-        // Remove obstacles that have gone off-screen and update score
-        if (obstacles[i].y > canvas.height) {
-            obstacles.splice(i, 1);
-            score++;
-            scoreDisplay.textContent = score;
-            obstacleCount++;
-        }
+function cellClickHandler(event) {
+    const index = parseInt(event.target.dataset.index);
+    if (gameBoardData[index] === 0) {
+        gameBoardData[index] = 1;
+        score++;
+        updateScore();
+        renderGameBoard();
     }
 }
 
-
-function animate() {
-    if (!gameRunning) return;  // Stop the animation if game is not running
-
-    animationFrameId = requestAnimationFrame(animate);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-
-    //Obstacle Spawning
-    const now = Date.now();
-    if (now - lastObstacleSpawn > obstacleSpawnInterval) {
-        spawnObstacle();
-        lastObstacleSpawn = now;
-    }
-
-    updateObstacles();
-    drawPlayer();
-    drawObstacles();
-
-
-    // Optional:  Adjust obstacle spawn rate or speed based on score.
-    if(score > 10 && obstacleSpawnInterval > 500) {
-        obstacleSpawnInterval = 800;
-    }
-    if (score > 20 && obstacleSpeed < 5) {
-        obstacleSpeed = 3;
-    }
-
+function updateScore() {
+    scoreDisplay.textContent = `Score: ${score}`;
 }
 
+// Initialisatie
+initializeGameBoard();
+renderGameBoard();
 </script>
+
 </body>
 </html>
 ```
