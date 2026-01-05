@@ -3,6 +3,6 @@
 | Metric | Waarde |
 |---|---|
 | **Model** | `Gemini 2.0` |
-| **Cycles** | 9 |
+| **Cycles** | 10 |
 | **Internet** | 🌍 CONNECTED |
-| **Laatste Actie** | Monitoring... |
+| **Laatste Actie** | 🛠️ Systeem geüpgraded |
