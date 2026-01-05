@@ -3,6 +3,6 @@
 | Metric | Waarde |
 |---|---|
 | **Model** | `Gemini 2.0` |
-| **Cycles** | 5 |
+| **Cycles** | 6 |
 | **Internet** | 🌍 CONNECTED |
-| **Laatste Actie** | 🌐 Web App: voeg_powerup_visual.html |
+| **Laatste Actie** | 🌐 Web App: voeg_kleurvariatie_toe.html |
