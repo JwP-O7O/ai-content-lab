@@ -2,37 +2,39 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Game</title>
+<title>Game Loop Example</title>
 <style>
 body {
-    font-family: sans-serif;
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    margin: 0;
+    padding: 0;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    margin: 0;
-    background-color: #f0f0f0;
+    min-height: 100vh;
 }
 
-#game-container {
-    background-color: #fff;
+#gameContainer {
+    background-color: white;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
+    width: 400px;
 }
 
-#game-canvas {
+#gameCanvas {
     border: 1px solid #ccc;
     margin-bottom: 10px;
 }
 
-#score-display {
+#scoreDisplay {
     font-size: 1.2em;
     margin-bottom: 10px;
 }
 
-#start-button, #restart-button {
+button {
     background-color: #4CAF50;
     color: white;
     padding: 10px 20px;
@@ -42,120 +44,76 @@ body {
     font-size: 1em;
 }
 
-#start-button:hover, #restart-button:hover {
+button:hover {
     background-color: #3e8e41;
 }
 </style>
 </head>
 <body>
 
-<div id="game-container">
-    <canvas id="game-canvas" width="400" height="300"></canvas>
-    <div id="score-display">Score: 0</div>
-    <button id="start-button">Start Game</button>
-    <button id="restart-button" style="display:none;">Restart Game</button>
+<div id="gameContainer">
+    <h1>Game Loop Example</h1>
+    <canvas id="gameCanvas" width="300" height="150"></canvas>
+    <div id="scoreDisplay">Score: 0</div>
+    <button id="startButton">Start Game</button>
 </div>
 
+
 <script>
-const canvas = document.getElementById('game-canvas');
-const ctx = canvas.getContext('2d');
-const scoreDisplay = document.getElementById('score-display');
-const startButton = document.getElementById('start-button');
-const restartButton = document.getElementById('restart-button');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const startButton = document.getElementById('startButton');
 
-let score = 0;
-let gameRunning = false;
-let circleX, circleY, circleRadius;
-let targetX, targetY, targetRadius;
+    let score = 0;
+    let gameRunning = false;
+    let requestId;
 
-function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+    function resetGame() {
+        score = 0;
+        scoreDisplay.textContent = 'Score: 0';
+        // Reset game state here. For example:
+        // x = canvas.width / 2;
+        // y = canvas.height / 2;
+    }
 
-function resetGame() {
-    score = 0;
-    scoreDisplay.textContent = 'Score: 0';
-    circleX = canvas.width / 2;
-    circleY = canvas.height / 2;
-    circleRadius = 15;
-    generateTarget();
-}
+    function update() {
+        if (!gameRunning) return;
 
-
-function generateTarget() {
-    targetRadius = 10;
-    targetX = getRandomInt(targetRadius, canvas.width - targetRadius);
-    targetY = getRandomInt(targetRadius, canvas.height - targetRadius);
-}
-
-
-function drawCircle() {
-    ctx.beginPath();
-    ctx.arc(circleX, circleY, circleRadius, 0, 2 * Math.PI);
-    ctx.fillStyle = 'blue';
-    ctx.fill();
-    ctx.closePath();
-}
-
-function drawTarget() {
-    ctx.beginPath();
-    ctx.arc(targetX, targetY, targetRadius, 0, 2 * Math.PI);
-    ctx.fillStyle = 'red';
-    ctx.fill();
-    ctx.closePath();
-}
-
-function clearCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-function updateGame() {
-    if (!gameRunning) return;
-
-    clearCanvas();
-    drawCircle();
-    drawTarget();
-
-    const dx = circleX - targetX;
-    const dy = circleY - targetY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance < circleRadius + targetRadius) {
+        // Game logic goes here
         score++;
         scoreDisplay.textContent = 'Score: ' + score;
-        generateTarget();
+
+        // Example:  Draw a simple shape
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+
+        ctx.fillStyle = 'blue';
+        ctx.fillRect(canvas.width / 2 - 20, canvas.height / 2 - 20, 40, 40);
+
+
+
     }
-}
-
-function gameLoop() {
-    updateGame();
-    requestAnimationFrame(gameLoop);
-}
-
-function startGame() {
-    gameRunning = true;
-    startButton.style.display = 'none';
-    restartButton.style.display = 'inline-block';
-    resetGame();
-    gameLoop();
-}
-
-function restartGame() {
-    gameRunning = true;
-    resetGame();
-}
 
 
 
-canvas.addEventListener('mousemove', (e) => {
-    if (!gameRunning) return;
-    const rect = canvas.getBoundingClientRect();
-    circleX = e.clientX - rect.left;
-    circleY = e.clientY - rect.top;
-});
+    function gameLoop() {
+        update();
+        requestId = requestAnimationFrame(gameLoop);
+    }
 
-startButton.addEventListener('click', startGame);
-restartButton.addEventListener('click', restartGame);
+
+    startButton.addEventListener('click', () => {
+        if (!gameRunning) {
+            gameRunning = true;
+            resetGame();
+            gameLoop();
+            startButton.textContent = "Stop Game";
+        } else {
+            gameRunning = false;
+            cancelAnimationFrame(requestId);
+            startButton.textContent = "Start Game";
+        }
+    });
 
 </script>
 </body>
