@@ -3,112 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Score Level Up!</title>
+    <title>Level Up! Confetti</title>
     <style>
         body {
             font-family: sans-serif;
-            background: #222;
-            color: #fff;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            margin: 0;
-            overflow: hidden; /* Prevent scrollbars during animation */
+            overflow: hidden; /* Prevent scrollbars during confetti */
         }
 
         .container {
             text-align: center;
             padding: 20px;
+            background-color: white;
             border-radius: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-            width: 90%; /* Responsive width */
-            max-width: 400px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
 
-        #scoreDisplay {
-            font-size: 2em;
-            margin-bottom: 20px;
-            transition: all 0.3s ease;
+        h1 {
+            color: #333;
         }
 
-        .level-up-animation {
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #3e8e41;
+        }
+
+        /* Confetti Styles */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allows clicks to pass through */
+            z-index: 1000;
+        }
+
+        .confetti {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 3em;
-            color: #ff0;
-            text-shadow: 0 0 10px #ff0, 0 0 20px #ff0, 0 0 30px #ff0;
-            animation: levelUp 1s ease-out forwards;
-            pointer-events: none; /* Allow interaction with underlying elements */
+            background-color: #f00; /* Default color, overwritten by JS */
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: confetti-fall 3s linear forwards;
         }
 
-        @keyframes levelUp {
+        @keyframes confetti-fall {
             0% {
-                opacity: 0;
-                transform: translate(-50%, -50%) scale(0.5);
-            }
-            20% {
+                transform: translateY(0) rotate(0deg);
                 opacity: 1;
-                transform: translate(-50%, -50%) scale(1);
-            }
-            80% {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1);
             }
             100% {
+                transform: translateY(100vh) rotate(360deg);
                 opacity: 0;
-                transform: translate(-50%, -50%) scale(1.5);
+            }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .container {
+                width: 90%;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Score:</h1>
-        <div id="scoreDisplay">0</div>
-        <button id="incrementButton">Increase Score</button>
+        <h1>Level Up!</h1>
+        <button id="levelUpButton">Level Up!</button>
     </div>
-    <div id="animationContainer"></div>
+
+    <div class="confetti-container" id="confettiContainer"></div>
 
     <script>
-        const scoreDisplay = document.getElementById('scoreDisplay');
-        const incrementButton = document.getElementById('incrementButton');
-        const animationContainer = document.getElementById('animationContainer');
-        let score = 0;
-        const levelUpThreshold = 100;
+        const button = document.getElementById('levelUpButton');
+        const confettiContainer = document.getElementById('confettiContainer');
 
-        function updateScore(newScore) {
-            scoreDisplay.textContent = newScore;
-        }
+        function createConfetti() {
+            const confetti = document.createElement('div');
+            confetti.classList.add('confetti');
 
-        function playLevelUpAnimation() {
-            const animation = document.createElement('div');
-            animation.classList.add('level-up-animation');
-            animation.textContent = 'Level Up!';
-            animationContainer.appendChild(animation);
+            // Random position and color
+            const randomX = Math.random() * window.innerWidth;
+            const randomColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            confetti.style.left = `${randomX}px`;
+            confetti.style.backgroundColor = randomColor;
 
-            animation.addEventListener('animationend', () => {
-                animation.remove();
+            confettiContainer.appendChild(confetti);
+
+            // Remove confetti after animation
+            confetti.addEventListener('animationend', () => {
+                confetti.remove();
             });
         }
 
-
-        function checkLevelUp() {
-            if (score % levelUpThreshold === 0 && score > 0) {
-                playLevelUpAnimation();
+        function launchConfetti() {
+            const numberOfConfetti = 100; // Increased for a more impressive effect
+            for (let i = 0; i < numberOfConfetti; i++) {
+                setTimeout(createConfetti, i * 50); // Stagger the confetti creation
             }
         }
 
-        incrementButton.addEventListener('click', () => {
-            score += 10;
-            updateScore(score);
-            checkLevelUp();
-        });
-
-
+        button.addEventListener('click', launchConfetti);
     </script>
 </body>
 </html>
