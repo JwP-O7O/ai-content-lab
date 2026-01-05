@@ -1,12 +1,13 @@
-from .base_agent import BaseAgent
+from src.agents.base_agent import BaseAgent
 
 class OnboardingAgent(BaseAgent):
     async def execute(self):
         """
         Voert de onboarding-procedure uit voor een nieuwe gebruiker.
-        Momenteel retourneert deze methode een lege dictionary. In de toekomst
-        zal deze methode logica bevatten om taken als het instellen van
+        Deze methode bevat nu een placeholder voor onboarding stappen.
+        In de toekomst zullen deze stappen logica bevatten om taken als het instellen van
         gebruikersaccounts, het versturen van welkomstmails, etc. te
         verwerken.
         """
+        onboarding_steps = []  # Placeholder voor onboarding stappen
         return {}
