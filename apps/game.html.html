@@ -16,157 +16,139 @@ body {
 
 #game-container {
     background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     text-align: center;
 }
 
-#score {
+#game-canvas {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+}
+
+#score-display {
     font-size: 1.2em;
     margin-bottom: 10px;
 }
 
-#game-board {
-    display: grid;
-    grid-template-columns: repeat(3, 80px); /* Adjusted for a 3x3 grid */
-    grid-gap: 10px;
-    margin-bottom: 10px;
-}
-
-.cell {
-    width: 80px; /* Adjusted cell size */
-    height: 80px; /* Adjusted cell size */
-    background-color: #eee;
-    border-radius: 4px;
-    font-size: 3em;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.cell:hover {
-    background-color: #ddd;
-}
-
-#message {
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-#reset-button {
+#start-button, #restart-button {
     background-color: #4CAF50;
     color: white;
     padding: 10px 20px;
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
     font-size: 1em;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.3s ease;
 }
 
-#reset-button:hover {
+#start-button:hover, #restart-button:hover {
     background-color: #3e8e41;
+}
+
+#instructions {
+    font-size: 0.9em;
+    color: #555;
+    margin-top: 10px;
 }
 </style>
 </head>
 <body>
 
 <div id="game-container">
-    <h1>Tic-Tac-Toe</h1>
-    <div id="score">Score: 0</div>
-    <div id="game-board">
-        <div class="cell" data-index="0"></div>
-        <div class="cell" data-index="1"></div>
-        <div class="cell" data-index="2"></div>
-        <div class="cell" data-index="3"></div>
-        <div class="cell" data-index="4"></div>
-        <div class="cell" data-index="5"></div>
-        <div class="cell" data-index="6"></div>
-        <div class="cell" data-index="7"></div>
-        <div class="cell" data-index="8"></div>
+    <canvas id="game-canvas" width="400" height="300"></canvas>
+    <div id="score-display">Score: <span id="score">0</span></div>
+    <button id="start-button">Start Game</button>
+    <button id="restart-button" style="display:none;">Restart Game</button>
+    <div id="instructions">
+        Click to change the color.
     </div>
-    <div id="message"></div>
-    <button id="reset-button">Reset</button>
 </div>
 
 <script>
-const cells = document.querySelectorAll('.cell');
-const message = document.getElementById('message');
-const resetButton = document.getElementById('reset-button');
-const scoreDisplay = document.getElementById('score');
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('score');
+    const startButton = document.getElementById('start-button');
+    const restartButton = document.getElementById('restart-button');
+    let score = 0;
+    let gameRunning = false;
+    let circle = {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        radius: 20,
+        color: 'red'
+    };
 
-let currentPlayer = 'X';
-let gameBoard = ['', '', '', '', '', '', '', '', ''];
-let gameActive = true;
-let score = 0; // Initialize score
 
-// Function to check for a winner
-const checkWinner = () => {
-    const winPatterns = [
-        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
-        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
-        [0, 4, 8], [2, 4, 6]             // Diagonals
-    ];
-
-    for (const pattern of winPatterns) {
-        const [a, b, c] = pattern;
-        if (gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) {
-            return gameBoard[a]; // Return the winning player ('X' or 'O')
-        }
-    }
-    return null; // No winner
-};
-
-// Function to check for a draw
-const checkDraw = () => {
-    return !gameBoard.includes("");
-};
-
-const handleCellClick = (event) => {
-    const index = event.target.dataset.index;
-
-    if (gameBoard[index] !== '' || !gameActive) {
-        return;
+    function drawCircle() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
+        ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
+        ctx.fillStyle = circle.color;
+        ctx.fill();
     }
 
-    gameBoard[index] = currentPlayer;
-    event.target.textContent = currentPlayer;
-    event.target.classList.add(currentPlayer); // Add class for styling
 
-    const winner = checkWinner();
-    if (winner) {
-        message.textContent = `Player ${winner} wins!`;
-        gameActive = false;
-        if (winner === 'X') {
-            score++;
-            scoreDisplay.textContent = `Score: ${score}`;
-        }
-    } else if (checkDraw()) {
-        message.textContent = "It's a draw!";
-        gameActive = false;
-    } else {
-        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-        message.textContent = `Player ${currentPlayer}'s turn`;
+    function updateGame() {
+        if (!gameRunning) return;
+
+        circle.x += Math.random() * 4 - 2; // Move horizontally
+        circle.y += Math.random() * 4 - 2; // Move vertically
+
+        // Keep circle within bounds.
+        circle.x = Math.max(circle.radius, Math.min(circle.x, canvas.width - circle.radius));
+        circle.y = Math.max(circle.radius, Math.min(circle.y, canvas.height - circle.radius));
+
+        drawCircle();
+        requestAnimationFrame(updateGame);
     }
-};
 
-const resetGame = () => {
-    currentPlayer = 'X';
-    gameBoard = ['', '', '', '', '', '', '', '', ''];
-    gameActive = true;
-    message.textContent = '';
 
-    cells.forEach(cell => {
-        cell.textContent = '';
-        cell.classList.remove('X', 'O'); // Remove player classes
+
+    function startGame() {
+        gameRunning = true;
+        score = 0;
+        scoreDisplay.textContent = score;
+        startButton.style.display = 'none';
+        restartButton.style.display = 'inline-block';
+        circle.x = canvas.width / 2;
+        circle.y = canvas.height / 2;
+        circle.color = 'red';
+        drawCircle();
+        updateGame();
+
+    }
+
+    function restartGame() {
+        gameRunning = false;
+        startGame();
+    }
+
+    canvas.addEventListener('click', () => {
+        if (!gameRunning) return;
+        score++;
+        scoreDisplay.textContent = score;
+        circle.color = getRandomColor();
+        drawCircle();
+
     });
-};
 
-cells.forEach(cell => cell.addEventListener('click', handleCellClick));
-resetButton.addEventListener('click', resetGame);
+
+
+    startButton.addEventListener('click', startGame);
+    restartButton.addEventListener('click', restartGame);
+
+
+    function getRandomColor() {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
 </script>
 
 </body>
