@@ -2,123 +2,123 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Gameveld Vullen & Verwijderen</title>
+<title>Game Loop Example</title>
 <style>
 body {
     font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
+    height: 100vh;
+    margin: 0;
     background-color: #f0f0f0;
 }
 
-#game-container {
+#gameContainer {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
 }
 
-#game-board {
-    display: grid;
-    grid-template-columns: repeat(10, 40px);
-    grid-gap: 5px;
-    margin-top: 10px;
-}
-
-.cell {
-    width: 40px;
-    height: 40px;
-    background-color: #eee;
+#gameCanvas {
     border: 1px solid #ccc;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 20px;
-    cursor: pointer;
-    border-radius: 4px;
+    margin-bottom: 10px;
 }
 
-.filled {
-    background-color: #4CAF50; /* Groen */
-    color: white;
+#score {
+    font-size: 1.2em;
+    margin-bottom: 10px;
 }
 
-button {
-    background-color: #008CBA;
-    color: white;
+#startButton, #stopButton {
     padding: 10px 20px;
+    font-size: 1em;
+    background-color: #4CAF50;
+    color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    margin: 10px;
-    font-size: 16px;
+    margin: 5px;
 }
 
-button:hover {
-    background-color: #0077a0;
+#startButton:hover, #stopButton:hover {
+    background-color: #3e8e41;
 }
+
+#stopButton {
+    background-color: #f44336;
+}
+
+#stopButton:hover {
+    background-color: #da190b;
+}
+
 </style>
 </head>
 <body>
 
-<div id="game-container">
-    <h1>Gameveld Vullen & Verwijderen</h1>
-    <div id="game-board"></div>
-    <button id="fill-button">Vul Veld</button>
-    <button id="clear-button">Leeg Veld</button>
+<div id="gameContainer">
+    <h1>Game Loop Demo</h1>
+    <canvas id="gameCanvas" width="400" height="300"></canvas>
+    <div id="score">Score: 0</div>
+    <button id="startButton">Start</button>
+    <button id="stopButton">Stop</button>
 </div>
 
 <script>
-const gameBoard = document.getElementById('game-board');
-const fillButton = document.getElementById('fill-button');
-const clearButton = document.getElementById('clear-button');
-const rows = 10;
-const cols = 10;
-let cells = []; // Store cell elements
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('score');
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
 
-// Initialize the game board
-function initializeBoard() {
-    for (let i = 0; i < rows; i++) {
-        for (let j = 0; j < cols; j++) {
-            const cell = document.createElement('div');
-            cell.classList.add('cell');
-            cell.dataset.row = i;
-            cell.dataset.col = j;
-            gameBoard.appendChild(cell);
-            cells.push(cell); // Store the cell
-        }
+    let score = 0;
+    let gameRunning = false;
+    let animationFrameId;
+
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
-}
 
-// Fill the board randomly
-function fillBoard() {
-    cells.forEach(cell => {
-        if (Math.random() > 0.7) { // 30% chance to fill
-            cell.classList.add('filled');
-        } else {
-            cell.classList.remove('filled');
+    function drawRectangle(x, y, width, height, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, width, height);
+    }
+
+
+    function update() {
+        if (!gameRunning) return;
+
+        clearCanvas();
+
+        // Game logic goes here
+        drawRectangle(10, 10, 50, 50, 'blue');
+        score++;
+        scoreDisplay.textContent = 'Score: ' + score;
+
+
+        animationFrameId = requestAnimationFrame(update);
+    }
+
+
+
+    startButton.addEventListener('click', () => {
+        if (!gameRunning) {
+            gameRunning = true;
+            score = 0;
+            scoreDisplay.textContent = 'Score: ' + score;
+            update();
         }
     });
-}
 
-// Clear the board
-function clearBoard() {
-    cells.forEach(cell => {
-        cell.classList.remove('filled');
+    stopButton.addEventListener('click', () => {
+        gameRunning = false;
+        cancelAnimationFrame(animationFrameId);
     });
-}
-
-// Event listeners
-fillButton.addEventListener('click', fillBoard);
-clearButton.addEventListener('click', clearBoard);
-
-
-// Initialize on page load
-initializeBoard();
 </script>
+
 </body>
 </html>
 ```
