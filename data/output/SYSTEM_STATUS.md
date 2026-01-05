@@ -3,6 +3,6 @@
 | Metric | Waarde |
 |---|---|
 | **Model** | `Gemini 2.0` |
-| **Cycles** | 18 |
+| **Cycles** | 19 |
 | **Status** | 🧠 LEARNING & OPTIMIZING |
-| **Laatste Actie** | Monitoring... |
+| **Laatste Actie** | 🌐 Web App: voeg_kleurvariatie_toe.html |
