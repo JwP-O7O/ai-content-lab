@@ -5,7 +5,7 @@
 <title>Simple Game</title>
 <style>
 body {
-    font-family: Arial, sans-serif;
+    font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -15,11 +15,16 @@ body {
 }
 
 #game-container {
-    background-color: white;
+    background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
+}
+
+#game-canvas {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
 }
 
 #score {
@@ -27,187 +32,117 @@ body {
     margin-bottom: 10px;
 }
 
-#game-board {
-    display: grid;
-    grid-template-columns: repeat(4, 60px);
-    grid-gap: 10px;
-    margin-bottom: 20px;
-}
-
-.cell {
-    width: 60px;
-    height: 60px;
-    background-color: #eee;
-    border-radius: 4px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.5em;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.cell:hover {
-    background-color: #ddd;
-}
-
-.cell.active {
-    background-color: #add8e6; /* Light blue for active cell */
-}
-
-#start-button {
-    padding: 10px 20px;
-    font-size: 1em;
+button {
     background-color: #4CAF50;
     color: white;
+    padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.2s;
+    font-size: 1em;
 }
 
-#start-button:hover {
+button:hover {
     background-color: #3e8e41;
-}
-
-#game-over {
-    font-size: 1.5em;
-    color: red;
-    margin-top: 10px;
-    display: none;
 }
 </style>
 </head>
 <body>
 
 <div id="game-container">
-    <h1>Memory Game</h1>
+    <h1>Simple Game</h1>
+    <canvas id="game-canvas" width="400" height="300"></canvas>
     <div id="score">Score: 0</div>
-    <div id="game-board">
-        <!-- Cells will be generated here -->
-    </div>
-    <button id="start-button">Start Game</button>
-    <div id="game-over">Game Over!</div>
+    <button id="restart-button">Restart</button>
 </div>
 
 <script>
-const gameBoard = document.getElementById('game-board');
-const scoreDisplay = document.getElementById('score');
-const startButton = document.getElementById('start-button');
-const gameOverDisplay = document.getElementById('game-over');
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('score');
+    const restartButton = document.getElementById('restart-button');
 
-let cards = [];
-let revealedCards = [];
-let score = 0;
-let gameStarted = false;
-let timeoutId;
-let canClick = true; // Prevent multiple clicks during reveal
+    let score = 0;
+    let gameOver = false;
+    let playerX = 50;
+    let playerY = canvas.height - 30;
+    let obstacleX = canvas.width;
+    let obstacleY = canvas.height - 20;
+    let obstacleWidth = 20;
+    let obstacleSpeed = 3;
 
-function createCards() {
-    const cardValues = [];
-    for (let i = 1; i <= 8; i++) {
-        cardValues.push(i, i); // Create pairs
+    function drawPlayer() {
+        ctx.fillStyle = 'blue';
+        ctx.fillRect(playerX, playerY, 20, 20);
     }
-    // Shuffle the cards
-    cardValues.sort(() => 0.5 - Math.random());
 
-    cards = cardValues.map((value, index) => ({
-        id: index,
-        value: value,
-        revealed: false
-    }));
-}
-
-function renderBoard() {
-    gameBoard.innerHTML = '';
-    cards.forEach(card => {
-        const cell = document.createElement('div');
-        cell.classList.add('cell');
-        cell.dataset.id = card.id;
-        if (card.revealed) {
-            cell.textContent = card.value;
-            cell.classList.add('active');
-        } else {
-            cell.textContent = ''; // Or display a default card back image/symbol
-        }
-        cell.addEventListener('click', cardClickHandler);
-        gameBoard.appendChild(cell);
-    });
-}
-
-
-function cardClickHandler(event) {
-    if (!gameStarted || !canClick) return;
-
-    const cardId = parseInt(event.target.dataset.id);
-    const card = cards.find(card => card.id === cardId);
-
-    if (card && !card.revealed) {
-        revealCard(card);
+    function drawObstacle() {
+        ctx.fillStyle = 'red';
+        ctx.fillRect(obstacleX, obstacleY, obstacleWidth, 10);
     }
-}
 
+    function update() {
+        if (gameOver) return;
 
-function revealCard(card) {
-    if (!gameStarted || !canClick) return;
-    card.revealed = true;
-    renderBoard();
-    revealedCards.push(card);
-
-    if (revealedCards.length === 2) {
-        canClick = false; // Disable clicking while checking
-
-        const [card1, card2] = revealedCards;
-        if (card1.value === card2.value) {
+        obstacleX -= obstacleSpeed;
+        if (obstacleX < 0) {
+            obstacleX = canvas.width;
             score++;
-            scoreDisplay.textContent = `Score: ${score}`;
-            revealedCards = [];
-            canClick = true;
-            // Check for win condition (all cards revealed)
-            if (score === 8) {
-                gameOver(true); // Player wins
-            }
-        } else {
-            // Cards don't match, hide after a short delay
-            timeoutId = setTimeout(() => {
-                card1.revealed = false;
-                card2.revealed = false;
-                renderBoard();
-                revealedCards = [];
-                canClick = true;
-            }, 1000); // 1 second delay
+            scoreDisplay.textContent = 'Score: ' + score;
+            obstacleSpeed = Math.min(obstacleSpeed + 0.5, 10); // Increase difficulty
+        }
+
+        // Collision detection
+        if (playerX < obstacleX + obstacleWidth &&
+            playerX + 20 > obstacleX &&
+            playerY < obstacleY + 10 &&
+            playerY + 20 > obstacleY) {
+            gameOver = true;
         }
     }
-}
 
-
-function startGame() {
-    createCards();
-    score = 0;
-    scoreDisplay.textContent = `Score: ${score}`;
-    gameOverDisplay.style.display = 'none';
-    gameStarted = true;
-    renderBoard();
-}
-
-function gameOver(win = false) {
-    gameStarted = false;
-    clearTimeout(timeoutId); // Clear any pending timeouts
-    if(win){
-        gameOverDisplay.textContent = "Congratulations! You Win!";
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawPlayer();
+        drawObstacle();
     }
-    else {
-        gameOverDisplay.textContent = "Game Over!";
+
+    function gameLoop() {
+        update();
+        draw();
+        if (!gameOver) {
+            requestAnimationFrame(gameLoop);
+        } else {
+            ctx.fillStyle = 'black';
+            ctx.font = '20px sans-serif';
+            ctx.fillText('Game Over! Final Score: ' + score, canvas.width / 4, canvas.height / 2);
+        }
     }
-    gameOverDisplay.style.display = 'block';
-}
+
+    function resetGame() {
+        score = 0;
+        gameOver = false;
+        obstacleX = canvas.width;
+        obstacleSpeed = 3;
+        scoreDisplay.textContent = 'Score: 0';
+        gameLoop();
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.code === 'Space') {
+            playerY -= 50; // Jump
+            setTimeout(() => {
+                playerY = canvas.height - 30; // Gravity
+            }, 300);
+        }
+    });
 
 
+    restartButton.addEventListener('click', resetGame);
 
-startButton.addEventListener('click', startGame);
-
-
+    gameLoop();
 </script>
+
 </body>
 </html>
 ```
