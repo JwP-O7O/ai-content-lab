@@ -4,9 +4,26 @@ from src.autonomous_agents.ai_service import AIService
 
 class FeatureArchitect:
     def __init__(self):
-        self.name = "FeatureArchitect"
+        self.name = "BackendSquad" # Nieuwe Squad Naam
         self.ai = AIService()
         self.src_dir = "src"
+        
+        # ACADEMISCH SYSTEEM PROMPT VOOR BACKEND
+        self.system_prompt = """
+        JIJ BENT DE 'LEAD BACKEND ENGINEER' VAN PHOENIX OS.
+        
+        Jouw taak is het schrijven van Python scripts die stabiel, veilig en efficiënt zijn.
+        
+        TECHNISCHE STANDAARDEN:
+        1.  **Safety First:** Gebruik ALTIJD try/except blokken om crashes te voorkomen.
+        2.  **Logging:** Gebruik `from loguru import logger` voor output, geen `print()`.
+        3.  **Type Hinting:** Gebruik Python type hints (def func(a: int) -> str:) waar mogelijk.
+        4.  **No Hallucinations:** Importeer alleen libraries die standaard zijn of waarvan je zeker weet dat ze geïnstalleerd zijn.
+        
+        ABSOLUTE VERBODEN:
+        - Wijzig NOOIT `__init__.py` bestanden.
+        - Verwijder NOOIT zomaar bestanden zonder backup instructie.
+        """
 
     def _find_file(self, partial_name):
         for root, dirs, files in os.walk(self.src_dir):
@@ -16,17 +33,16 @@ class FeatureArchitect:
         return None
 
     async def build_feature(self, instruction):
-        logger.info(f"[{self.name}] ⚙️ Feature bouwen: {instruction[:50]}...")
+        logger.info(f"[{self.name}] ⚙️ Backend architecture starten: {instruction}...")
         
-        # 🚫 VEILIGHEIDSPROTOCOL: Verbied __init__.py
+        # Veiligheid
         if "__init__" in instruction:
-            logger.warning(f"[{self.name}] 🚫 Wijzigen van __init__.py is verboden om crashes te voorkomen.")
+            logger.warning(f"[{self.name}] 🚫 Toegang geweigerd tot systeem-kern (__init__).")
             return {"status": "skipped"}
 
-        # 1. Zoek bestaand bestand
+        # 1. Context zoeken
         target_file = None
         existing_code = ""
-        
         words = instruction.split()
         for word in words:
             if ".py" in word:
@@ -36,46 +52,40 @@ class FeatureArchitect:
                     with open(target_file, 'r') as f: existing_code = f.read()
                     break
 
-        # 2. De Prompt
-        prompt = f"""
-        Je bent een Expert Python Developer.
-        TAAK: {instruction}
+        # 2. De Bouw Prompt
+        build_prompt = f"""
+        {self.system_prompt}
         
-        BESTAANDE CODE:
+        OPDRACHT: {instruction}
+        
+        BESTAANDE CODE (indien van toepassing):
         {existing_code[:8000]}
         
-        REGELS:
-        1. Geef ALLEEN de volledige Python code terug.
-        2. Raak GEEN __init__.py bestanden aan.
-        3. Zorg dat imports kloppen (gebruik 'from src...' waar nodig).
+        Output formaat: Geef ALLEEN de volledige Python code terug.
         """
         
-        response = await self.ai.generate_text(prompt)
+        response = await self.ai.generate_text(build_prompt)
         if not response: return {"status": "failed"}
 
         # 3. Schoonmaak
         code = response.replace("```python", "").replace("```", "").strip()
         
-        # 4. Opslaan
+        # 4. Opslag (Nieuw bestand of Update)
         if not target_file:
-            name_p = f"Bestandsnaam (eindigend op .py): {instruction}"
+            name_p = f"Kies een Python bestandsnaam (snake_case) voor: {instruction}. ALLEEN de naam."
             fname = await self.ai.generate_text(name_p)
-            fname = fname.strip().lower().replace(" ", "_")
-            if not fname.endswith(".py"): fname += ".py"
-            # 🚫 DUBBELE CHECK
-            if "__init__" in fname: fname = "mod_safety_override.py"
-            target_file = os.path.join("src/autonomous_agents/execution", fname)
+            fname = fname.strip().lower().replace(" ", "_").replace(".py", "") + ".py"
+            # Veiligheidshalve opslaan in playground als locatie onbekend is
+            target_file = os.path.join("src/playground", fname)
 
-        # Zorg dat map bestaat
+        # Map aanmaken indien nodig
         os.makedirs(os.path.dirname(target_file), exist_ok=True)
         
-        # 🚫 LAATSTE CHECK: Schrijf nooit naar __init__.py
         if "__init__.py" in target_file:
-            logger.error(f"[{self.name}] 🛑 Poging tot sabotage geblokkeerd.")
-            return {"status": "failed"}
+            return {"status": "failed", "msg": "Protected File"}
 
         with open(target_file, 'w') as f:
             f.write(code)
             
-        logger.success(f"[{self.name}] 💾 Code geschreven naar: {target_file}")
-        return {"status": "built", "file": target_file}
+        logger.success(f"[{self.name}] 💾 Code geïmplementeerd in: {target_file}")
+        return {"status": "success", "file": target_file}
