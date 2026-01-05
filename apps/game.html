@@ -2,110 +2,190 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Game Speelveld</title>
+<title>Simple Game</title>
 <style>
 body {
     font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    background-color: #f0f0f0;
+    height: 100vh;
     margin: 0;
+    background-color: #f0f0f0;
 }
 
 #game-container {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
 }
 
-#game-board {
-    display: grid;
-    grid-template-columns: repeat(10, 40px);
-    grid-gap: 5px;
-    margin-top: 20px;
-}
-
-.cell {
-    width: 40px;
-    height: 40px;
-    background-color: #eee;
+#canvas {
     border: 1px solid #ccc;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 20px;
-    cursor: pointer;
-    border-radius: 4px;
-}
-
-.cell.active {
-    background-color: #b0e2ff;
+    margin-bottom: 10px;
 }
 
 #score {
-    margin-top: 10px;
     font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+}
+
+button:hover {
+    background-color: #3e8e41;
 }
 </style>
 </head>
 <body>
 
 <div id="game-container">
-    <h1>Game Speelveld</h1>
-    <div id="game-board"></div>
+    <h1>Simple Game</h1>
+    <canvas id="canvas" width="400" height="300"></canvas>
     <div id="score">Score: 0</div>
+    <button id="startButton">Start Game</button>
 </div>
 
 <script>
-const gameBoard = document.getElementById('game-board');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
 const scoreDisplay = document.getElementById('score');
-let score = 0;
-let gridSize = 10;
-let gameBoardData = [];
+const startButton = document.getElementById('startButton');
 
-function initializeGameBoard() {
-    gameBoardData = [];
-    for (let i = 0; i < gridSize * gridSize; i++) {
-        gameBoardData.push(0); // 0 = leeg, 1 = actief
-    }
+let score = 0;
+let gameRunning = false;
+let playerX = canvas.width / 2;
+let playerY = canvas.height - 30;
+let playerWidth = 20;
+let playerHeight = 20;
+let playerSpeed = 5;
+let obstacles = [];
+let obstacleSpeed = 2;
+let obstacleInterval = 2000; // milliseconds
+let lastObstacleSpawn = 0;
+
+
+function drawPlayer() {
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
 }
 
-
-function renderGameBoard() {
-    gameBoard.innerHTML = '';
-    gameBoardData.forEach((cellValue, index) => {
-        const cell = document.createElement('div');
-        cell.classList.add('cell');
-        if (cellValue === 1) {
-            cell.classList.add('active');
-        }
-        cell.dataset.index = index;
-        cell.addEventListener('click', cellClickHandler);
-        gameBoard.appendChild(cell);
+function drawObstacles() {
+    ctx.fillStyle = 'red';
+    obstacles.forEach(obstacle => {
+        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
     });
 }
 
-function cellClickHandler(event) {
-    const index = parseInt(event.target.dataset.index);
-    if (gameBoardData[index] === 0) {
-        gameBoardData[index] = 1;
-        score++;
-        updateScore();
-        renderGameBoard();
+function updateObstacles(deltaTime) {
+    for (let i = 0; i < obstacles.length; i++) {
+        obstacles[i].y += obstacleSpeed * (deltaTime / 16); // Adjusted for consistent speed
+        if (obstacles[i].y > canvas.height) {
+            obstacles.splice(i, 1);
+            i--; // Adjust index after removal
+            score++;
+            updateScore();
+        }
     }
 }
 
-function updateScore() {
-    scoreDisplay.textContent = `Score: ${score}`;
+
+function generateObstacle() {
+    const obstacleWidth = 30;
+    const obstacleHeight = 15;
+    const x = Math.random() * (canvas.width - obstacleWidth);
+    obstacles.push({
+        x: x,
+        y: -obstacleHeight,
+        width: obstacleWidth,
+        height: obstacleHeight
+    });
 }
 
-// Initialisatie
-initializeGameBoard();
-renderGameBoard();
+function checkCollision() {
+    for (let i = 0; i < obstacles.length; i++) {
+        const obstacle = obstacles[i];
+        if (playerX < obstacle.x + obstacle.width &&
+            playerX + playerWidth > obstacle.x &&
+            playerY < obstacle.y + obstacle.height &&
+            playerY + playerHeight > obstacle.y) {
+            return true; // Collision detected
+        }
+    }
+    return false; // No collision
+}
+
+
+function updateScore() {
+    scoreDisplay.textContent = 'Score: ' + score;
+}
+
+let lastTime = 0;
+function gameLoop(currentTime) {
+    const deltaTime = currentTime - lastTime;
+    lastTime = currentTime;
+
+    if (!gameRunning) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawPlayer();
+    drawObstacles();
+    updateObstacles(deltaTime);
+
+    if (checkCollision()) {
+        gameOver();
+        return;
+    }
+
+    if (currentTime - lastObstacleSpawn > obstacleInterval) {
+        generateObstacle();
+        lastObstacleSpawn = currentTime;
+    }
+
+    requestAnimationFrame(gameLoop);
+}
+
+function gameOver() {
+    gameRunning = false;
+    alert('Game Over! Score: ' + score);
+    score = 0;
+    updateScore();
+    obstacles = [];
+    playerX = canvas.width / 2;
+}
+
+function startGame() {
+    gameRunning = true;
+    score = 0;
+    updateScore();
+    obstacles = []; // Clear obstacles
+    lastTime = 0;
+    requestAnimationFrame(gameLoop);
+}
+
+
+startButton.addEventListener('click', startGame);
+
+document.addEventListener('keydown', (e) => {
+    if (!gameRunning) return;
+    if (e.key === 'ArrowLeft') {
+        playerX -= playerSpeed;
+        if (playerX < 0) playerX = 0;
+    } else if (e.key === 'ArrowRight') {
+        playerX += playerSpeed;
+        if (playerX > canvas.width - playerWidth) playerX = canvas.width - playerWidth;
+    }
+});
 </script>
 
 </body>
