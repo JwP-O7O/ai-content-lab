@@ -1,0 +1,145 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Game Loop</title>
+<style>
+body {
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+
+#game-container {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+}
+
+canvas {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+button:hover {
+    background-color: #3e8e41;
+}
+
+#score {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+</style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>Game Loop Demo</h1>
+    <div id="score">Score: 0</div>
+    <canvas id="gameCanvas" width="400" height="300"></canvas>
+    <button id="startButton">Start/Stop</button>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const startButton = document.getElementById('startButton');
+    const scoreElement = document.getElementById('score');
+
+    let score = 0;
+    let gameRunning = false;
+    let animationFrameId;
+
+    // Game Objects - Example: a simple red square
+    let square = {
+        x: 50,
+        y: 50,
+        width: 20,
+        height: 20,
+        color: 'red',
+        speed: 2, // pixels per frame
+        directionX: 1, // 1 or -1 for right or left
+        directionY: 1  // 1 or -1 for down or up
+    };
+
+    function drawSquare() {
+        ctx.fillStyle = square.color;
+        ctx.fillRect(square.x, square.y, square.width, square.height);
+    }
+
+    function updateSquare() {
+        // Move the square
+        square.x += square.speed * square.directionX;
+        square.y += square.speed * square.directionY;
+
+        // Bounce off the walls - simple collision detection
+        if (square.x + square.width > canvas.width || square.x < 0) {
+            square.directionX *= -1; // Reverse direction
+            score++; // Increment score on a bounce (for testing)
+            updateScore();
+        }
+        if (square.y + square.height > canvas.height || square.y < 0) {
+            square.directionY *= -1; // Reverse direction
+            score++; // Increment score on a bounce
+            updateScore();
+        }
+    }
+
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function gameLoop() {
+        if (!gameRunning) return; // Exit if the game is not running
+
+        clearCanvas();
+        updateSquare(); // Update the game objects
+        drawSquare();     // Redraw the game objects
+
+        animationFrameId = requestAnimationFrame(gameLoop); // Request the next frame
+    }
+
+    function startGame() {
+        if (!gameRunning) {
+            gameRunning = true;
+            startButton.textContent = "Stop";
+            gameLoop(); // Start the game loop
+        } else {
+            stopGame();
+        }
+    }
+
+    function stopGame() {
+        gameRunning = false;
+        startButton.textContent = "Start";
+        cancelAnimationFrame(animationFrameId); // Cancel the animation frame
+    }
+
+    function updateScore() {
+        scoreElement.textContent = "Score: " + score;
+    }
+
+
+    startButton.addEventListener('click', startGame);
+
+</script>
+
+</body>
+</html>
+```
