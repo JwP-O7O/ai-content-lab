@@ -12,45 +12,53 @@ class DatabaseError(Exception):
 @asynccontextmanager
 async def database_connection(db_config):
     """
-    Context manager for database connections.  This is a placeholder as actual
-    database connection details are not provided.  Replace with appropriate
-    database library calls (e.g., asyncpg, aiopg) and connection details.
+    Context manager for database connections.
+    This is a placeholder that requires adaptation based on your chosen database library
+    (e.g., asyncpg, aiopg).  **Replace the placeholder code within the 'try' block**
+    with your actual database connection and test logic.  Also, **replace the placeholder
+    code in the 'finally' block** with your database connection closing logic.
 
     Args:
         db_config (dict): A dictionary containing database configuration parameters
-                            (e.g., host, port, user, password, database).  This
-                            is a placeholder and needs to be replaced with your actual
-                            database connection setup.
+                            (e.g., host, port, user, password, database).
 
     Yields:
-        object: A database connection object.
+        object: A database connection object (or a suitable wrapper).
 
     Raises:
         DatabaseError: If there's an error connecting to the database.
     """
-    connection = None  # Placeholder - replace with your actual database connection code
+    connection = None  # Placeholder - replace with your actual database connection object
     try:
-        # Replace the following with your database connection logic:
+        # ---------------------------------------------------------------------
+        # *** REPLACE THIS SECTION WITH YOUR DATABASE CONNECTION CODE ***
         # Example using asyncpg (requires installation: pip install asyncpg)
         # import asyncpg
         # connection = await asyncpg.connect(**db_config)
         # await connection.execute("SELECT 1")  # Test connection
-        #
-        # For simplicity, we'll simulate a successful connection for now.
+        # ---------------------------------------------------------------------
+
+        # For demonstration purposes, we'll simulate a successful connection.
         print(f"Simulating database connection with config: {db_config}")
         await asyncio.sleep(0.1) # Simulate a short connection delay
-        yield "simulated_connection"  # Replace with actual connection object
+        yield "simulated_connection"  # Replace with the actual connection object
+
     except Exception as e:
         logging.error(f"Database connection error: {e}")
         raise DatabaseError(f"Failed to connect to the database: {e}") from e
     finally:
+        # ---------------------------------------------------------------------
+        # *** REPLACE THIS SECTION WITH YOUR DATABASE CLOSING CODE ***
         if connection: # Replace with your closing connection code
             try:
-                #await connection.close()
+                # Example for asyncpg: await connection.close()
                 print("Simulating closing the database connection")
                 await asyncio.sleep(0.1)
             except Exception as e:
                 logging.error(f"Error closing database connection: {e}")
+        # ---------------------------------------------------------------------
+
+
 
 class BaseAgent:
     async def execute(self):
