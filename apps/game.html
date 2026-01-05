@@ -2,133 +2,149 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Game Loop Example</title>
+<title>Game of Squares</title>
 <style>
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
-    margin: 0;
-    padding: 0;
+    font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
 }
 
-#gameContainer {
+#game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
-    text-align: center;
 }
 
-#canvas {
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(10, 40px);
+    grid-gap: 5px;
+    margin-bottom: 20px;
+}
+
+.square {
+    width: 40px;
+    height: 40px;
+    background-color: #eee;
     border: 1px solid #ccc;
-    margin-bottom: 10px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    border-radius: 5px;
 }
 
-#scoreDisplay {
-    font-size: 1.2em;
-    margin-bottom: 10px;
-}
-
-#startButton {
+.square.filled {
     background-color: #4CAF50;
     color: white;
-    border: none;
-    padding: 10px 20px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 1em;
-    cursor: pointer;
-    border-radius: 4px;
 }
 
-#startButton:hover {
-    background-color: #3e8e41;
+#game-over-message {
+    font-size: 1.5em;
+    color: red;
+    display: none;
+    margin-bottom: 10px;
+}
+
+button {
+    background-color: #008CBA;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+}
+
+button:hover {
+    background-color: #0077A0;
 }
 </style>
 </head>
 <body>
 
-<div id="gameContainer">
-    <h1>Simple Game Loop</h1>
-    <canvas id="canvas" width="400" height="300"></canvas>
-    <div id="scoreDisplay">Score: 0</div>
-    <button id="startButton">Start Game</button>
+<div id="game-container">
+    <h1>Game of Squares</h1>
+    <div id="game-over-message">Game Over!</div>
+    <div id="game-board"></div>
+    <button id="reset-button">Reset</button>
 </div>
 
 <script>
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const scoreDisplay = document.getElementById('scoreDisplay');
-const startButton = document.getElementById('startButton');
+const gameBoard = document.getElementById('game-board');
+const gameOverMessage = document.getElementById('game-over-message');
+const resetButton = document.getElementById('reset-button');
+const gridSize = 10;
+let squares = [];
+let gameOver = false;
 
-let score = 0;
-let gameRunning = false;
-let animationFrameId;
-
-// Game object (example: a simple square)
-let square = {
-    x: 50,
-    y: 50,
-    size: 20,
-    speed: 2,
-    color: 'blue'
-};
-
-function drawSquare() {
-    ctx.fillStyle = square.color;
-    ctx.fillRect(square.x, square.y, square.size, square.size);
-}
-
-function updateSquare() {
-    square.x += square.speed;
-    if (square.x > canvas.width) {
-        square.x = 0;
-        score++;
-        scoreDisplay.textContent = 'Score: ' + score;
+function createBoard() {
+    for (let i = 0; i < gridSize * gridSize; i++) {
+        const square = document.createElement('div');
+        square.classList.add('square');
+        square.dataset.index = i;
+        gameBoard.appendChild(square);
+        squares.push(square);
     }
 }
 
 
-function clearCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
+function fillSquares() {
+    if (gameOver) return;
 
-function gameLoop() {
-    if (!gameRunning) return;
+    squares.forEach(square => {
+        square.classList.remove('filled');
+        square.textContent = '';
+    });
 
-    clearCanvas();
-    updateSquare();
-    drawSquare();
-    animationFrameId = requestAnimationFrame(gameLoop);
-}
-
-function startGame() {
-    if (!gameRunning) {
-        gameRunning = true;
-        score = 0;
-        scoreDisplay.textContent = 'Score: 0';
-        square.x = 50;
-        cancelAnimationFrame(animationFrameId); //stop any existing animation
-        gameLoop();
+    let filledCount = 0;
+    while (filledCount < 25) {
+        const randomIndex = Math.floor(Math.random() * squares.length);
+        if (!squares[randomIndex].classList.contains('filled')) {
+            squares[randomIndex].classList.add('filled');
+            squares[randomIndex].textContent = Math.floor(Math.random() * 9) + 1; //numbers 1-9
+            filledCount++;
+        }
     }
 }
 
 
-function stopGame() {
-    gameRunning = false;
-    cancelAnimationFrame(animationFrameId);
+function checkGameOver() {
+    if(gameOver) return;
+    let filledSquares = squares.filter(square => square.classList.contains('filled'));
+    if (filledSquares.length === 0){
+        gameOver = true;
+        gameOverMessage.style.display = 'block';
+    }
+}
+
+function resetGame() {
+    gameOver = false;
+    gameOverMessage.style.display = 'none';
+    squares.forEach(square => {
+        square.classList.remove('filled');
+        square.textContent = '';
+    });
+    fillSquares();
 }
 
 
-startButton.addEventListener('click', startGame);
+createBoard();
+fillSquares();
+
+resetButton.addEventListener('click', resetGame);
 
 </script>
-
 </body>
 </html>
 ```
