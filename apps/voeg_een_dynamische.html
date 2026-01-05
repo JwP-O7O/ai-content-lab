@@ -8,72 +8,95 @@
         body {
             margin: 0;
             overflow: hidden; /* Hide scrollbars */
-            background-color: #87CEEB; /* Light blue sky */
+            background: linear-gradient(to bottom, #87CEEB, #E0FFFF); /* Sky Blue to Light Cyan */
             font-family: sans-serif;
             color: #333;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        #background {
-            position: fixed;
+        .sky {
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -1; /* Place behind the game container */
+            overflow: hidden;
+            z-index: -1; /* Place behind other content */
         }
 
         .cloud {
             position: absolute;
-            background-color: white;
-            border-radius: 50px;
-            opacity: 0.7;
-            animation: move-clouds linear infinite;
+            background: rgba(255, 255, 255, 0.7); /* Semi-transparent white */
+            border-radius: 50%;
+            animation: moveClouds 20s linear infinite; /* Adjust speed and duration */
+        }
+        @keyframes moveClouds {
+            from {
+                transform: translateX(100vw);
+            }
+            to {
+                transform: translateX(-200px); /* Move clouds off-screen */
+            }
         }
 
-        #game-container {
-            position: relative;
-            z-index: 1; /* Bring game content to the front */
-            width: 90%;
-            max-width: 800px;
-            margin: 50px auto;
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .cloud {
+                animation-duration: 30s; /* Slower on smaller screens */
+            }
+        }
+
+        .content {
+            background-color: rgba(255, 255, 255, 0.8);
             padding: 20px;
-            background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
             text-align: center;
         }
 
-        @keyframes move-clouds {
-            from {
-                transform: translateX(100vw);
-            }
-            to {
-                transform: translateX(-200px); /* Slightly off-screen for seamless loop */
-            }
+        h1 {
+            margin-bottom: 10px;
         }
 
-        @media (max-width: 600px) {
-            #game-container {
-                margin: 20px;
-            }
-        }
     </style>
 </head>
 <body>
-
-    <div id="background">
-        <div class="cloud" style="width: 150px; height: 60px; top: 20%; left: 10%; animation-duration: 40s;"></div>
-        <div class="cloud" style="width: 100px; height: 40px; top: 50%; left: 70%; animation-duration: 30s;"></div>
-        <div class="cloud" style="width: 200px; height: 80px; top: 10%; left: 40%; animation-duration: 50s;"></div>
-        <div class="cloud" style="width: 120px; height: 50px; top: 70%; left: 20%; animation-duration: 35s;"></div>
-        <div class="cloud" style="width: 180px; height: 70px; top: 80%; left: 80%; animation-duration: 45s;"></div>
+    <div class="sky">
+        </div>
+    <div class="content">
+        <h1>Welcome!</h1>
+        <p>This is a web page with a moving cloud background.</p>
     </div>
 
-    <div id="game-container">
-        <h1>My Awesome Game</h1>
-        <p>Welcome to the game! The moving clouds add a nice touch, right?</p>
-        <button>Start Game</button>
-    </div>
+    <script>
+        const sky = document.querySelector('.sky');
+        const numberOfClouds = 10; // Adjust the number of clouds
 
+        for (let i = 0; i < numberOfClouds; i++) {
+            const cloud = document.createElement('div');
+            cloud.classList.add('cloud');
+
+            // Random size and position
+            const size = Math.random() * 80 + 30; // Size between 30px and 110px
+            const topPosition = Math.random() * 80; // Position clouds within the top 80% of the screen
+            const animationDelay = Math.random() * 20; // Randomize start time
+
+            cloud.style.width = `${size}px`;
+            cloud.style.height = `${size * 0.6}px`; // Make clouds slightly oblong
+            cloud.style.left = `${Math.random() * 100}vw`; // Random horizontal position
+            cloud.style.top = `${topPosition}vh`;
+            cloud.style.animationDelay = `-${animationDelay}s`; // Start at random times
+
+            sky.appendChild(cloud);
+
+            // Add some round shape
+            cloud.style.borderRadius = "50%";
+            cloud.style.filter = "blur(3px)"; // Soften the clouds.
+        }
+
+    </script>
 </body>
 </html>
