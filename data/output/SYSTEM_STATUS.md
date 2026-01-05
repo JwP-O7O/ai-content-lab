@@ -4,4 +4,4 @@
 | **Model** | `Gemini 2.0` |
 | **Cycles** | 1 |
 | **Status** | 🟢 ONLINE |
-| **Actie** | 🛠️ Systeem geüpgraded |
+| **Actie** | Monitoring... |
