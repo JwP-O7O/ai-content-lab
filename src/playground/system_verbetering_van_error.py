@@ -14,6 +14,7 @@ def run_ruff(directory="."):
             capture_output=True,
             text=True,
             check=False,  # Don't raise exception on non-zero exit code, we'll handle it
+            timeout=60  # Added timeout for robustness
         )
 
         if result.returncode != 0:
@@ -24,6 +25,8 @@ def run_ruff(directory="."):
         else:
             return {"success": True, "stdout": result.stdout}
 
+    except subprocess.TimeoutExpired:
+        return {"success": False, "error": "ruff check timed out."}
     except FileNotFoundError:
         return {"success": False, "error": "ruff executable not found."}
     except PermissionError:
