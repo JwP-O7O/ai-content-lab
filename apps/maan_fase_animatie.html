@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moon Phase Animation</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: linear-gradient(to bottom, #1e3c72, #2a5298);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            position: relative;
+            width: 300px;
+            height: 300px;
+        }
+
+        .moon {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: #f0f0d8;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            transition: transform 0.5s ease;
+        }
+
+        .shadow {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.4);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: 50% 50%;
+            transform: translate(-50%, -50%) rotate(0deg);
+            transition: transform 0.5s ease;
+        }
+
+
+        .phase-name {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.2em;
+            color: #ddd;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                width: 250px;
+                height: 250px;
+            }
+
+            .moon, .shadow {
+                width: 120px;
+                height: 120px;
+            }
+
+            .phase-name {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="moon"></div>
+        <div class="shadow"></div>
+        <div class="phase-name">New Moon</div>
+    </div>
+
+    <script>
+        function getMoonPhase() {
+            const now = new Date();
+            const startOfCycle = new Date(now.getFullYear(), 0, 1);
+            const diffInDays = Math.floor((now - startOfCycle) / (1000 * 60 * 60 * 24));
+            const phase = (diffInDays % 29.53) / 29.53; // Approximate lunar cycle length
+            return phase;
+        }
+
+        function updateMoonPhase() {
+            const phase = getMoonPhase();
+            const shadowElement = document.querySelector('.shadow');
+            const phaseNameElement = document.querySelector('.phase-name');
+            let rotationAngle = phase * 360;
+
+            shadowElement.style.transform = `translate(-50%, -50%) rotate(${rotationAngle}deg)`;
+
+            let phaseName = "";
+            if (phase < 0.05) {
+                phaseName = "New Moon";
+            } else if (phase < 0.20) {
+                phaseName = "Waxing Crescent";
+            } else if (phase < 0.25) {
+                phaseName = "First Quarter";
+            } else if (phase < 0.45) {
+                phaseName = "Waxing Gibbous";
+            } else if (phase < 0.55) {
+                phaseName = "Full Moon";
+            } else if (phase < 0.75) {
+                phaseName = "Waning Gibbous";
+            } else if (phase < 0.80) {
+                phaseName = "Last Quarter";
+            } else {
+                phaseName = "Waning Crescent";
+            }
+
+
+            phaseNameElement.textContent = phaseName;
+
+        }
+
+        updateMoonPhase();
+        setInterval(updateMoonPhase, 60000); // Update every minute
+    </script>
+</body>
+</html>
