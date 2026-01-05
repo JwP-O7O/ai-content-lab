@@ -1,6 +1,5 @@
 import os
 import random
-import time
 from github import Github
 from loguru import logger
 from dotenv import load_dotenv
@@ -14,80 +13,82 @@ class EvolutionaryAgent:
         self.ai = AIService()
         self.github_token = os.getenv("GITHUB_TOKEN")
         self.repo_name = "JwP-O7O/ai-content-lab"
-        self.apps_dir = "apps"
+        self.apps_dir = "apps" # FOCUS OP APPS
 
-    def _get_random_file(self):
-        """Kiest een willekeurig bestand om te verbeteren"""
+    def _get_random_app(self):
+        """Kiest een bestaande game/app"""
         if not os.path.exists(self.apps_dir): return None
-        
         files = [f for f in os.listdir(self.apps_dir) if f.endswith('.html')]
         if not files: return None
-        
         return os.path.join(self.apps_dir, random.choice(files))
 
     async def propose_improvement(self):
-        """Bedenkt een verbetering en maakt een ticket aan"""
-        target_file = self._get_random_file()
+        target_file = self._get_random_app()
         if not target_file:
-            logger.warning(f"[{self.name}] Geen bestanden gevonden om te verbeteren.")
+            logger.warning(f"[{self.name}] Geen apps gevonden om te verbeteren.")
             return
 
         filename = os.path.basename(target_file)
-        logger.info(f"[{self.name}] 🧬 Analyseren van {filename} voor evolutie...")
+        logger.info(f"[{self.name}] 🎮 Gameplay analyseren van {filename}...")
 
-        # 1. Lees de huidige code
         with open(target_file, 'r') as f:
-            code_snippet = f.read()[:2000] # Lees eerste 2000 tekens voor context
+            code_snippet = f.read()
 
-        # 2. Vraag Gemini om een creatieve upgrade
+        # DE NIEUWE PROMPT: FOCUS OP GAMEPLAY & FEATURES
         prompt = f"""
-        Je bent een Product Owner die kijkt naar de code van '{filename}'.
+        Je bent een Creatieve Game Designer en Product Owner.
+        Je kijkt naar de broncode van een web-game: '{filename}'.
         
-        CODE CONTEXT:
-        {code_snippet}
+        HUIDIGE CODE (Snippet):
+        {code_snippet[:4000]}
         ...
         
         OPDRACHT:
-        Verzin 1 concrete, leuke feature of verbetering voor deze app.
-        Het moet een duidelijke taak zijn voor een developer.
+        Bedenk 1 CONCRETE, ZICHTBARE feature om dit spel leuker te maken.
+        Niet refactoren, geen 'clean code', maar SPELPLEZIER.
         
-        FORMAT:
-        Titel: WEB: [Korte pakkende titel]
-        Body: [Beschrijving van wat er moet gebeuren]
+        Denk aan:
+        - Power-ups (schilden, snelheid, lasers)
+        - Visuele effecten (partikels, explosies, achtergronden)
+        - Geluidseffecten (indien nog niet aanwezig)
+        - UI verbeteringen (Score bord, Start scherm, Game Over scherm)
+        - Nieuwe obstakels of vijanden
+        
+        FORMAT (Belangrijk voor de WebArchitect):
+        Titel: WEB: Voeg [Feature Naam] toe aan {filename}
+        Body:
+        Breid de bestaande '{filename}' uit met [Feature].
+        Behoud de bestaande logica, maar voeg deze functionaliteit toe.
+        Zorg dat het direct werkt in de browser.
         """
 
         suggestion = await self.ai.generate_text(prompt)
-        
         if not suggestion: return
 
-        # 3. Parse het antwoord
+        # Parse antwoord
         lines = suggestion.split('\n')
-        title = "WEB: Verbetering"
-        body = "Verbeter de code."
+        title = f"WEB: Upgrade {filename}"
+        body = suggestion
         
         for line in lines:
-            if line.startswith("Titel:"):
-                title = line.replace("Titel:", "").strip()
-            if line.startswith("Body:"):
-                body = line.replace("Body:", "").strip()
+            if line.startswith("Titel:"): title = line.replace("Titel:", "").strip()
+            if line.startswith("Body:"): body = line.replace("Body:", "").strip()
 
-        # 4. Maak het issue aan op GitHub (zodat de Listener het oppakt)
+        # Post naar GitHub
         try:
             g = Github(self.github_token)
             repo = g.get_repo(self.repo_name)
             
-            # Check of we niet spammen (max 3 open auto-issues)
-            open_issues = repo.get_issues(state='open', labels=['evolution'])
-            if open_issues.totalCount >= 3:
-                logger.info(f"[{self.name}] ⏸️ Al genoeg open verbeteringen. Ik wacht even.")
-                return
+            # Max 2 open feature requests tegelijk om chaos te voorkomen
+            issues = repo.get_issues(state='open', labels=['feature-request'])
+            if issues.totalCount >= 2: return
 
-            new_issue = repo.create_issue(
+            repo.create_issue(
                 title=title,
-                body=f"{body}\n\n*(Gegenereerd door EvolutionaryAgent 🧬)*",
-                labels=['evolution']
+                body=f"{body}\n\n*(Gegenereerd door Game Designer Agent 🎮)*",
+                labels=['feature-request']
             )
-            logger.success(f"[{self.name}] 💡 Nieuw idee gelanceerd: {title}")
+            logger.success(f"[{self.name}] 💡 Nieuwe game feature bedacht: {title}")
             
         except Exception as e:
-            logger.error(f"[{self.name}] Kon geen issue maken: {e}")
+            logger.error(f"[{self.name}] Kon feature ticket niet maken: {e}")
