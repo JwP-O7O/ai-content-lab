@@ -2,192 +2,190 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>WebArchitect - Gameplay</title>
+<title>Pixel Grid Game</title>
 <style>
 body {
     font-family: sans-serif;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     height: 100vh;
     margin: 0;
     background-color: #f0f0f0;
 }
 
 #game-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    border: 2px solid #333;
     background-color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-#game-grid {
+#pixel-grid {
     display: grid;
-    grid-template-columns: repeat(10, 30px);
-    grid-template-rows: repeat(10, 30px);
-    gap: 2px;
-    margin-bottom: 10px;
+    /* Adjusted grid for better responsiveness, use percentages */
+    grid-template-columns: repeat(20, 1fr); /* Adjust the number of columns (pixels wide) */
+    grid-gap: 1px;
+    width: 400px; /* or a percentage, e.g., 80% */
+    height: 400px;
+    /* Adjust width/height as needed */
 }
 
-.grid-cell {
-    width: 30px;
-    height: 30px;
+.pixel {
+    width: 100%; /* Ensure pixels fill their grid cells */
+    height: 100%; /* Ensure pixels fill their grid cells */
     background-color: #eee;
-    border-radius: 3px;
+    border: 1px solid #ddd;
+    box-sizing: border-box; /* Important for width/height calculation */
     cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.grid-cell:hover {
-    background-color: #ddd;
-}
-
-.grid-cell.active {
-    background-color: #4CAF50; /* Green */
 }
 
 #controls {
+    margin-top: 20px;
     display: flex;
     gap: 10px;
-    margin-bottom: 10px;
 }
 
 button {
     padding: 10px 15px;
-    background-color: #008CBA;
-    color: white;
+    font-size: 1em;
+    cursor: pointer;
     border: none;
     border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
+    background-color: #4CAF50;
+    color: white;
+    transition: background-color 0.2s;
 }
 
 button:hover {
-    background-color: #0077a0;
+    background-color: #3e8e41;
 }
 
 #score {
+    margin-top: 20px;
     font-size: 1.2em;
-    margin-bottom: 10px;
 }
+
 </style>
 </head>
 <body>
+
+    <h1>Pixel Grid Game</h1>
+
     <div id="game-container">
-        <div id="score">Score: <span id="score-value">0</span></div>
-        <div id="game-grid"></div>
-        <div id="controls">
-            <button id="start-button">Start</button>
-            <button id="reset-button">Reset</button>
+        <div id="pixel-grid">
+            <!-- Pixels will be dynamically generated here -->
         </div>
     </div>
 
+    <div id="controls">
+        <button id="start-button">Start</button>
+        <button id="reset-button">Reset</button>
+    </div>
+
+    <div id="score">Score: <span id="score-value">0</span></div>
+
+
 <script>
-    const gridSize = 10;
-    const grid = document.getElementById('game-grid');
-    const scoreDisplay = document.getElementById('score-value');
+    const pixelGrid = document.getElementById('pixel-grid');
     const startButton = document.getElementById('start-button');
     const resetButton = document.getElementById('reset-button');
+    const scoreValue = document.getElementById('score-value');
+    const gridWidth = 20; // Number of columns
+    const gridHeight = 20; // Number of rows
+    let pixels = [];
     let gameInterval;
     let score = 0;
-    let activeCells = [];
-    let gameRunning = false;
+    let isGameRunning = false;
 
-    // Function to create the grid
+    // Function to generate the pixel grid
     function createGrid() {
-        for (let i = 0; i < gridSize * gridSize; i++) {
-            const cell = document.createElement('div');
-            cell.classList.add('grid-cell');
-            cell.dataset.index = i;
-            grid.appendChild(cell);
+        for (let row = 0; row < gridHeight; row++) {
+            for (let col = 0; col < gridWidth; col++) {
+                const pixel = document.createElement('div');
+                pixel.classList.add('pixel');
+                pixel.dataset.row = row;
+                pixel.dataset.col = col;
+                pixel.addEventListener('click', pixelClickHandler);
+                pixelGrid.appendChild(pixel);
+                pixels.push(pixel);
+            }
         }
     }
 
-    // Function to get all cells
-    function getCells() {
-        return document.querySelectorAll('.grid-cell');
+    function getRandomPixel() {
+        const randomIndex = Math.floor(Math.random() * pixels.length);
+        return pixels[randomIndex];
     }
 
-    // Function to activate a random cell
-    function activateRandomCell() {
-        const cells = getCells();
-        const randomIndex = Math.floor(Math.random() * cells.length);
+    function pixelClickHandler(event) {
+        if (!isGameRunning) return; // Prevent clicking when the game is not running
 
-        if (activeCells.length > 0) {
-            deactivateCells();
-        }
-
-        activeCells = [randomIndex]; // Store the active cell index
-        cells[randomIndex].classList.add('active');
-    }
-
-    function deactivateCells() {
-        const cells = getCells();
-        activeCells.forEach(index => {
-            cells[index].classList.remove('active');
-        });
-        activeCells = [];
-    }
-
-
-    function handleCellClick(event) {
-        if (!gameRunning) return;
-
-        const clickedIndex = parseInt(event.target.dataset.index);
-
-        if (activeCells.includes(clickedIndex)) {
+        const clickedPixel = event.target;
+        if (clickedPixel.classList.contains('active')) {
+            clickedPixel.classList.remove('active');
+            clickedPixel.style.backgroundColor = '#eee';
             score++;
-            scoreDisplay.textContent = score;
-            activateRandomCell();
+            scoreValue.textContent = score;
+            spawnActivePixel(); // Spawn a new active pixel
         } else {
+            // Game Over - optional implementation
             gameOver();
         }
     }
 
 
-    function startGame() {
-        if (gameRunning) return;
-        score = 0;
-        scoreDisplay.textContent = score;
-        gameRunning = true;
-        activateRandomCell();
+    function spawnActivePixel() {
+        // Clear existing active pixels
+        pixels.forEach(pixel => {
+            pixel.classList.remove('active');
+            pixel.style.backgroundColor = '#eee';
+        });
 
-        gameInterval = setInterval(() => {
-            if (gameRunning) {
-                activateRandomCell();
-            }
-        }, 1500);
+        // Get a random pixel and activate it
+        const activePixel = getRandomPixel();
+        activePixel.classList.add('active');
+        activePixel.style.backgroundColor = '#ff0000'; // Red color
+    }
+
+
+    function startGame() {
+        if (isGameRunning) return;
+        isGameRunning = true;
+        score = 0;
+        scoreValue.textContent = score;
+        spawnActivePixel();
+
     }
 
     function gameOver() {
-        clearInterval(gameInterval);
-        gameRunning = false;
-        alert(`Game Over! Final Score: ${score}`);
-        deactivateCells();
+        clearInterval(gameInterval); // Stop the game loop
+        isGameRunning = false;
+        alert(`Game Over! Your score: ${score}`);
+        // Optionally: reset the game after game over
     }
 
     function resetGame() {
         clearInterval(gameInterval);
-        gameRunning = false;
+        isGameRunning = false;
         score = 0;
-        scoreDisplay.textContent = score;
-        deactivateCells();
+        scoreValue.textContent = score;
+        pixels.forEach(pixel => {
+            pixel.classList.remove('active');
+            pixel.style.backgroundColor = '#eee'; // Reset pixel color
+        });
     }
 
 
-    // Event Listeners
+    // Event listeners
     startButton.addEventListener('click', startGame);
     resetButton.addEventListener('click', resetGame);
 
-    // Initialize grid and event listeners for each cell.
+    // Initialize the grid
     createGrid();
-    getCells().forEach(cell => {
-        cell.addEventListener('click', handleCellClick);
-    });
+
 </script>
+
 </body>
 </html>
 ```
