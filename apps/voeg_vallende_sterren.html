@@ -21,6 +21,7 @@
             position: relative;
             width: 100%;
             height: 100vh;
+            cursor: crosshair; /* Indicate interactivity */
         }
 
         .star {
@@ -31,6 +32,13 @@
             animation-name: fall;
             animation-timing-function: linear;
             animation-fill-mode: forwards;
+            cursor: pointer; /* Indicate interactivity */
+        }
+
+        .star.caught {
+            animation-name: caughtFall;
+            animation-duration: 0.3s; /* Shorter duration for caught animation */
+            animation-fill-mode: forwards;
         }
 
         @keyframes fall {
@@ -40,6 +48,17 @@
             }
             to {
                 transform: translateY(100vh);
+                opacity: 0;
+            }
+        }
+
+        @keyframes caughtFall {
+            from {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            to {
+                transform: translateY(100vh) scale(0);
                 opacity: 0;
             }
         }
@@ -118,6 +137,7 @@
             star.style.top = `${Math.random() * -20}vh`; // Start above the screen
             star.style.animationDuration = `${animationDuration}s`;
             star.style.animationDelay = `-${Math.random() * animationDuration}s`; // Stagger the stars
+            star.dataset.caught = 'false';  // Add a data attribute to track caught stars
 
 
             starContainer.appendChild(star);
@@ -125,11 +145,21 @@
 
             // Remove the star after animation
             star.addEventListener('animationend', () => {
-                star.remove();
-                // Increase score when star disappears
-                score++;
-                scoreDisplay.textContent = score;
+                if (star.dataset.caught === 'false') {
+                    star.remove();
+                    // Increase score when star disappears
+                    score++;
+                    scoreDisplay.textContent = score;
+                }
+            });
 
+
+             // Add click event listener to catch stars
+            star.addEventListener('click', (event) => {
+                if (star.dataset.caught === 'false') {
+                   catchStar(star);
+                }
+                event.stopPropagation(); // Prevent the click from bubbling to the container
             });
         }
 
@@ -142,6 +172,22 @@
             }
         }
 
+        // Function to handle catching a star
+        function catchStar(star) {
+            star.dataset.caught = 'true'; // Mark as caught
+            star.classList.add('caught');
+             // Add score for caught star
+            score += 10; // Award 10 points for catching a star
+            scoreDisplay.textContent = score;
+
+            // Remove the star after the caught animation
+            star.addEventListener('animationend', () => {
+                star.remove();
+            }, { once: true }); // Ensure the event listener runs only once
+        }
+
+
+
         // Initial star creation
         startStarCreation();
 
@@ -151,6 +197,14 @@
         speedInput.addEventListener('change', () => {
              startStarCreation(); // Restart the animation
         });
+
+        // Optional: Add a click listener to the container to catch all stars (for testing)
+       /* starContainer.addEventListener('click', () => {
+            document.querySelectorAll('.star').forEach(star => {
+                catchStar(star);
+            });
+        });*/
+
     </script>
 </body>
 </html>
