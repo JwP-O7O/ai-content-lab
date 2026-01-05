@@ -3,6 +3,6 @@
 | Metric | Waarde |
 |---|---|
 | **Model** | `Gemini 2.0 Flash Lite` |
-| **Cycles** | 2 |
+| **Cycles** | 3 |
 | **Laatste Actie** | Monitoring... |
 | **Status** | ✅ EVOLVING |
