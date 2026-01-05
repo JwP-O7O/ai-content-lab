@@ -4,7 +4,7 @@
 <head>
 <title>Game Loop Example</title>
 <style>
-body {
+  body {
     font-family: sans-serif;
     display: flex;
     justify-content: center;
@@ -12,27 +12,27 @@ body {
     height: 100vh;
     margin: 0;
     background-color: #f0f0f0;
-}
+  }
 
-#gameContainer {
+  #gameContainer {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
-}
+  }
 
-#gameCanvas {
+  #gameCanvas {
     border: 1px solid #ccc;
     margin-bottom: 10px;
-}
+  }
 
-#scoreDisplay {
+  #scoreDisplay {
     font-size: 1.2em;
     margin-bottom: 10px;
-}
+  }
 
-#startButton, #stopButton {
+  button {
     background-color: #4CAF50;
     color: white;
     padding: 10px 20px;
@@ -40,122 +40,84 @@ body {
     border-radius: 4px;
     cursor: pointer;
     font-size: 1em;
-    margin: 5px;
-}
+  }
 
-#stopButton {
-    background-color: #f44336;
-}
+  button:hover {
+    background-color: #3e8e41;
+  }
 </style>
 </head>
 <body>
 
 <div id="gameContainer">
     <h1>Simple Game Loop</h1>
-    <canvas id="gameCanvas" width="400" height="300"></canvas>
     <div id="scoreDisplay">Score: <span id="score">0</span></div>
-    <button id="startButton">Start Game</button>
-    <button id="stopButton">Stop Game</button>
+    <canvas id="gameCanvas" width="300" height="200"></canvas>
+    <button id="startButton">Start</button>
 </div>
 
-
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const scoreDisplay = document.getElementById('score');
-const startButton = document.getElementById('startButton');
-const stopButton = document.getElementById('stopButton');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('score');
+    const startButton = document.getElementById('startButton');
 
-let score = 0;
-let gameRunning = false;
-let animationFrameId;
+    let score = 0;
+    let gameRunning = false;
+    let x = 50;
+    let y = 50;
+    let dx = 2; // horizontal speed
+    let dy = 2; // vertical speed
 
-// Game object - example (could be a player, enemy, etc.)
-let gameObjects = [];
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // clear the canvas
 
-function createGameObject() {
-    return {
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        size: 10,
-        color: `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`,
-        speedX: (Math.random() - 0.5) * 2, // Random speed -2 to 2
-        speedY: (Math.random() - 0.5) * 2  // Random speed -2 to 2
-    };
-}
+        // Draw a simple shape (e.g., a rectangle)
+        ctx.fillStyle = 'blue';
+        ctx.fillRect(x, y, 20, 20);
 
-function updateScore() {
-    score++;
-    scoreDisplay.textContent = score;
-}
-
-function drawGameObject(gameObject) {
-    ctx.fillStyle = gameObject.color;
-    ctx.beginPath();
-    ctx.arc(gameObject.x, gameObject.y, gameObject.size, 0, Math.PI * 2);
-    ctx.fill();
-}
-
-
-function updateGameObjects() {
-    gameObjects.forEach(obj => {
-        obj.x += obj.speedX;
-        obj.y += obj.speedY;
-
-        // Bounce off walls
-        if (obj.x + obj.size > canvas.width || obj.x - obj.size < 0) {
-            obj.speedX = -obj.speedX;
+         // Bounce the shape off the walls
+        if (x + 20 > canvas.width || x < 0) {
+            dx = -dx;
         }
-        if (obj.y + obj.size > canvas.height || obj.y - obj.size < 0) {
-            obj.speedY = -obj.speedY;
+        if (y + 20 > canvas.height || y < 0) {
+            dy = -dy;
         }
-    });
-}
 
-
-function clearCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-
-function gameLoop() {
-    if (!gameRunning) return;
-
-    clearCanvas();
-    updateGameObjects();
-
-    gameObjects.forEach(obj => {
-        drawGameObject(obj);
-    });
-
-    updateScore(); // Example: Update score every frame (or after a set interval)
-
-    animationFrameId = requestAnimationFrame(gameLoop);
-}
-
-function startGame() {
-    if (gameRunning) return; // Prevent multiple starts
-
-    score = 0;
-    scoreDisplay.textContent = score;
-    gameRunning = true;
-    gameObjects = []; //reset
-    for (let i = 0; i < 5; i++) { // Create 5 initial game objects
-      gameObjects.push(createGameObject());
+        x += dx;
+        y += dy;
     }
 
-    gameLoop();
-}
+    function updateScore() {
+        score++;
+        scoreDisplay.textContent = score;
+    }
 
-function stopGame() {
-    gameRunning = false;
-    cancelAnimationFrame(animationFrameId);
-}
 
-startButton.addEventListener('click', startGame);
-stopButton.addEventListener('click', stopGame);
+    function gameLoop() {
+        if (!gameRunning) return; // Stop the loop if the game isn't running
+
+        draw();
+        updateScore();
+        requestAnimationFrame(gameLoop); // Request the next frame
+    }
+
+
+    startButton.addEventListener('click', () => {
+        if (!gameRunning) {
+            gameRunning = true;
+            score = 0;
+            scoreDisplay.textContent = score;
+            gameLoop();
+            startButton.textContent = "Stop";
+        } else {
+            gameRunning = false;
+            startButton.textContent = "Start";
+        }
+
+    });
+
 </script>
-
 </body>
 </html>
 ```
