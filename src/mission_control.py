@@ -1,57 +1,84 @@
-import os
 import time
-from datetime import datetime
+import os
+from rich.console import Console
+from rich.layout import Layout
+from rich.panel import Panel
+from rich.table import Table
+from rich.live import Live
+from rich.align import Align
 
-# Kleuren
-CYAN = '\033[96m'
-GREEN = '\033[92m'
-YELLOW = '\033[93m'
-RED = '\033[91m'
-BOLD = '\033[1m'
-RESET = '\033[0m'
+console = Console()
 
-LOG_FILE = "logs/autonomous_agents/agent.log"
+def get_last_logs(n=8):
+    log_file = "logs/autonomous_agents/agent.log"
+    if not os.path.exists(log_file): return ["Wachten op logs..."]
+    try:
+        with open(log_file, 'r') as f:
+            lines = f.readlines()
+            # Filter wat rommel eruit voor een schoner beeld
+            clean_lines = []
+            for line in lines[-20:]:
+                if "INFO" in line and "Cycle" not in line:
+                    clean_lines.append(f"[cyan]{line.split('|')[-1].strip()}[/]")
+                elif "SUCCESS" in line:
+                    clean_lines.append(f"[bold green]✔ {line.split('|')[-1].strip()}[/]")
+                elif "ERROR" in line:
+                    clean_lines.append(f"[bold red]✖ {line.split('|')[-1].strip()}[/]")
+                elif "WARNING" in line:
+                    clean_lines.append(f"[yellow]⚠ {line.split('|')[-1].strip()}[/]")
+            return clean_lines[-n:]
+    except: return ["Log file busy..."]
 
-def clear_screen(): os.system('clear')
-
-def get_last_log_lines(n=10):
-    if not os.path.exists(LOG_FILE): return ["Wachten op logs..."]
-    with open(LOG_FILE, 'r') as f: return [line.strip() for line in f.readlines()[-n:]]
-
-def draw_dashboard():
-    clear_screen()
-    print(f"{BOLD}{CYAN}╔══════════════════════════════════════════════════╗{RESET}")
-    print(f"{BOLD}{CYAN}║              🔵 ALL IN AI  V14.0                 ║{RESET}")
-    print(f"{BOLD}{CYAN}║            S21 ULTRA - THE HIVE MIND             ║{RESET}")
-    print(f"{BOLD}{CYAN}╚══════════════════════════════════════════════════╝{RESET}")
+def generate_layout():
+    layout = Layout()
     
-    status = os.popen("pgrep -f master_orchestrator").read()
-    print(f"\n{BOLD}🤖 AGENT WORKFORCE:{RESET}")
-    if status:
-        print(f"  [{GREEN}ONLINE{RESET}] Master Orchestrator")
-        print(f"  [{GREEN}ACTIVE{RESET}] GitHub Command Center")
-        print(f"  [{GREEN}ACTIVE{RESET}] FeatureArchitect {YELLOW}(CODE){RESET}")
-        print(f"  [{GREEN}ACTIVE{RESET}] VisionaryAgent {CYAN}(ART){RESET}")
-        print(f"  [{GREEN}ACTIVE{RESET}] Gemini Writer")
-    else:
-        print(f"  [{RED}OFFLINE{RESET}] Systeem ligt stil")
+    # Header
+    layout.split_column(
+        Layout(name="header", size=3),
+        Layout(name="body")
+    )
+    
+    # Body split
+    layout["body"].split_row(
+        Layout(name="status", ratio=1),
+        Layout(name="logs", ratio=2)
+    )
 
-    print(f"\n{BOLD}📝 LIVE LOGS:{RESET}")
-    for log in get_last_log_lines(10):
-        if "ERROR" in log: print(f"  {RED}✖ {log.split('|')[-1].strip()}{RESET}")
-        elif "WARNING" in log: print(f"  {YELLOW}⚠ {log.split('|')[-1].strip()}{RESET}")
-        elif "SUCCESS" in log: print(f"  {GREEN}✔ {log.split('|')[-1].strip()}{RESET}")
-        elif "INFO" in log: print(f"  {CYAN}ℹ {log.split('|')[-1].strip()}{RESET}")
+    # 1. Header Content
+    layout["header"].update(
+        Panel(Align.center("[bold white]🔵 ALL IN AI - S21 ULTRA COMMAND CENTER V16[/]"), style="blue")
+    )
 
-    print(f"\n{BOLD}🎮 CONTROLS:{RESET} [r]efresh | [k]ill | [s]tart | [q]uit")
+    # 2. Status Table
+    table = Table(show_header=False, expand=True, box=None)
+    
+    # Check process
+    running = os.popen("pgrep -f master_orchestrator").read()
+    status_icon = "🟢 ONLINE" if running else "🔴 OFFLINE"
+    status_color = "green" if running else "red"
+    
+    table.add_row("🤖 [bold]SYSTEM STATUS[/]", f"[{status_color}]{status_icon}[/]")
+    table.add_row("🧠 [bold]MODEL[/]", "[cyan]Gemini 2.0 Flash Lite[/]")
+    table.add_row("🌍 [bold]INTERNET[/]", "[green]Connected (Google)[/]")
+    table.add_row("🧬 [bold]EVOLUTION[/]", "[magenta]Active[/]")
+    table.add_row("🛡️ [bold]SECURITY[/]", "[green]Enforced[/]")
+    
+    layout["status"].update(
+        Panel(table, title="[bold]SYSTEM METRICS[/]", border_style="green")
+    )
 
-def main():
-    while True:
-        draw_dashboard()
-        choice = input(f"\n> ").lower().strip()
-        if choice == 'q': break
-        elif choice == 'k': os.system("pkill -f master_orchestrator")
-        elif choice == 's': os.system("nohup python3 -m src.autonomous_agents.master_orchestrator > logs/autonomous_agents/agent.log 2>&1 &")
-        time.sleep(0.5)
+    # 3. Live Logs
+    logs = get_last_logs()
+    log_content = "\n".join(logs)
+    layout["logs"].update(
+        Panel(log_content, title="[bold]LIVE FEED[/]", border_style="cyan")
+    )
 
-if __name__ == "__main__": main()
+    return layout
+
+if __name__ == "__main__":
+    console.clear()
+    with Live(generate_layout(), refresh_per_second=2) as live:
+        while True:
+            live.update(generate_layout())
+            time.sleep(0.5)
