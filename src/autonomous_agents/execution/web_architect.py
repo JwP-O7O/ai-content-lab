@@ -1,4 +1,5 @@
 import os
+import aiofiles
 from loguru import logger
 from src.autonomous_agents.ai_service import AIService
 
@@ -14,22 +15,29 @@ class WebArchitect:
         logger.info(f"[{self.name}] 🏗️ Analyseren van instructie: {instruction[:50]}...")
 
         existing_code = ""
-        target_file = None
+        filename = None
+        target_file = None # Initialiseer target_file
+
         files = [f for f in os.listdir(self.output_dir) if f.endswith('.html')]
 
         # Eerst kijken of er een relevante bestandsnaam is in de instructie
         for f in files:
             if f in instruction:
                 target_file = f
+                filename = f  # Gebruik f als bestandsnaam
                 filepath = os.path.join(self.output_dir, f)  # Bepaal het filepath direct hier
                 try:
-                    with open(filepath, 'r') as read_f:
-                        existing_code = read_f.read()
-                    logger.info(f"[{self.name}] ♻️ Update bestaande app: {target_file}")
+                    async with aiofiles.open(filepath, mode='r') as read_f:  # Gebruik aiofiles
+                        existing_code = await read_f.read()
+                    logger.info(f"[{self.name}] ♻️ Update bestaande app: {filename}")
                     break  # Stop zodra er een match is gevonden
                 except FileNotFoundError:
                     logger.error(f"[{self.name}] ⚠️ Bestand niet gevonden: {f}")
                     target_file = None  # Reset target_file als het bestand niet kan worden gelezen
+                    existing_code = ""
+                except Exception as e:
+                    logger.error(f"[{self.name}] ⚠️ Fout bij het lezen van bestand: {f} - {e}")
+                    target_file = None
                     existing_code = ""
 
         # Prompt bouwen
@@ -65,16 +73,16 @@ class WebArchitect:
             if not filename.endswith(".html"): filename += ".html"
             # Veiligheidscheck bestandsnaam
             filename = "".join([c for c in filename if c.isalnum() or c in ['_', '.']])
-        else:
-            filename = target_file
+
 
         filepath = os.path.join(self.output_dir, filename)
 
+        # Schrijven naar bestand (async)
         try:
-            with open(filepath, 'w') as f:
-                f.write(clean_html)
-            logger.success(f"[{self.name}] 🚀 App gebouwd/geüpdatet: {filename}")
+            async with aiofiles.open(filepath, mode='w') as f: # Gebruik aiofiles
+                await f.write(clean_html)
+            logger.info(f"[{self.name}] 💾 Bestand succesvol opgeslagen: {filename}")
             return {"status": "built", "filename": filename, "file": filepath}
         except Exception as e:
-            logger.error(f"[{self.name}] ⚠️ Fout bij het schrijven van bestand {filename}: {e}")
+            logger.error(f"[{self.name}] ❌ Fout bij het opslaan van bestand: {filename} - {e}")
             return {"status": "failed", "error": str(e)}
