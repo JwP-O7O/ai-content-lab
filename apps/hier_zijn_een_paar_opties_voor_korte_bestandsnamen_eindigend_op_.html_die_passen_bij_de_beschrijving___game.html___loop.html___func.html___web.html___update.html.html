@@ -1,0 +1,176 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Simple Game</title>
+<style>
+body {
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+
+#game-container {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+}
+
+#score-display {
+    font-size: 1.2em;
+    margin-bottom: 15px;
+}
+
+#game-canvas {
+    border: 1px solid #ccc;
+    background-color: #eee;
+}
+
+#controls {
+    margin-top: 15px;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 5px;
+}
+
+button:hover {
+    background-color: #3e8e41;
+}
+</style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>Simple Game</h1>
+    <div id="score-display">Score: <span id="score">0</span></div>
+    <canvas id="game-canvas" width="400" height="300"></canvas>
+    <div id="controls">
+        <button id="start-button">Start</button>
+        <button id="reset-button">Reset</button>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const scoreDisplay = document.getElementById('score');
+const startButton = document.getElementById('start-button');
+const resetButton = document.getElementById('reset-button');
+
+let score = 0;
+let gameRunning = false;
+let gameInterval;
+let circleX, circleY, circleRadius;
+let targetX, targetY, targetRadius;
+
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function initializeGame() {
+    circleRadius = 15;
+    targetRadius = 20;
+    circleX = canvas.width / 2;
+    circleY = canvas.height / 2;
+    targetX = getRandomInt(targetRadius, canvas.width - targetRadius);
+    targetY = getRandomInt(targetRadius, canvas.height - targetRadius);
+}
+
+
+function drawCircle() {
+    ctx.beginPath();
+    ctx.arc(circleX, circleY, circleRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = 'blue';
+    ctx.fill();
+    ctx.closePath();
+}
+
+function drawTarget() {
+    ctx.beginPath();
+    ctx.arc(targetX, targetY, targetRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = 'red';
+    ctx.fill();
+    ctx.closePath();
+}
+
+
+function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+
+function updateGame() {
+    clearCanvas();
+    drawTarget();
+    drawCircle();
+    checkCollision();
+
+}
+
+
+function checkCollision() {
+    const dx = circleX - targetX;
+    const dy = circleY - targetY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < circleRadius + targetRadius) {
+        score++;
+        scoreDisplay.textContent = score;
+        // Reset target position
+        targetX = getRandomInt(targetRadius, canvas.width - targetRadius);
+        targetY = getRandomInt(targetRadius, canvas.height - targetRadius);
+
+    }
+}
+
+
+function startGame() {
+    if (!gameRunning) {
+        gameRunning = true;
+        initializeGame();
+        gameInterval = setInterval(updateGame, 30); // 30ms = ~33 FPS
+    }
+}
+
+function resetGame() {
+    clearInterval(gameInterval);
+    gameRunning = false;
+    score = 0;
+    scoreDisplay.textContent = score;
+    initializeGame();
+    clearCanvas();
+
+}
+
+
+startButton.addEventListener('click', startGame);
+resetButton.addEventListener('click', resetGame);
+
+// Mouse Controls
+canvas.addEventListener('mousemove', (e) => {
+    if (gameRunning) {
+        const rect = canvas.getBoundingClientRect();
+        circleX = e.clientX - rect.left;
+        circleY = e.clientY - rect.top;
+    }
+});
+
+
+</script>
+
+</body>
+</html>
+```
