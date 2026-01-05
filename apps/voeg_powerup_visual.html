@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power-up Visual Effect</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #222;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+        }
+
+        #game-container {
+            position: relative;
+            width: 80%;
+            max-width: 400px;
+            height: 300px;
+            background-color: #333;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            overflow: hidden; /* Clip power-up effect */
+        }
+
+        #player {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 30px;
+            background-color: #007bff;
+            border-radius: 50%;
+        }
+
+        #power-up {
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            width: 20px;
+            height: 20px;
+            background-color: #ffc107;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .powerup-effect {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none; /* Make effect clickable*/
+        }
+
+        .powerup-effect::before,
+        .powerup-effect::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0;
+            animation: powerupEffect 1s ease-out forwards;
+        }
+
+        .powerup-effect::before {
+            width: 100px;
+            height: 100px;
+            background-color: rgba(255, 255, 255, 0.3);
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .powerup-effect::after {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 0, 0.5);
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: 0.2s;
+        }
+
+
+        @keyframes powerupEffect {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0);
+            }
+            50% {
+                opacity: 0.5;
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(2);
+            }
+        }
+
+        @media (max-width: 600px) {
+            #game-container {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="player"></div>
+        <div id="power-up" onclick="collectPowerUp()"></div>
+        <div id="effect-container" class="powerup-effect"></div>
+    </div>
+
+    <script>
+        function collectPowerUp() {
+            const powerUp = document.getElementById('power-up');
+            const effectContainer = document.getElementById('effect-container');
+            const gameContainer = document.getElementById('game-container');
+
+
+            // Visueel effect
+            effectContainer.style.display = 'block';
+            effectContainer.style.animation = 'none'; // Reset animation
+            setTimeout(() => {
+                effectContainer.style.animation = null;
+            }, 10);
+            setTimeout(() => {
+                effectContainer.style.display = 'none';
+            }, 1000); // Effect duration
+
+
+            // Power-up logica (verplaatsen naar willekeurige locatie)
+            const gameWidth = gameContainer.offsetWidth;
+            const gameHeight = gameContainer.offsetHeight;
+            const powerUpSize = powerUp.offsetWidth;
+
+            const newX = Math.random() * (gameWidth - powerUpSize);
+            const newY = Math.random() * (gameHeight - powerUpSize);
+
+            powerUp.style.left = `${newX}px`;
+            powerUp.style.top = `${newY}px`;
+        }
+    </script>
+</body>
+</html>
