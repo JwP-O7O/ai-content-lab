@@ -2,9 +2,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Speelveld Generatie en Klik Event</title>
+<title>Game Loop Example</title>
 <style>
-body {
+  body {
     font-family: sans-serif;
     display: flex;
     justify-content: center;
@@ -12,91 +12,140 @@ body {
     height: 100vh;
     margin: 0;
     background-color: #f0f0f0;
-}
+  }
 
-#game-container {
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  #gameContainer {
+    background-color: #fff;
     padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     text-align: center;
-}
+  }
 
-#game-board {
-    display: grid;
-    grid-template-columns: repeat(8, 50px); /* Adjust for desired grid size */
-    grid-gap: 5px;
-    margin-top: 20px;
-}
-
-.cell {
-    width: 50px;
-    height: 50px;
-    background-color: #eee;
+  #gameCanvas {
     border: 1px solid #ccc;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 20px;
+    margin-bottom: 10px;
+  }
+
+  #scoreDisplay {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+  }
+
+  button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
     cursor: pointer;
-    border-radius: 5px;
-    transition: background-color 0.2s;
-}
+    font-size: 1em;
+  }
 
-.cell:hover {
-    background-color: #ddd;
-}
-
-.clicked {
-    background-color: #b0e2ff; /* Example: Light blue */
-}
+  button:hover {
+    background-color: #3e8e41;
+  }
 </style>
 </head>
 <body>
 
-<div id="game-container">
-    <h1>Speelveld</h1>
-    <div id="game-board">
-        <!-- Cells will be generated here by JavaScript -->
-    </div>
+<div id="gameContainer">
+  <h1>Game Loop Example</h1>
+  <canvas id="gameCanvas" width="400" height="300"></canvas>
+  <div id="scoreDisplay">Score: <span id="scoreValue">0</span></div>
+  <button id="startButton">Start Game</button>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const gameBoard = document.getElementById('game-board');
-    const gridSize = 8; // Adjust for grid size
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const scoreDisplay = document.getElementById('scoreValue');
+  const startButton = document.getElementById('startButton');
 
-    // Function to generate the game board
-    function generateGameBoard() {
-        for (let i = 0; i < gridSize * gridSize; i++) {
-            const cell = document.createElement('div');
-            cell.classList.add('cell');
-            cell.dataset.index = i; // Store index for later use
+  let score = 0;
+  let gameRunning = false;
+  let animationFrameId;
 
-            // Optional: Initial cell content (e.g., numbers)
-            cell.textContent = i + 1; // Example: Display cell number
+  // Game object - example: a simple square
+  const gameObject = {
+    x: 50,
+    y: 50,
+    size: 20,
+    speedX: 2,
+    speedY: 2,
+    color: 'blue'
+  };
 
-            cell.addEventListener('click', cellClick);
-            gameBoard.appendChild(cell);
-        }
+  function drawGameObject() {
+    ctx.fillStyle = gameObject.color;
+    ctx.fillRect(gameObject.x, gameObject.y, gameObject.size, gameObject.size);
+  }
+
+  function updateGameObject() {
+    gameObject.x += gameObject.speedX;
+    gameObject.y += gameObject.speedY;
+
+    // Bounce off walls
+    if (gameObject.x + gameObject.size > canvas.width || gameObject.x < 0) {
+      gameObject.speedX = -gameObject.speedX;
+      score++; // Example: increment score on a bounce
     }
-
-    // Function to handle cell click events
-    function cellClick(event) {
-        const clickedCell = event.target;
-        // Toggle the 'clicked' class to change the appearance
-        clickedCell.classList.toggle('clicked');
-
-        // Example: Get the index of the clicked cell
-        const index = clickedCell.dataset.index;
-        console.log(`Cell clicked at index: ${index}`);
+    if (gameObject.y + gameObject.size > canvas.height || gameObject.y < 0) {
+      gameObject.speedY = -gameObject.speedY;
+      score++;
     }
+  }
 
-    // Initialize the game board
-    generateGameBoard();
-});
+
+  function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function updateScore() {
+    scoreDisplay.textContent = score;
+  }
+
+
+  function gameLoop() {
+    if (!gameRunning) return;
+
+    clearCanvas();
+    updateGameObject();
+    drawGameObject();
+    updateScore();
+
+    animationFrameId = requestAnimationFrame(gameLoop);
+  }
+
+
+
+  function startGame() {
+    if (!gameRunning) {
+      gameRunning = true;
+      score = 0;
+      updateScore();
+      gameLoop();
+      startButton.textContent = "Stop Game";
+    }
+  }
+
+  function stopGame() {
+    gameRunning = false;
+    cancelAnimationFrame(animationFrameId);
+    startButton.textContent = "Start Game";
+  }
+
+
+  startButton.addEventListener('click', () => {
+    if (gameRunning) {
+      stopGame();
+    } else {
+      startGame();
+    }
+  });
+
+
 </script>
-
 </body>
 </html>
 ```
