@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Score Explosie</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+            overflow: hidden; /* Om te voorkomen dat explosie buiten het scherm gaat */
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+        }
+
+        #score {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            transition: color 0.3s ease;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #3e8e41;
+        }
+
+        .explosion {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background-color: rgba(255, 165, 0, 0.5); /* Oranje */
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+            transform: scale(0);
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+
+        .explosion.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Score</h1>
+        <div id="score">0</div>
+        <button onclick="increaseScore()">Verhoog Score</button>
+    </div>
+
+    <script>
+        let score = 0;
+        const scoreElement = document.getElementById('score');
+        const explosionContainer = document.createElement('div');
+        explosionContainer.style.position = 'fixed';
+        explosionContainer.style.top = '0';
+        explosionContainer.style.left = '0';
+        explosionContainer.style.width = '100%';
+        explosionContainer.style.height = '100%';
+        explosionContainer.style.pointerEvents = 'none'; // Zorg ervoor dat de explosies geen interactie blokkeren
+        document.body.appendChild(explosionContainer);
+
+
+        function increaseScore() {
+            score++;
+            scoreElement.textContent = score;
+
+            // Voeg explosie toe
+            createExplosion();
+
+            // Verander de kleur van de score bij hogere score (optioneel)
+            if (score > 10) {
+                scoreElement.style.color = '#ff0'; // Geel
+            }
+            if (score > 20) {
+              scoreElement.style.color = '#f00'; // Rood
+            }
+        }
+
+
+        function createExplosion() {
+            const explosion = document.createElement('div');
+            explosion.classList.add('explosion');
+            explosion.style.left = Math.random() * window.innerWidth + 'px';
+            explosion.style.top = Math.random() * window.innerHeight + 'px';
+            explosionContainer.appendChild(explosion);
+
+            // Activeer de animatie
+            explosion.classList.add('active');
+
+            // Verwijder de explosie na de animatie
+            setTimeout(() => {
+                explosion.classList.remove('active');
+                setTimeout(() => {
+                    explosion.remove();
+                }, 500); // Wacht nog 0.5 seconden voor de verwijdering
+            }, 500); // 0.5 seconden voor de animatie
+        }
+    </script>
+</body>
+</html>
