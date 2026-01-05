@@ -1,85 +1,64 @@
-import random
-import contextlib
+import logging
+import threading
 import time
 
-class Resource:
-    def __init__(self, value):
-        self.value = value
-        self.is_open = False
+class MemoryLoader:
+    _instance = None
+    _lock = threading.Lock()
+    _memory = None
+    _memory_loading_lock = threading.Lock()
+    _memory_loading_complete = threading.Event()
 
-    def open(self):
-        if not self.is_open:
-            print(f"Opening resource with value: {self.value}")
-            self.is_open = True
-        else:
-            print("Resource already open.")
+    def __new__(cls):
+        if not cls._instance:
+            with cls._lock:
+                if not cls._instance:
+                    cls._instance = super().__new__(cls)
+        return cls._instance
 
-    def use(self):
-        if self.is_open:
-            try:
-                result = random.randint(1, 10) * self.value
-                print(f"Using resource with value {self.value}, result: {result}")
-                return result
-            except Exception as e:
-                print(f"Error during use: {e}")
-                raise
-        else:
-            raise ValueError("Resource not open")
-
-    def close(self):
-        if self.is_open:
-            print(f"Closing resource with value: {self.value}")
-            self.is_open = False
-        else:
-            print("Resource already closed.")
+    def __init__(self):
+        if hasattr(self, '_initialized'):
+            return
+        self._initialized = True
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-class ResourceContextManager:
-    def __init__(self, value):
-        self.resource = Resource(value)
-
-    def __enter__(self):
+    def _load_memory_internal(self):
         try:
-            self.resource.open()
-            return self.resource
+            logging.info("Starting memory loading...")
+            time.sleep(2)  # Simulate loading
+            loaded_memory = {"data": "This is the loaded memory."}
+            logging.info("Memory loaded successfully.")
+            return loaded_memory
         except Exception as e:
-            print(f"Error opening resource: {e}")
-            raise
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        try:
-            self.resource.close()
-        except Exception as e:
-            print(f"Error closing resource: {e}")
-            pass # Suppress closing errors
-
-def main():
-    try:
-        with ResourceContextManager(5) as resource:
-            result = resource.use()
-            print(f"Result in main: {result}")
-            if random.random() < 0.2:
-                raise ValueError("Simulated error during use.")
-    except ValueError as e:
-        print(f"Caught an error in main: {e}")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-
-    try:
-         with ResourceContextManager(10) as resource:
-             resource.use()
-             time.sleep(0.1)
-             if random.random() < 0.1:
-                raise ZeroDivisionError("Simulated division by zero")
-
-    except ZeroDivisionError as e:
-        print(f"Caught a zero division error: {e}")
-    except Exception as e:
-         print(f"Unexpected error: {e}")
+            logging.error(f"Error during memory loading: {e}", exc_info=True)
+            return None
 
 
-    print("Program finished.")
+    def _load_memory_async(self):
+        with self._memory_loading_lock:
+            if self._memory is not None:
+                return
+            self._memory = None
+            self._memory_loading_complete.clear()
+
+        def load_task():
+            loaded_memory = self._load_memory_internal()
+            with self._memory_loading_lock:
+                self._memory = loaded_memory
+                self._memory_loading_complete.set()
+        
+        threading.Thread(target=load_task, daemon=True).start()
 
 
-if __name__ == "__main__":
-    main()
+    def load_memory(self):
+        self._load_memory_async()
+        self._memory_loading_complete.wait()
+
+        with self._memory_loading_lock:
+            return self._memory
+
+    def get_memory(self):
+        if self._memory is None:
+            self.load_memory()
+        return self._memory
