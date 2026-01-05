@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Undo Game</title>
+<title>Undo Game Example</title>
 <style>
 body {
     font-family: Arial, sans-serif;
@@ -15,70 +15,62 @@ body {
 }
 
 .container {
-    background-color: white;
+    background-color: #fff;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     text-align: center;
 }
 
-button {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    margin: 10px;
-}
-
-button:hover {
-    background-color: #3e8e41;
-}
-
-#gameBoard {
+#game-board {
     display: grid;
-    grid-template-columns: repeat(3, 100px);
+    grid-template-columns: repeat(3, 80px);
     grid-gap: 5px;
-    margin-top: 20px;
+    margin-bottom: 15px;
 }
 
 .cell {
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
     background-color: #eee;
-    border-radius: 4px;
-    font-size: 4em;
+    border: 1px solid #ccc;
+    font-size: 3em;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
+    border-radius: 4px;
 }
 
 .cell:hover {
     background-color: #ddd;
 }
 
-#status {
-    margin-top: 15px;
-    font-size: 1.2em;
+#undo-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
 }
 
-#undoButton {
-    background-color: #f44336;
+#undo-button:hover {
+    background-color: #3e8e41;
 }
 
-#undoButton:hover {
-    background-color: #da190b;
+#message {
+    margin-bottom: 10px;
 }
+
 </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Tic Tac Toe</h1>
-    <div id="gameBoard">
+    <div id="message"></div>
+    <div id="game-board">
         <div class="cell" data-index="0"></div>
         <div class="cell" data-index="1"></div>
         <div class="cell" data-index="2"></div>
@@ -89,128 +81,101 @@ button:hover {
         <div class="cell" data-index="7"></div>
         <div class="cell" data-index="8"></div>
     </div>
-    <div id="status"></div>
-    <button id="undoButton">Undo</button>
-    <button id="resetButton">Reset</button>
+    <button id="undo-button">Undo</button>
 </div>
 
 <script>
-    const gameBoard = document.getElementById('gameBoard');
-    const cells = document.querySelectorAll('.cell');
-    const status = document.getElementById('status');
-    const undoButton = document.getElementById('undoButton');
-    const resetButton = document.getElementById('resetButton');
+const cells = document.querySelectorAll('.cell');
+const message = document.getElementById('message');
+const undoButton = document.getElementById('undo-button');
+let currentPlayer = 'X';
+let gameBoard = ['', '', '', '', '', '', '', '', ''];
+let movesHistory = [];
+let gameActive = true;
 
-    let currentPlayer = 'X';
-    let gameActive = true;
-    let gameState = ["", "", "", "", "", "", "", "", ""];
-    let moveHistory = []; // Store the history of moves
+const winningConditions = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6]
+];
 
-    const winningConditions = [
-        [0, 1, 2], [3, 4, 5], [6, 7, 8],
-        [0, 3, 6], [1, 4, 7], [2, 5, 8],
-        [0, 4, 8], [2, 4, 6]
-    ];
+function handleCellClick(e) {
+    const cell = e.target;
+    const cellIndex = parseInt(cell.dataset.index);
 
-    const winningMessage = () => `Player ${currentPlayer} has won!`;
-    const drawMessage = () => `Game ended in a draw!`;
-    const currentPlayerTurn = () => `It's ${currentPlayer}'s turn`;
+    if (gameBoard[cellIndex] !== '' || !gameActive) {
+        return;
+    }
 
-    status.textContent = currentPlayerTurn();
+    gameBoard[cellIndex] = currentPlayer;
+    cell.textContent = currentPlayer;
+    cell.classList.add(currentPlayer === 'X' ? 'x-symbol' : 'o-symbol'); // Add styling class
+    movesHistory.push({board: [...gameBoard], currentPlayer: currentPlayer}); // Store a snapshot of the board and player
+    checkGameResult();
+    switchPlayer();
+}
 
-    function handleCellClick(clickedCellEvent) {
-        const clickedCell = clickedCellEvent.target;
-        const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
+function switchPlayer() {
+    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+    message.textContent = `Player ${currentPlayer}'s turn`;
+}
 
-        if (gameState[clickedCellIndex] !== "" || !gameActive) {
-            return;
+function checkGameResult() {
+    let roundWon = false;
+    for (let i = 0; i < winningConditions.length; i++) {
+        const [a, b, c] = winningConditions[i];
+        if (gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) {
+            roundWon = true;
+            break;
         }
-
-        handleCellPlayed(clickedCell, clickedCellIndex);
-        checkGameResult();
     }
 
-
-    function handleCellPlayed(clickedCell, clickedCellIndex) {
-        gameState[clickedCellIndex] = currentPlayer;
-        clickedCell.textContent = currentPlayer;
-        clickedCell.classList.add(currentPlayer);
-        moveHistory.push({index: clickedCellIndex, value: currentPlayer});
+    if (roundWon) {
+        message.textContent = `Player ${currentPlayer} wins!`;
+        gameActive = false;
+        return;
     }
 
-    function changePlayer() {
-        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-        status.textContent = currentPlayerTurn();
+    let roundDraw = !gameBoard.includes('');
+    if (roundDraw) {
+        message.textContent = 'Game draw!';
+        gameActive = false;
+        return;
     }
+}
 
-    function checkGameResult() {
-        let roundWon = false;
-        for (let i = 0; i <= 7; i++) {
-            const winCondition = winningConditions[i];
-            let a = gameState[winCondition[0]];
-            let b = gameState[winCondition[1]];
-            let c = gameState[winCondition[2]];
-            if (a === '' || b === '' || c === '') {
-                continue;
-            }
-            if (a === b && b === c) {
-                roundWon = true;
-                break;
-            }
+function undoMove() {
+    if (movesHistory.length === 0 || !gameActive) {
+        return;
+    }
+    const lastMove = movesHistory.pop();
+    gameBoard = [...lastMove.board];
+    currentPlayer = lastMove.currentPlayer;
+    gameActive = true;
+
+    cells.forEach((cell, index) => {
+        cell.textContent = gameBoard[index];
+        cell.classList.remove('x-symbol', 'o-symbol'); // Remove styling classes
+        if (gameBoard[index] === 'X' || gameBoard[index] === 'O') {
+            cell.classList.add(gameBoard[index] === 'X' ? 'x-symbol' : 'o-symbol');
         }
+    });
 
-        if (roundWon) {
-            status.textContent = winningMessage();
-            gameActive = false;
-            return;
-        }
+    message.textContent = `Player ${currentPlayer}'s turn`;
+}
 
-        let roundDraw = !gameState.includes("");
-        if (roundDraw) {
-            status.textContent = drawMessage();
-            gameActive = false;
-            return;
-        }
+cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+undoButton.addEventListener('click', undoMove);
 
-        changePlayer();
-    }
+// Initial message
+message.textContent = `Player ${currentPlayer}'s turn`;
 
-    function handleUndo() {
-        if (moveHistory.length === 0 || !gameActive) {
-            return;
-        }
-
-        const lastMove = moveHistory.pop();
-        const lastMoveIndex = lastMove.index;
-
-        gameState[lastMoveIndex] = "";
-        cells[lastMoveIndex].textContent = "";
-        cells[lastMoveIndex].classList.remove('X', 'O');
-
-
-        currentPlayer = lastMove.value === 'X' ? 'O' : 'X';
-        status.textContent = currentPlayerTurn();
-    }
-
-
-    function handleResetGame() {
-        gameActive = true;
-        currentPlayer = 'X';
-        gameState = ["", "", "", "", "", "", "", "", ""];
-        moveHistory = [];
-        status.textContent = currentPlayerTurn();
-        cells.forEach(cell => {
-            cell.textContent = "";
-            cell.classList.remove('X', 'O');
-        });
-    }
-
-
-    cells.forEach(cell => cell.addEventListener('click', handleCellClick));
-    undoButton.addEventListener('click', handleUndo);
-    resetButton.addEventListener('click', handleResetGame);
 </script>
-
 </body>
 </html>
 ```
