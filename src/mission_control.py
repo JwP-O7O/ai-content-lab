@@ -10,184 +10,168 @@ from rich.table import Table
 from rich.live import Live
 from rich.align import Align
 from rich.text import Text
+from rich import box
 
 console = Console()
 
 # --- CONFIGURATIE ---
+# Icon: Het plaatje
+# Color: Kleur van de tekst
+# Tag: Korte naam voor in de kolom (max 6 letters)
 AGENT_CONFIG = {
-    "ResearchAgent":    {"c": "bold yellow",  "i": "🌍", "load": 0.9},
-    "WebArchitect":     {"c": "bold cyan",    "i": "🌐", "load": 0.8},
-    "FeatureArchitect": {"c": "bold green",   "i": "⚙️", "load": 0.85},
-    "VisionaryAgent":   {"c": "bold magenta", "i": "🎨", "load": 0.95},
-    "GitHubListener":   {"c": "blue",         "i": "📡", "load": 0.3},
-    "GitPublisher":     {"c": "white",        "i": "📦", "load": 0.4},
-    "SystemOptimizer":  {"c": "orange1",      "i": "🔧", "load": 0.7},
-    "Evolutionary":     {"c": "purple",       "i": "🧬", "load": 0.6},
-    "StaffingAgent":    {"c": "bright_white", "i": "👔", "load": 0.5},
-    "QualityAssurance": {"c": "red",          "i": "🛡️", "load": 0.75},
-    "Master":           {"c": "white",        "i": "🤖", "load": 0.2},
-    "IDLE":             {"c": "dim white",    "i": "💤", "load": 0.1}
+    "ResearchAgent":    {"c": "yellow",   "i": "🌍", "tag": "ZOEKT"},
+    "WebArchitect":     {"c": "cyan",     "i": "🌐", "tag": "BOUWT"},
+    "FeatureArchitect": {"c": "green",    "i": "⚙️", "tag": "CODET"},
+    "VisionaryAgent":   {"c": "magenta",  "i": "🎨", "tag": "ART"},
+    "GitHubListener":   {"c": "blue",     "i": "📡", "tag": "LEEST"},
+    "GitPublisher":     {"c": "white",    "i": "📦", "tag": "PUSHT"},
+    "SystemOptimizer":  {"c": "orange1",  "i": "🔧", "tag": "FIXT"},
+    "Evolutionary":     {"c": "purple",    "i": "🧬", "tag": "DENKT"},
+    "StaffingAgent":    {"c": "bright_white", "i": "👔", "tag": "HUURT"},
+    "QualityAssurance": {"c": "red",      "i": "🛡️", "tag": "TEST"},
+    "Master":           {"c": "white",    "i": "🤖", "tag": "CORE"},
+    "IDLE":             {"c": "dim white","i": "•",  "tag": "WAIT"}
 }
 
-def get_file_tail(filepath, lines=20):
-    """Leest efficiënt de laatste regels"""
+def get_file_tail(filepath, lines=50):
     try:
         if not os.path.exists(filepath): return []
         with open(filepath, 'r') as f:
             return f.readlines()[-lines:]
     except: return []
 
-def get_active_agent_info():
-    """Bepaalt WIE er nu werkt o.b.v. logs"""
-    logs = get_file_tail("logs/autonomous_agents/agent.log", lines=5)
-    if not logs: return ("IDLE", "System Booting...", 0.1)
+def parse_log_line(line):
+    """Breekt een regel op in: (Icoon, Tag, Bericht, Kleur)"""
+    line = line.strip()
+    if not line: return None
+    
+    # 1. FILTER RUIS (Belangrijk!)
+    if "Cycle #" in line or "Ruststand" in line or "---" in line:
+        return None
 
-    # We kijken naar de allerlaatste logregel
-    last_line = logs[-1].strip()
-    
-    # Zoek agent naam
-    agent_key = "IDLE"
-    for key in AGENT_CONFIG:
-        if key in last_line:
-            agent_key = key
-            break
-            
-    # Bericht opschonen
-    msg = last_line.split(' - ')[-1]
-    msg = re.sub(r'\[.*?\]', '', msg).strip()
-    if len(msg) > 25: msg = msg[:22] + "..."
-    
-    # Load bepalen (met beetje random jitter voor effect)
-    base_load = AGENT_CONFIG.get(agent_key, {}).get("load", 0.1)
-    jitter = random.uniform(-0.05, 0.05)
-    current_load = min(1.0, max(0.1, base_load + jitter))
-    
-    return (agent_key, msg, current_load)
-
-def get_load_bar(load, width=20):
-    """Maakt een mooie gradient progress bar"""
-    filled = int(load * width)
-    
-    # Kleur bepalen o.b.v. load
-    if load < 0.3: color = "green"
-    elif load < 0.6: color = "yellow"
-    elif load < 0.8: color = "orange1"
-    else: color = "red"
-    
-    bar = ""
-    for i in range(width):
-        if i < filled:
-            bar += f"[{color}]█[/]"
-        else:
-            bar += f"[dim {color}]░[/]"
-    return bar
-
-def get_scanner_bar(frame, width=40):
-    """De Cylon Scanner"""
-    pos = int((math.sin(frame * 0.2) + 1) / 2 * (width - 1))
-    chars = ["[dim blue]─[/]"] * width
-    if 0 <= pos < width: chars[pos] = "[bold white]◆[/]"
-    if 0 <= pos-1 < width: chars[pos-1] = "[bold cyan]━[/]"
-    if 0 <= pos+1 < width: chars[pos+1] = "[bold cyan]━[/]"
-    return "".join(chars)
-
-def clean_log_line(line):
-    parts = line.split(' - ')
-    raw_msg = parts[-1].strip() if len(parts) > 1 else line.strip()
-    
+    # 2. Bepaal Agent Config
     cfg = AGENT_CONFIG["IDLE"]
     for key, config in AGENT_CONFIG.items():
         if key in line:
             cfg = config
             break
-            
-    if "ERROR" in line: cfg = {"c": "bold red", "i": "☠️"}
-    if "SUCCESS" in line: cfg = {"c": "bold green", "i": "✔"}
-
-    msg = re.sub(r'\[.*?\]', '', raw_msg).strip()
-    if len(msg) > 48: msg = msg[:45] + "..."
     
-    return f"[{cfg['c']}]{cfg['i']} │ {msg}[/]"
+    # Check voor algemene status in de tekst
+    if "ERROR" in line: cfg = {"c": "bold red", "i": "✖", "tag": "FOUT"}
+    if "SUCCESS" in line: cfg = {"c": "bold green", "i": "✔", "tag": "KLAAR"}
+    if "WARNING" in line: cfg = {"c": "yellow", "i": "⚠", "tag": "WARN"}
+
+    # 3. Schoon bericht op
+    parts = line.split(' - ')
+    msg = parts[-1].strip() if len(parts) > 1 else line
+    
+    # Verwijder [AgentNaam] tags uit bericht
+    msg = re.sub(r'\[.*?\]', '', msg).strip()
+    
+    # Verkort bericht voor mobiel scherm
+    if len(msg) > 40: msg = msg[:38] + ".."
+
+    return (cfg['i'], cfg['tag'], msg, cfg['c'])
+
+def get_active_stats():
+    """Haalt live data op voor de bovenbalk"""
+    logs = get_file_tail("logs/autonomous_agents/agent.log", lines=10)
+    last_action = "System Idle"
+    active_agent = "Standby"
+    
+    if logs:
+        last_line = logs[-1].strip()
+        parts = last_line.split(' - ')
+        last_action = parts[-1].strip() if len(parts) > 1 else last_line
+        last_action = re.sub(r'\[.*?\]', '', last_action).strip()[:25]
+        
+        for key in AGENT_CONFIG:
+            if key in last_line:
+                active_agent = key.replace("Agent", "")
+                break
+
+    cycle = "0"
+    for l in reversed(logs):
+        if "Cycle #" in l:
+            cycle = l.split("#")[-1].split(" ")[0]
+            break
+            
+    return active_agent, last_action, cycle
 
 def generate_layout(frame):
     layout = Layout()
     
-    # INDELING: Header -> Scanner -> STATS (Top) -> LOGS (Bottom)
     layout.split_column(
         Layout(name="header", size=3),
-        Layout(name="scanner", size=1),
-        Layout(name="stats", size=6), # Groter voor meer detail
+        Layout(name="stats", size=4),
         Layout(name="feed")
     )
 
-    # 1. HEADER
-    blink = " " if frame % 10 < 5 else "_"
-    layout["header"].update(Panel(Align.center(f"[bold white]PHOENIX SENTIENT CORE[/][dim]{blink}[/]"), style="blue"))
+    # --- 1. HEADER (Compact & Strak) ---
+    title = "[bold white]PHOENIX[/] [dim]OS[/] [bold cyan]V6.0[/]"
+    layout["header"].update(Panel(Align.center(title), style="blue", box=box.HEAVY_EDGE))
 
-    # 2. SCANNER
-    layout["scanner"].update(Align.center(get_scanner_bar(frame)))
-
-    # 3. STATS PANEL (Real-Time Info)
-    agent_key, agent_act, load = get_active_agent_info()
-    agent_cfg = AGENT_CONFIG.get(agent_key, AGENT_CONFIG["IDLE"])
+    # --- 2. STATS (Grid View) ---
+    agent, action, cycle = get_active_stats()
     
-    # Haal cyclus nummer op (simpel hackje uit logs)
-    cycle = "0"
-    try:
-        logs = get_file_tail("logs/autonomous_agents/agent.log", 30)
-        for l in reversed(logs):
-            if "Cycle #" in l:
-                cycle = l.split("#")[-1].split(" ")[0].strip()
-                break
-    except: pass
-
-    # Grid opbouw
-    stats_table = Table(box=None, expand=True, show_header=False)
-    stats_table.add_column("Label", justify="right", width=10)
-    stats_table.add_column("Value", justify="left")
+    # Animatie balkje
+    load_len = int((math.sin(frame * 0.2) + 1) * 4) + 1
+    load_bar = "█" * load_len
     
-    # Rij 1: Huidige Agent (Met icoon en kleur)
-    stats_table.add_row(
-        "[bold white]ACTIVE:[/]", 
-        f"[{agent_cfg['c']}]{agent_cfg['i']} {agent_key}[/]"
-    )
-    # Rij 2: Huidige Actie
-    stats_table.add_row(
-        "[dim white]ACTION:[/]", 
-        f"[cyan]{agent_act}[/]"
-    )
-    # Rij 3: Neural Load Bar
-    stats_table.add_row(
-        "[bold white]LOAD:[/]", 
-        get_load_bar(load, width=25)
-    )
-    # Rij 4: System Info
-    running = os.popen("pgrep -f master_orchestrator").read()
-    status = "🟢 ONLINE" if running else "🔴 OFFLINE"
-    stats_table.add_row(
-        "[dim white]SYS:[/]", 
-        f"{status}  [dim]Cycle: #{cycle}[/]"
-    )
-
-    layout["stats"].update(Panel(stats_table, title="[bold]LIVE METRICS[/]", border_style="green"))
-
-    # 4. LOG FEED
-    logs_raw = get_file_tail("logs/autonomous_agents/agent.log", lines=18)
-    clean_logs = []
-    for line in reversed(logs_raw):
-        if "Cycle #" in line or "Ruststand" in line: continue
-        clean = clean_log_line(line)
-        clean_logs.append(clean)
+    grid = Table.grid(expand=True)
+    grid.add_column(justify="center", ratio=1)
+    grid.add_column(justify="center", ratio=1)
+    grid.add_column(justify="center", ratio=1)
     
-    layout["feed"].update(Panel("\n".join(clean_logs), title="[bold]NEURAL STREAM[/]", border_style="cyan"))
+    grid.add_row(
+        "[dim]CYCLE[/]", "[dim]ACTIVE[/]", "[dim]LOAD[/]"
+    )
+    grid.add_row(
+        f"[bold white]#{cycle}[/]", 
+        f"[cyan]{agent}[/]", 
+        f"[green]{load_bar}[/]"
+    )
+    
+    layout["stats"].update(Panel(grid, style="white", box=box.ROUNDED))
+
+    # --- 3. FEED (De Grote Schoonmaak) ---
+    # We gebruiken hier een TABEL in plaats van platte tekst voor perfecte uitlijning
+    log_table = Table(show_header=False, box=None, expand=True, padding=(0,1))
+    log_table.add_column("Icon", width=2, justify="center")
+    log_table.add_column("Tag", width=6, justify="left")
+    log_table.add_column("Message", ratio=1) # Neemt de rest van de ruimte
+
+    raw_logs = get_file_tail("logs/autonomous_agents/agent.log", lines=25)
+    
+    # Verwerk logs (van nieuw naar oud voor de lijst)
+    count = 0
+    display_logs = []
+    
+    for line in reversed(raw_logs):
+        parsed = parse_log_line(line)
+        if parsed:
+            display_logs.append(parsed)
+            count += 1
+        if count >= 16: break # Pas aan op schermhoogte
+
+    # Voeg toe aan tabel (oudste onderaan? Nee, nieuwste bovenaan is handiger op mobiel dashboard)
+    # Maar in logs lezen we vaak van boven naar beneden. Laten we nieuwste BOVENAAN zetten.
+    for icon, tag, msg, color in display_logs:
+        log_table.add_row(
+            f"[{color}]{icon}[/]",
+            f"[bold {color}]{tag}[/]",
+            f"[dim white]{msg}[/]"
+        )
+
+    layout["feed"].update(Panel(log_table, title="[bold]NEURAL STREAM[/]", border_style="blue", box=box.ROUNDED))
 
     return layout
 
 if __name__ == "__main__":
     console.clear()
     frame = 0
-    with Live(generate_layout(0), refresh_per_second=5) as live:
+    with Live(generate_layout(0), refresh_per_second=4) as live:
         while True:
             live.update(generate_layout(frame))
             frame += 1
-            time.sleep(0.1)
+            time.sleep(0.25)
