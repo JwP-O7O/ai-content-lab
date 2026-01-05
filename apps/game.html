@@ -2,15 +2,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Game</title>
+<title>Gameveld Vullen & Verwijderen</title>
 <style>
 body {
     font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    margin: 0;
+    min-height: 100vh;
     background-color: #f0f0f0;
 }
 
@@ -22,163 +21,103 @@ body {
     text-align: center;
 }
 
-#canvas {
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(10, 40px);
+    grid-gap: 5px;
+    margin-top: 10px;
+}
+
+.cell {
+    width: 40px;
+    height: 40px;
+    background-color: #eee;
     border: 1px solid #ccc;
-    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 4px;
 }
 
-#score {
-    font-size: 1.2em;
-    margin-bottom: 10px;
+.filled {
+    background-color: #4CAF50; /* Groen */
+    color: white;
 }
 
-#controls button {
-    background-color: #4CAF50;
+button {
+    background-color: #008CBA;
     color: white;
     padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    margin: 5px;
+    margin: 10px;
+    font-size: 16px;
 }
 
-#controls button:hover {
-    background-color: #3e8e41;
+button:hover {
+    background-color: #0077a0;
 }
-
-#game-over {
-    display: none;
-    font-size: 1.5em;
-    color: red;
-    margin-top: 10px;
-}
-
 </style>
 </head>
 <body>
 
 <div id="game-container">
-    <canvas id="canvas" width="400" height="300"></canvas>
-    <div id="score">Score: 0</div>
-    <div id="controls">
-        <button id="start-button">Start</button>
-        <button id="reset-button" style="display:none;">Reset</button>
-    </div>
-    <div id="game-over">Game Over!</div>
+    <h1>Gameveld Vullen & Verwijderen</h1>
+    <div id="game-board"></div>
+    <button id="fill-button">Vul Veld</button>
+    <button id="clear-button">Leeg Veld</button>
 </div>
 
 <script>
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const scoreDisplay = document.getElementById('score');
-const startButton = document.getElementById('start-button');
-const resetButton = document.getElementById('reset-button');
-const gameOverDisplay = document.getElementById('game-over');
+const gameBoard = document.getElementById('game-board');
+const fillButton = document.getElementById('fill-button');
+const clearButton = document.getElementById('clear-button');
+const rows = 10;
+const cols = 10;
+let cells = []; // Store cell elements
 
-let score = 0;
-let gameRunning = false;
-let playerX = 50;
-let playerY = canvas.height - 30; // Start the player at the bottom
-let playerWidth = 20;
-let playerHeight = 20;
-let enemyX = canvas.width;
-let enemyY = canvas.height - 30;
-let enemyWidth = 20;
-let enemyHeight = 20;
-let enemySpeed = 2; // Adjust speed as needed
-let gameLoopInterval;
-
-
-function drawPlayer() {
-    ctx.fillStyle = 'blue';
-    ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
-}
-
-
-function drawEnemy() {
-    ctx.fillStyle = 'red';
-    ctx.fillRect(enemyX, enemyY, enemyWidth, enemyHeight);
-}
-
-function updateScore() {
-    scoreDisplay.textContent = `Score: ${score}`;
-}
-
-function clearCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-
-function gameOver() {
-    clearInterval(gameLoopInterval);
-    gameRunning = false;
-    gameOverDisplay.style.display = 'block';
-    startButton.style.display = 'block';
-    resetButton.style.display = 'none';
-
-}
-
-function checkCollision() {
-    if (playerX < enemyX + enemyWidth &&
-        playerX + playerWidth > enemyX &&
-        playerY < enemyY + enemyHeight &&
-        playerY + playerHeight > enemyY) {
-        gameOver();
+// Initialize the game board
+function initializeBoard() {
+    for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.dataset.row = i;
+            cell.dataset.col = j;
+            gameBoard.appendChild(cell);
+            cells.push(cell); // Store the cell
+        }
     }
 }
 
-
-
-function gameLoop() {
-    if (!gameRunning) return; // Stop if the game is not running
-
-    clearCanvas();
-    drawPlayer();
-    drawEnemy();
-
-    //Enemy movement
-    enemyX -= enemySpeed;
-    if (enemyX < 0) {
-        enemyX = canvas.width;
-        score++;
-        updateScore();
-        enemySpeed += 0.2;
-    }
-
-    checkCollision();
-
-
+// Fill the board randomly
+function fillBoard() {
+    cells.forEach(cell => {
+        if (Math.random() > 0.7) { // 30% chance to fill
+            cell.classList.add('filled');
+        } else {
+            cell.classList.remove('filled');
+        }
+    });
 }
 
+// Clear the board
+function clearBoard() {
+    cells.forEach(cell => {
+        cell.classList.remove('filled');
+    });
+}
+
+// Event listeners
+fillButton.addEventListener('click', fillBoard);
+clearButton.addEventListener('click', clearBoard);
 
 
-startButton.addEventListener('click', () => {
-    if (!gameRunning) {
-        score = 0;
-        updateScore();
-        enemyX = canvas.width;
-        enemySpeed = 2; // Reset speed
-        gameOverDisplay.style.display = 'none';
-        gameRunning = true;
-        startButton.style.display = 'none';
-        resetButton.style.display = 'block';
-        gameLoopInterval = setInterval(gameLoop, 20); // Adjust interval for speed (lower = faster)
-    }
-});
-
-
-resetButton.addEventListener('click', () => {
-    if (gameRunning) {
-      clearInterval(gameLoopInterval);
-      gameRunning = false;
-      score = 0;
-      updateScore();
-      enemyX = canvas.width;
-      enemySpeed = 2;
-      startButton.style.display = 'block';
-      resetButton.style.display = 'none';
-    }
-});
+// Initialize on page load
+initializeBoard();
 </script>
 </body>
 </html>
