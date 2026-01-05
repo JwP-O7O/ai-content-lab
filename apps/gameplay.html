@@ -2,202 +2,201 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Pixel Game</title>
+<title>Simple Game</title>
 <style>
 body {
     font-family: sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    margin: 0;
     background-color: #f0f0f0;
-}
-
-#gameContainer {
+    margin: 0;
     display: flex;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
-    border: 2px solid #333;
+    height: 100vh;
+}
+
+#game-container {
     background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
 }
 
-#gridContainer {
-    display: grid;
-    /* Adjust grid size dynamically based on grid size */
-    grid-template-columns: repeat(var(--grid-size), 20px);
-    grid-gap: 1px;
-    margin-bottom: 10px;
-}
-
-.pixel {
-    width: 20px;
-    height: 20px;
-    background-color: #eee;
+#game-canvas {
     border: 1px solid #ccc;
-    box-sizing: border-box;
-    cursor: pointer;
-}
-
-.pixel.active {
-    background-color: #4CAF50; /* Green */
-}
-
-#controls {
-    display: flex;
-    gap: 10px;
     margin-bottom: 10px;
 }
 
-button {
-    padding: 10px 20px;
-    font-size: 1em;
-    cursor: pointer;
-    background-color: #008CBA;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    transition: background-color 0.3s ease;
-}
-
-button:hover {
-    background-color: #0077a0;
-}
-
-#scoreDisplay {
+#score-display {
     font-size: 1.2em;
     margin-bottom: 10px;
 }
 
-#message {
-    font-size: 1.1em;
-    color: #333;
-    margin-bottom: 10px;
+#controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+}
+
+button:hover {
+    background-color: #3e8e41;
 }
 </style>
 </head>
 <body>
 
-<div id="gameContainer">
-    <div id="message">Click to activate pixels!</div>
-    <div id="scoreDisplay">Score: 0</div>
-    <div id="gridContainer"></div>
+<div id="game-container">
+    <h1>Simple Game</h1>
+    <canvas id="game-canvas" width="400" height="300"></canvas>
+    <div id="score-display">Score: 0</div>
     <div id="controls">
-        <button id="startButton">Start</button>
-        <button id="resetButton">Reset</button>
+        <button id="start-button">Start Game</button>
+        <button id="reset-button">Reset</button>
     </div>
 </div>
 
-
 <script>
-    const gridSize = 15; // Set the grid size
-    const gridContainer = document.getElementById('gridContainer');
-    const startButton = document.getElementById('startButton');
-    const resetButton = document.getElementById('resetButton');
-    const scoreDisplay = document.getElementById('scoreDisplay');
-    const message = document.getElementById('message');
-    let pixels = [];
-    let score = 0;
-    let gameInterval;
-    let activePixelIndex = -1;
-    let gameRunning = false;
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const scoreDisplay = document.getElementById('score-display');
+const startButton = document.getElementById('start-button');
+const resetButton = document.getElementById('reset-button');
 
-    // Set CSS variable for grid size
-    document.documentElement.style.setProperty('--grid-size', gridSize);
+let score = 0;
+let gameRunning = false;
+let playerX = canvas.width / 2;
+let playerY = canvas.height - 20;
+let playerSize = 10;
+let playerSpeed = 5;
 
-    function createGrid() {
-        for (let i = 0; i < gridSize * gridSize; i++) {
-            const pixel = document.createElement('div');
-            pixel.classList.add('pixel');
-            pixel.addEventListener('click', () => pixelClick(i));
-            gridContainer.appendChild(pixel);
-            pixels.push(pixel);
-        }
-    }
+let enemies = [];
+let enemySpeed = 2;
+let enemySpawnInterval = 1000;
+let lastEnemySpawn = 0;
+
+function drawPlayer() {
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(playerX - playerSize/2, playerY - playerSize/2, playerSize, playerSize);
+}
+
+function drawEnemies() {
+    ctx.fillStyle = 'red';
+    enemies.forEach(enemy => {
+        ctx.fillRect(enemy.x - 10, enemy.y - 10, 20, 20);
+    });
+}
 
 
-    function getRandomPixelIndex() {
-        return Math.floor(Math.random() * gridSize * gridSize);
-    }
+function updateEnemies(deltaTime) {
+    enemies.forEach((enemy, index) => {
+        enemy.y += enemySpeed * deltaTime;
 
-
-    function activateRandomPixel() {
-        if (activePixelIndex !== -1) {
-            pixels[activePixelIndex].classList.remove('active');
-        }
-        activePixelIndex = getRandomPixelIndex();
-        pixels[activePixelIndex].classList.add('active');
-    }
-
-    function pixelClick(index) {
-        if (!gameRunning) return; // Prevent clicking when the game is not running
-
-        if (index === activePixelIndex) {
+        if (enemy.y > canvas.height) {
+            enemies.splice(index, 1);
             score++;
-            scoreDisplay.textContent = `Score: ${score}`;
-            message.textContent = "Correct!";
-            setTimeout(() => {message.textContent = "Keep clicking!";}, 1000);
-            activateRandomPixel();
-        } else {
-            gameOver();
-        }
-    }
-
-
-    function startGame() {
-        if(gameRunning) return;
-        gameRunning = true;
-        score = 0;
-        scoreDisplay.textContent = `Score: ${score}`;
-        message.textContent = "Game started!";
-        activateRandomPixel();
-        gameInterval = setInterval(activateRandomPixel, 2000); // Activate a new pixel every 2 seconds
-        startButton.textContent = "Stop";
-
-    }
-
-    function stopGame() {
-        clearInterval(gameInterval);
-        gameRunning = false;
-        startButton.textContent = "Start";
-        activePixelIndex = -1;
-        message.textContent = "Game stopped.";
-        pixels.forEach(pixel => pixel.classList.remove('active'));
-
-    }
-
-
-    function gameOver() {
-        stopGame();
-        message.textContent = `Game Over! Final Score: ${score}`;
-    }
-
-
-    function resetGame() {
-        stopGame();
-        score = 0;
-        scoreDisplay.textContent = `Score: ${score}`;
-        pixels.forEach(pixel => pixel.classList.remove('active'));
-        message.textContent = "Game reset.";
-    }
-
-
-    createGrid();
-
-    startButton.addEventListener('click', () => {
-        if (gameRunning) {
-            stopGame();
-        } else {
-            startGame();
         }
     });
-    resetButton.addEventListener('click', resetGame);
-</script>
 
+    enemies = enemies.filter(enemy => enemy.y < canvas.height);
+}
+
+function spawnEnemy() {
+    const x = Math.random() * canvas.width;
+    enemies.push({ x: x, y: 0 });
+}
+
+function checkCollisions() {
+    enemies.forEach((enemy, index) => {
+        const dx = enemy.x - playerX;
+        const dy = enemy.y - playerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < playerSize / 2 + 10) { // Assuming enemy size is 20
+            gameOver();
+        }
+    });
+}
+
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawPlayer();
+    drawEnemies();
+    scoreDisplay.textContent = `Score: ${score}`;
+}
+
+let lastTime = 0;
+function gameLoop(currentTime) {
+    const deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+
+    if (gameRunning) {
+        updateEnemies(deltaTime);
+        checkCollisions();
+        draw();
+    }
+    requestAnimationFrame(gameLoop);
+}
+
+function startGame() {
+    gameRunning = true;
+    score = 0;
+    enemies = [];
+    playerX = canvas.width / 2;
+    playerY = canvas.height - 20;
+    lastTime = 0;
+    requestAnimationFrame(gameLoop);
+}
+
+function resetGame() {
+    gameRunning = false;
+    score = 0;
+    enemies = [];
+    playerX = canvas.width / 2;
+    playerY = canvas.height - 20;
+    draw();
+}
+
+function gameOver() {
+    gameRunning = false;
+    alert(`Game Over! Final Score: ${score}`);
+    resetGame();
+}
+
+
+
+startButton.addEventListener('click', startGame);
+resetButton.addEventListener('click', resetGame);
+
+
+document.addEventListener('keydown', (e) => {
+    if (!gameRunning) return;
+    if (e.key === 'ArrowLeft') {
+        playerX -= playerSpeed;
+        if (playerX - playerSize/2 < 0) playerX = playerSize/2;
+    } else if (e.key === 'ArrowRight') {
+        playerX += playerSpeed;
+        if (playerX + playerSize/2 > canvas.width) playerX = canvas.width - playerSize/2;
+    }
+});
+
+
+setInterval(() => {
+    if (gameRunning) {
+        spawnEnemy();
+    }
+}, enemySpawnInterval);
+</script>
 </body>
 </html>
 ```
