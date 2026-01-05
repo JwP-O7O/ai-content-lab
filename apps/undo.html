@@ -1,0 +1,213 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Undo Game Example</title>
+<style>
+body {
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f0f0;
+    margin: 0;
+}
+
+.container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+#gameBoard {
+    display: grid;
+    grid-template-columns: repeat(3, 80px);
+    grid-gap: 5px;
+    margin-bottom: 15px;
+}
+
+.cell {
+    width: 80px;
+    height: 80px;
+    background-color: #eee;
+    border: 1px solid #ccc;
+    font-size: 3em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.cell:hover {
+    background-color: #ddd;
+}
+
+#status {
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 1em;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 5px;
+}
+
+button:hover {
+    background-color: #3e8e41;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Tic-Tac-Toe</h1>
+    <div id="status"></div>
+    <div id="gameBoard">
+        <div class="cell" data-index="0"></div>
+        <div class="cell" data-index="1"></div>
+        <div class="cell" data-index="2"></div>
+        <div class="cell" data-index="3"></div>
+        <div class="cell" data-index="4"></div>
+        <div class="cell" data-index="5"></div>
+        <div class="cell" data-index="6"></div>
+        <div class="cell" data-index="7"></div>
+        <div class="cell" data-index="8"></div>
+    </div>
+    <button id="undoButton" disabled>Undo</button>
+    <button id="resetButton">Reset</button>
+</div>
+
+<script>
+const gameBoard = document.getElementById('gameBoard');
+const cells = document.querySelectorAll('.cell');
+const status = document.getElementById('status');
+const undoButton = document.getElementById('undoButton');
+const resetButton = document.getElementById('resetButton');
+
+let currentPlayer = 'X';
+let gameActive = true;
+let boardState = ['', '', '', '', '', '', '', '', ''];
+let movesHistory = [];
+
+const winningConditions = [
+    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+    [0, 4, 8], [2, 4, 6]
+];
+
+const winningMessage = () => `Player ${currentPlayer} wins!`;
+const drawMessage = () => `Game ended in a draw!`;
+const currentPlayerTurn = () => `It's ${currentPlayer}'s turn`;
+
+status.textContent = currentPlayerTurn();
+
+function handleCellClick(clickedCellEvent) {
+    const clickedCell = clickedCellEvent.target;
+    const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
+
+    if (boardState[clickedCellIndex] !== '' || !gameActive) {
+        return;
+    }
+
+    placeMove(clickedCellIndex);
+    checkGameResult();
+}
+
+function placeMove(index) {
+    boardState[index] = currentPlayer;
+    cells[index].textContent = currentPlayer;
+    movesHistory.push({ index: index, player: currentPlayer, board: [...boardState] });
+    undoButton.disabled = false;
+    switchPlayer();
+    status.textContent = currentPlayerTurn();
+}
+
+
+function switchPlayer() {
+    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+}
+
+function checkGameResult() {
+    let roundWon = false;
+    for (let i = 0; i <= 7; i++) {
+        const winCondition = winningConditions[i];
+        const a = boardState[winCondition[0]];
+        const b = boardState[winCondition[1]];
+        const c = boardState[winCondition[2]];
+        if (a === '' || b === '' || c === '') {
+            continue;
+        }
+        if (a === b && b === c) {
+            roundWon = true;
+            break;
+        }
+    }
+
+    if (roundWon) {
+        status.textContent = winningMessage();
+        gameActive = false;
+        return;
+    }
+
+    let roundDraw = !boardState.includes('');
+    if (roundDraw) {
+        status.textContent = drawMessage();
+        gameActive = false;
+        return;
+    }
+}
+
+function handleUndoMove() {
+    if (movesHistory.length === 0) {
+        return;
+    }
+
+    const lastMove = movesHistory.pop();
+    boardState = [...lastMove.board];
+    currentPlayer = lastMove.player === 'X' ? 'O' : 'X';
+    status.textContent = currentPlayerTurn();
+    gameActive = true;
+
+    cells.forEach((cell, index) => {
+        cell.textContent = boardState[index];
+    });
+
+    if (movesHistory.length === 0) {
+        undoButton.disabled = true;
+    }
+}
+
+
+function handleResetGame() {
+    currentPlayer = 'X';
+    gameActive = true;
+    boardState = ['', '', '', '', '', '', '', '', ''];
+    movesHistory = [];
+    status.textContent = currentPlayerTurn();
+    cells.forEach(cell => cell.textContent = '');
+    undoButton.disabled = true;
+}
+
+cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+undoButton.addEventListener('click', handleUndoMove);
+resetButton.addEventListener('click', handleResetGame);
+</script>
+
+</body>
+</html>
+```
