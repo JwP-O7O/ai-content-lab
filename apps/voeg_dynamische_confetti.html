@@ -51,6 +51,11 @@
             pointer-events: none; /* Allows clicks to pass through */
         }
 
+        #timer {
+            font-size: 24px;
+            margin-top: 10px;
+        }
+
         @media (max-width: 600px) {
             .container {
                 width: 90%;
@@ -60,6 +65,10 @@
                 padding: 12px 28px;
                 font-size: 14px;
             }
+
+            #timer {
+                font-size: 20px;
+            }
         }
     </style>
 </head>
@@ -67,14 +76,19 @@
     <div class="container">
         <h1>Power-up Activated!</h1>
         <button id="powerupButton">Activate Power-up</button>
+        <div id="timer"></div>
     </div>
     <canvas class="confetti-canvas"></canvas>
     <script>
         const button = document.getElementById('powerupButton');
         const canvas = document.querySelector('.confetti-canvas');
         const context = canvas.getContext('2d');
+        const timerElement = document.getElementById('timer');
         let confetti = [];
         let animationFrameId;
+        let powerupActive = false;
+        let timeLeft = 0;
+        let timerInterval;
 
         function resizeCanvas() {
             canvas.width = window.innerWidth;
@@ -133,11 +147,38 @@
             confetti = [];
         }
 
+        function updateTimerDisplay() {
+            timerElement.textContent = `Time left: ${timeLeft}s`;
+        }
+
+        function startTimer(duration) {
+            timeLeft = duration;
+            updateTimerDisplay();
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 0) {
+                    stopPowerup();
+                }
+            }, 1000);
+        }
+
+
+        function stopPowerup() {
+            powerupActive = false;
+            stopConfetti();
+            clearInterval(timerInterval);
+            timerElement.textContent = "";
+        }
+
 
         button.addEventListener('click', () => {
-            stopConfetti(); // Ensure no previous animation is running
-            startConfetti();
-            setTimeout(stopConfetti, 3000); // Stop after 3 seconds
+            if (!powerupActive) {
+                powerupActive = true;
+                stopConfetti(); // Ensure no previous animation is running
+                startConfetti();
+                startTimer(5); // Power-up duration in seconds
+            }
         });
 
         window.addEventListener('resize', resizeCanvas);
