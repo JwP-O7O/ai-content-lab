@@ -26,12 +26,12 @@
             width: 90%;
             max-width: 400px;
             transition: transform 0.3s ease;
+            position: relative; /* For the alert positioning */
         }
 
         .container:hover {
             transform: scale(1.02);
         }
-
 
         h1 {
             color: #007bff;
@@ -65,6 +65,29 @@
             font-style: italic;
         }
 
+        /* Power-up Alert Styling */
+        #powerupAlert {
+            position: absolute;
+            top: -10px; /* Adjust as needed */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1em;
+            opacity: 0;
+            transition: opacity 0.3s ease, top 0.3s ease;
+            z-index: 10; /* Ensure it's on top */
+            border: 1px solid #c3e6cb;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        #powerupAlert.active {
+            opacity: 1;
+            top: 0px; /* Adjust as needed */
+        }
+
         @media (max-width: 600px) {
             .container {
                 width: 95%;
@@ -87,15 +110,19 @@
         <div id="countdown"></div>
         <button id="startButton">Start Power-up</button>
         <div id="message"></div>
+        <div id="powerupAlert">Power-up Active!</div>
     </div>
 
     <script>
         let countdownInterval;
         let timeLeft;
+        const alertDuration = 2000; // Duration of the alert in milliseconds
 
         const countdownDisplay = document.getElementById('countdown');
         const startButton = document.getElementById('startButton');
         const messageDisplay = document.getElementById('message');
+        const powerupAlert = document.getElementById('powerupAlert');
+        const audio = new Audio('https://www.soundjay.com/buttons/button-10.mp3'); // Replace with your audio file
 
         function updateCountdown() {
             if (timeLeft <= 0) {
@@ -103,6 +130,7 @@
                 countdownDisplay.textContent = 'Power-up!';
                 messageDisplay.textContent = 'Power-up is active!';
                 startButton.disabled = false;
+                showPowerupAlert();
                 return;
             }
 
@@ -110,6 +138,14 @@
             const seconds = timeLeft % 60;
             countdownDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             timeLeft--;
+        }
+
+        function showPowerupAlert() {
+            powerupAlert.classList.add('active');
+            audio.play();  // Play the sound
+            setTimeout(() => {
+                powerupAlert.classList.remove('active');
+            }, alertDuration);
         }
 
         startButton.addEventListener('click', () => {
