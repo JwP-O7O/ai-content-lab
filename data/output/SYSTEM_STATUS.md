@@ -3,6 +3,6 @@
 | Metric | Waarde |
 |---|---|
 | **Model** | `Gemini 2.0` |
-| **Cycles** | 11 |
+| **Cycles** | 3 |
 | **Status** | 🧠 LEARNING & OPTIMIZING |
 | **Laatste Actie** | Monitoring... |
