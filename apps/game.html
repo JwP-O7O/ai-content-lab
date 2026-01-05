@@ -2,10 +2,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Speelveld Vullen & Verwijderen</title>
+<title>Game Loop Example</title>
 <style>
 body {
-    font-family: Arial, sans-serif;
+    font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -14,107 +14,132 @@ body {
     background-color: #f0f0f0;
 }
 
-.container {
-    background-color: white;
-    padding: 20px;
+#gameContainer {
+    background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
     text-align: center;
 }
 
-#gameBoard {
-    display: grid;
-    grid-template-columns: repeat(10, 40px);
-    grid-gap: 5px;
-    margin-top: 20px;
-}
-
-.cell {
-    width: 40px;
-    height: 40px;
-    background-color: #eee;
+#gameCanvas {
     border: 1px solid #ccc;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 20px;
-    border-radius: 4px;
+    margin-bottom: 10px;
 }
 
-.cell.filled {
-    background-color: #4CAF50;
-    color: white;
+#scoreDisplay {
+    font-size: 1.2em;
+    margin-bottom: 10px;
 }
 
-button {
-    background-color: #4CAF50;
+#startButton, #stopButton {
+    background-color: #4CAF50; /* Green */
+    border: none;
     color: white;
     padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
     font-size: 16px;
-    margin-top: 10px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 4px;
 }
 
-button:hover {
-    background-color: #3e8e41;
+#stopButton {
+    background-color: #f44336; /* Red */
 }
 </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Speelveld</h1>
-        <div id="gameBoard"></div>
-        <button id="fillBoardButton">Vul Speelveld</button>
-        <button id="clearBoardButton">Maak Leeg</button>
-    </div>
+
+<div id="gameContainer">
+    <h1>Game Loop</h1>
+    <canvas id="gameCanvas" width="400" height="300"></canvas>
+    <div id="scoreDisplay">Score: <span id="scoreValue">0</span></div>
+    <button id="startButton">Start</button>
+    <button id="stopButton">Stop</button>
+</div>
 
 <script>
-    const gameBoard = document.getElementById('gameBoard');
-    const fillBoardButton = document.getElementById('fillBoardButton');
-    const clearBoardButton = document.getElementById('clearBoardButton');
-    const boardSize = 100; // 10x10 grid
-    let cells = [];
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('scoreValue');
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
 
-    // Initialize the game board
-    function initializeBoard() {
-        for (let i = 0; i < boardSize; i++) {
-            const cell = document.createElement('div');
-            cell.classList.add('cell');
-            cell.dataset.index = i;
-            gameBoard.appendChild(cell);
-            cells.push(cell);
+    let score = 0;
+    let gameRunning = false;
+    let animationFrameId;
+
+    // Game object - example (can be replaced with your game objects)
+    const gameObject = {
+        x: 50,
+        y: 50,
+        size: 20,
+        color: 'blue',
+        speed: 2,
+        direction: { x: 1, y: 1 } // Initial direction
+    };
+
+    function drawGameObject() {
+        ctx.fillStyle = gameObject.color;
+        ctx.fillRect(gameObject.x, gameObject.y, gameObject.size, gameObject.size);
+    }
+
+    function updateGameObject() {
+        // Move the object
+        gameObject.x += gameObject.speed * gameObject.direction.x;
+        gameObject.y += gameObject.speed * gameObject.direction.y;
+
+        // Bounce off the walls
+        if (gameObject.x + gameObject.size > canvas.width || gameObject.x < 0) {
+            gameObject.direction.x *= -1;
+        }
+        if (gameObject.y + gameObject.size > canvas.height || gameObject.y < 0) {
+            gameObject.direction.y *= -1;
         }
     }
 
-    // Fill the board with random values
-    function fillBoard() {
-        cells.forEach(cell => {
-            if (Math.random() < 0.5) { // 50% chance to fill a cell
-                cell.classList.add('filled');
-            } else {
-                 cell.classList.remove('filled');
-            }
-        });
-    }
-
-    // Clear the board
-    function clearBoard() {
-        cells.forEach(cell => {
-            cell.classList.remove('filled');
-        });
+    function increaseScore() {
+        score++;
+        scoreDisplay.textContent = score;
     }
 
 
-    // Event listeners
-    fillBoardButton.addEventListener('click', fillBoard);
-    clearBoardButton.addEventListener('click', clearBoard);
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
 
-    // Initialize on page load
-    initializeBoard();
+    function gameLoop() {
+        if (!gameRunning) return;
+
+        clearCanvas();
+        updateGameObject();
+        drawGameObject();
+
+        increaseScore();
+
+        animationFrameId = requestAnimationFrame(gameLoop);
+    }
+
+
+    startButton.addEventListener('click', () => {
+        if (!gameRunning) {
+            gameRunning = true;
+            score = 0; // Reset score on start
+            scoreDisplay.textContent = score;
+            gameLoop();
+        }
+    });
+
+    stopButton.addEventListener('click', () => {
+        gameRunning = false;
+        cancelAnimationFrame(animationFrameId);
+    });
+
 </script>
+
 </body>
 </html>
 ```
