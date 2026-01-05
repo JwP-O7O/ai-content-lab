@@ -2,6 +2,6 @@
 | Metric | Waarde |
 |---|---|
 | **Model** | `Gemini 2.0` |
-| **Cycles** | 5 |
+| **Cycles** | 6 |
 | **Status** | 🟢 ONLINE |
-| **Actie** | Monitoring... |
+| **Actie** | 🌐 Web App: voeg_een_dynamische.html |
