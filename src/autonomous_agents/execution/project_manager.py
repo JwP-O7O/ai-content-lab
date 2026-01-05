@@ -69,25 +69,14 @@ class ProjectManager:
             task["status"] = "failed"
             task["error"] = str(e)
             task["attempts"] += 1 # Increment attempt counter
-            logging.error(f"ProjectManager: Fout tijdens het uitvoeren van taak '{task.get('description')}' door {agent_name}: {e}")
+            logging.error(f"ProjectManager: Fout tijdens het uitvoeren van taak '{task.get('description')}' door {agent_name}: {e}. Poging {task['attempts']} van {self.max_retries}")
 
-            if task["attempts"] <= self.max_retries:
-                await self.retry_task(task)
+            if task["attempts"] < self.max_retries:
+                logging.info(f"ProjectManager: Opnieuw proberen taak '{task.get('description')}'")
+                await self.add_task(task.get("description"), task.get("agent"), task.get("data")) # Retry the task
             else:
-                logging.error(f"ProjectManager: Taak '{task.get('description')}' mislukt na {self.max_retries} pogingen.")
+                logging.error(f"ProjectManager: Taak '{task.get('description')}' is mislukt na {self.max_retries} pogingen.")
             return None
-
-    async def retry_task(self, task: Dict):
-        """
-        Probeert een gefaalde taak opnieuw uit te voeren.
-        """
-        delay = 2 ** task["attempts"]  # Exponential backoff
-        logging.info(f"ProjectManager: Taak '{task.get('description')}' opnieuw proberen in {delay} seconden...")
-        await asyncio.sleep(delay)  # Voeg een delay toe voor exponential backoff
-
-        task["status"] = "pending"  # Reset de status voor de volgende poging
-        await self.task_queue.put(task)
-        logging.info(f"ProjectManager: Taak '{task.get('description')}' opnieuw toegevoegd aan de wachtrij.")
 
 
     async def analyze_results(self, task_results: List[Dict]) -> None:
