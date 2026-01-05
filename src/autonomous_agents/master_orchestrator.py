@@ -13,7 +13,9 @@ try:
     from src.autonomous_agents.execution.web_architect import WebArchitect
     from src.autonomous_agents.execution.visionary_agent import VisionaryAgent
     
-    # SLIMME MODULES
+    # NIEUWE MODULE
+    from src.autonomous_agents.execution.research_agent import ResearchAgent
+    
     from src.autonomous_agents.planning.evolutionary_agent import EvolutionaryAgent
     from src.autonomous_agents.planning.system_optimizer import SystemOptimizer
     from src.autonomous_agents.learning.brain import GlobalBrain
@@ -26,14 +28,14 @@ class TermuxMasterOrchestrator:
         self.is_running = False
         self.cycle_count = 0
         
-        # TEAM
         self.publisher = GitPublisher()
         self.listener = GitHubListener()
         self.architect = FeatureArchitect()
         self.web_architect = WebArchitect()
         self.visionary = VisionaryAgent()
         
-        # BRAIN & OPTIMIZER
+        self.researcher = ResearchAgent() # NIEUWE KRACHT
+        
         self.evolutionary = EvolutionaryAgent()
         self.optimizer = SystemOptimizer()
         self.brain = GlobalBrain()
@@ -41,11 +43,11 @@ class TermuxMasterOrchestrator:
     async def _update_remote_status(self, last_action):
         try:
             with open("data/output/SYSTEM_STATUS.md", "w") as f:
-                f.write(f"# 🔵 All In AI - Self-Evolving System\n\n")
+                f.write(f"# 🔵 All In AI - Knowledge System\n\n")
                 f.write(f"| Metric | Waarde |\n|---|---|\n")
                 f.write(f"| **Model** | `Gemini 2.0` |\n")
                 f.write(f"| **Cycles** | {self.cycle_count} |\n")
-                f.write(f"| **Status** | 🧠 LEARNING & OPTIMIZING |\n")
+                f.write(f"| **Internet** | 🌍 CONNECTED |\n")
                 f.write(f"| **Laatste Actie** | {last_action} |\n")
         except: pass
 
@@ -53,51 +55,59 @@ class TermuxMasterOrchestrator:
         self.cycle_count += 1
         logger.info(f"--- 🔄 Cycle #{self.cycle_count} ---")
         last_action = "Monitoring..."
-        needs_restart = False  # Vlaggetje voor herstart
+        needs_restart = False
         
-        # 1. ZELF-OPTIMALISATIE (Elke 5 cycles)
-        if self.cycle_count % 5 == 0:
-            await self.optimizer.optimize_system()
-            
-        # 2. EVOLUTIE (Elke 3 cycles)
-        if self.cycle_count % 3 == 0:
-            await self.evolutionary.propose_improvement()
+        # ONDERHOUD (Minder frequent om API te sparen)
+        if self.cycle_count % 10 == 0: await self.optimizer.optimize_system()
+        if self.cycle_count % 5 == 0: await self.evolutionary.propose_improvement()
 
-        # 3. ORDER VERWERKING
+        # ORDERS
         orders = await self.listener.check_for_orders()
         if orders.get("status") == "new_tasks":
             for task in orders['tasks']:
                 
-                # A. SYSTEM & CODE TAAK (HIER ZIT DE HERSTART)
-                if "SYSTEM:" in task['title'].upper() or "CODE:" in task['title'].upper():
-                    logger.info(f"⚙️ Systeem Taak: {task['title']}")
+                # A. RESEARCH (NIEUW)
+                if "RESEARCH:" in task['title'].upper() or "ZOEK:" in task['title'].upper():
+                    topic = task['title'].replace("RESEARCH:", "").replace("ZOEK:", "").strip()
+                    logger.info(f"🌍 Research Taak: {topic}")
+                    
+                    res = await self.researcher.conduct_research(topic)
+                    
+                    if res['status'] == 'success':
+                        await self.publisher.publish_changes()
+                        
+                        # Maak een mooie GitHub comment met het rapport
+                        raw_url = f"https://github.com/JwP-O7O/ai-content-lab/blob/main/{res['file']}"
+                        msg = f"✅ **Onderzoek Afgerond!**\n\n📄 [Bekijk volledig bestand]({raw_url})\n\n---\n**Samenvatting:**\n{res['summary'][:800]}...\n*(Zie bestand voor meer)*"
+                        
+                        task['issue_obj'].create_comment(msg)
+                        task['issue_obj'].edit(state='closed')
+                        last_action = f"📚 Onderzoek: {topic}"
+
+                # B. SYSTEM & CODE
+                elif "SYSTEM:" in task['title'].upper() or "CODE:" in task['title'].upper():
                     context = self.brain.get_context()
                     full_prompt = f"{task['title']} {task['body']}\n\nCONTEXT:\n{context}"
-                    
                     res = await self.architect.build_feature(full_prompt)
                     if res['status'] == 'built':
                         await self.publisher.publish_changes()
-                        task['issue_obj'].create_comment(f"✅ **Systeem Update Uitgevoerd**\nBestand: `{res['file']}`\n\n*Het systeem herstart nu om de wijzigingen toe te passen...* 🔄")
+                        task['issue_obj'].create_comment(f"✅ **Systeem Update**\nBestand: `{res['file']}`\n\n🔄 *Herstarten...*")
                         task['issue_obj'].edit(state='closed')
-                        
                         self.brain.add_lesson("successful_patterns", f"Python fix voor {task['title']}")
-                        last_action = "🛠️ Systeem geüpgraded (Auto-Restart)"
-                        
-                        # ZET VLAG OP TRUE: We hebben onze eigen code veranderd!
+                        last_action = "🛠️ Systeem geüpgraded"
                         needs_restart = True
 
-                # B. WEB TAAK (Geen herstart nodig, is html)
+                # C. WEB
                 elif "WEB:" in task['title'].upper():
-                    logger.info(f"🌐 Web Taak: {task['title']}")
                     res = await self.web_architect.build_website(f"{task['title']} {task['body']}")
                     if res['status'] == 'built':
                         await self.publisher.publish_changes()
                         url = f"https://JwP-O7O.github.io/ai-content-lab/apps/{res['filename']}"
-                        task['issue_obj'].create_comment(f"✅ **App Online**\n\n👉 [**OPEN APP**]({url})")
+                        task['issue_obj'].create_comment(f"✅ **App Online**\n👉 [OPEN APP]({url})")
                         task['issue_obj'].edit(state='closed')
                         last_action = f"🌐 Web App: {res['filename']}"
 
-                # C. ART TAAK
+                # D. ART
                 elif "IMG:" in task['title'].upper():
                     res = self.visionary.generate_image(task['title'].replace("IMG:", ""))
                     if res['status'] == 'success':
@@ -114,16 +124,14 @@ class TermuxMasterOrchestrator:
         if last_action != "Monitoring...":
             logger.success(f"📡 {last_action}")
 
-        # DE HERSTART LOGICA
         if needs_restart:
-            logger.warning("♻️ SYSTEEM UPDATE GEDETECTEERD! HERSTARTEN IN 3 SECONDEN...")
+            logger.warning("♻️ HERSTARTEN...")
             await asyncio.sleep(3)
-            logger.info("👋 Tot zo!")
-            sys.exit(0) # Dit stopt het script, keep_alive.sh start het weer op
+            sys.exit(0)
 
     async def run_autonomous_loop(self):
         self.is_running = True
-        logger.info("🧠 All In AI - ZELF-LEREND & AUTO-RESTART ONLINE")
+        logger.info("🧠 All In AI - KNOWLEDGE ENGINE ONLINE")
         while self.is_running:
             try:
                 await self.run_improvement_cycle()
