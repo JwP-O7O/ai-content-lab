@@ -2,16 +2,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Game Loop Example</title>
+<title>Simple Game Loop</title>
 <style>
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
-    margin: 0;
+    font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
 }
 
 #gameContainer {
@@ -22,105 +22,152 @@ body {
     text-align: center;
 }
 
-#gameCanvas {
+#canvas {
     border: 1px solid #ccc;
     margin-bottom: 10px;
 }
 
-#scoreDisplay {
+#score {
     font-size: 1.2em;
     margin-bottom: 10px;
 }
 
-#startButton {
+#startButton, #stopButton {
     background-color: #4CAF50;
     color: white;
     padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 1em;
+    margin: 5px;
 }
 
-#startButton:hover {
-    background-color: #3e8e41;
+#stopButton {
+    background-color: #f44336;
+}
+
+#startButton:hover, #stopButton:hover {
+    opacity: 0.8;
 }
 </style>
 </head>
 <body>
 
 <div id="gameContainer">
-    <h1>Simple Game Loop</h1>
-    <canvas id="gameCanvas" width="400" height="300"></canvas>
-    <div id="scoreDisplay">Score: 0</div>
-    <button id="startButton">Start Game</button>
+    <h1>Game Loop Example</h1>
+    <canvas id="canvas" width="400" height="300"></canvas>
+    <div id="score">Score: 0</div>
+    <div>
+        <button id="startButton">Start</button>
+        <button id="stopButton">Stop</button>
+    </div>
 </div>
 
 <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const scoreDisplay = document.getElementById('scoreDisplay');
-    const startButton = document.getElementById('startButton');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const scoreDisplay = document.getElementById('score');
+const startButton = document.getElementById('startButton');
+const stopButton = document.getElementById('stopButton');
 
-    let score = 0;
-    let gameRunning = false;
-    let playerX = 50;
-    let playerY = canvas.height / 2;
-    let playerSize = 20;
-    let speed = 2; // Increased speed
+let score = 0;
+let gameRunning = false;
+let animationFrameId;
 
+// Game object - example (can be anything)
+let gameObjects = [];
 
-    function drawPlayer() {
-        ctx.fillStyle = 'blue';
-        ctx.fillRect(playerX, playerY - playerSize/2, playerSize, playerSize);
+// Game object class
+class GameObject {
+    constructor(x, y, size, color) {
+        this.x = x;
+        this.y = y;
+        this.size = size;
+        this.color = color;
+        this.speedX = (Math.random() - 0.5) * 2; // Random horizontal speed
+        this.speedY = (Math.random() - 0.5) * 2; // Random vertical speed
     }
 
-    function clearCanvas() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
+    update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
 
-    function updateGame() {
-        if (!gameRunning) return;
-
-        clearCanvas();
-        drawPlayer();
-        playerX += speed;
-
-        if (playerX > canvas.width) {
-            playerX = 0;
-            score++;
-            scoreDisplay.textContent = 'Score: ' + score;
+        // Bounce off the walls
+        if (this.x + this.size > canvas.width || this.x - this.size < 0) {
+            this.speedX = -this.speedX;
         }
-
-        requestAnimationFrame(updateGame);
+        if (this.y + this.size > canvas.height || this.y - this.size < 0) {
+            this.speedY = -this.speedY;
+        }
     }
 
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
 
-    startButton.addEventListener('click', () => {
-        if (!gameRunning) {
-            gameRunning = true;
-            score = 0;
-            scoreDisplay.textContent = 'Score: 0';
-            playerX = 50;
-            updateGame();
-            startButton.textContent = 'Stop Game';
 
-        } else {
-            gameRunning = false;
-            startButton.textContent = 'Start Game';
-        }
+function createGameObject() {
+    const size = 10 + Math.random() * 20; // Random size
+    const x = Math.random() * (canvas.width - size * 2) + size;
+    const y = Math.random() * (canvas.height - size * 2) + size;
+    const colors = ['red', 'green', 'blue', 'yellow', 'purple'];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    gameObjects.push(new GameObject(x, y, size, color));
+}
+
+
+function updateScore() {
+    score++;
+    scoreDisplay.textContent = `Score: ${score}`;
+}
+
+
+function gameLoop() {
+    if (!gameRunning) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+
+    // Update game objects and draw them
+    gameObjects.forEach(obj => {
+        obj.update();
+        obj.draw();
     });
 
-    canvas.addEventListener('mousemove', (e) => {
-        if (gameRunning) {
-            const rect = canvas.getBoundingClientRect();
-            playerY = e.clientY - rect.top;
-        }
-    });
+    // Example: Increase the score every few frames (adjust as needed)
+    if (score % 60 === 0) {  // Update score every second (assuming 60fps)
+        updateScore();
+    }
 
-    // Initial draw to set up the canvas
-    drawPlayer();
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
 
+
+function startGame() {
+    if (gameRunning) return; // Prevent multiple starts
+    gameRunning = true;
+    score = 0; // Reset score when starting
+    scoreDisplay.textContent = `Score: ${score}`;
+    gameObjects = []; // Clear previous objects
+    // Populate with initial objects
+    for (let i = 0; i < 5; i++) { //Example: create 5 initial game objects
+        createGameObject();
+    }
+    gameLoop();
+}
+
+function stopGame() {
+    gameRunning = false;
+    cancelAnimationFrame(animationFrameId);
+}
+
+
+
+startButton.addEventListener('click', startGame);
+stopButton.addEventListener('click', stopGame);
 </script>
 
 </body>
