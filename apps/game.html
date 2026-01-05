@@ -2,166 +2,118 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Game Reset</title>
+<title>Simple Game Loop</title>
 <style>
-body {
-    font-family: Arial, sans-serif;
+  body {
+    font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
     margin: 0;
     background-color: #f0f0f0;
-}
+  }
 
-.game-container {
+  #gameContainer {
     background-color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
-}
+  }
 
-button {
+  #canvas {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+  }
+
+  #scoreDisplay {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+  }
+
+  #startButton {
     background-color: #4CAF50;
     color: white;
     padding: 10px 20px;
     border: none;
-    border-radius: 5px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 16px;
-    margin-top: 20px;
-}
+    font-size: 1em;
+  }
 
-button:hover {
+  #startButton:hover {
     background-color: #3e8e41;
-}
-
-#gameBoard {
-    display: grid;
-    grid-template-columns: repeat(3, 100px);
-    grid-gap: 5px;
-    margin-top: 20px;
-}
-
-.cell {
-    width: 100px;
-    height: 100px;
-    background-color: #eee;
-    border-radius: 5px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 4em;
-    cursor: pointer;
-}
-
-.cell:hover {
-    background-color: #ccc;
-}
+  }
 </style>
 </head>
 <body>
-
-<div class="game-container">
-    <h1>Tic Tac Toe</h1>
-    <div id="gameBoard">
-        <div class="cell" data-index="0"></div>
-        <div class="cell" data-index="1"></div>
-        <div class="cell" data-index="2"></div>
-        <div class="cell" data-index="3"></div>
-        <div class="cell" data-index="4"></div>
-        <div class="cell" data-index="5"></div>
-        <div class="cell" data-index="6"></div>
-        <div class="cell" data-index="7"></div>
-        <div class="cell" data-index="8"></div>
-    </div>
-    <button id="resetButton">Reset Game</button>
-</div>
+  <div id="gameContainer">
+    <h1>Simple Game Loop</h1>
+    <div id="scoreDisplay">Score: <span id="score">0</span></div>
+    <canvas id="canvas" width="400" height="300"></canvas>
+    <button id="startButton">Start Game</button>
+  </div>
 
 <script>
-    const gameBoard = document.getElementById('gameBoard');
-    const cells = document.querySelectorAll('.cell');
-    const resetButton = document.getElementById('resetButton');
-    let currentPlayer = 'X';
-    let gameActive = true;
-    let gameState = ['', '', '', '', '', '', '', '', ''];
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('score');
+    const startButton = document.getElementById('startButton');
 
-    const winningConditions = [
-        [0, 1, 2],
-        [3, 4, 5],
-        [6, 7, 8],
-        [0, 3, 6],
-        [1, 4, 7],
-        [2, 5, 8],
-        [0, 4, 8],
-        [2, 4, 6]
-    ];
+    let score = 0;
+    let gameRunning = false;
+    let circleX = canvas.width / 2;
+    let circleY = canvas.height / 2;
+    let circleRadius = 20;
+    let circleSpeedX = 2;
+    let circleSpeedY = 2;
 
-    function handleCellClick(clickedCellEvent) {
-        const clickedCell = clickedCellEvent.target;
-        const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
-
-        if (gameState[clickedCellIndex] !== "" || !gameActive) {
-            return;
-        }
-
-        gameState[clickedCellIndex] = currentPlayer;
-        clickedCell.textContent = currentPlayer;
-        clickedCell.classList.add(currentPlayer);
-
-        checkResult();
-        switchPlayer();
+    function drawCircle() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
+        ctx.arc(circleX, circleY, circleRadius, 0, Math.PI * 2);
+        ctx.fillStyle = 'blue';
+        ctx.fill();
+        ctx.closePath();
     }
 
+    function updateCircle() {
+        circleX += circleSpeedX;
+        circleY += circleSpeedY;
 
-    function checkResult() {
-        let roundWon = false;
-        for (let i = 0; i <= 7; i++) {
-            const winCondition = winningConditions[i];
-            const a = gameState[winCondition[0]];
-            const b = gameState[winCondition[1]];
-            const c = gameState[winCondition[2]];
-            if (a === '' || b === '' || c === '') {
-                continue;
-            }
-            if (a === b && b === c) {
-                roundWon = true;
-                break;
-            }
+        if (circleX + circleRadius > canvas.width || circleX - circleRadius < 0) {
+            circleSpeedX = -circleSpeedX;
+            score++;
+            updateScore();
         }
-
-        if (roundWon) {
-            alert(`${currentPlayer} wins!`);
-            gameActive = false;
-            return;
-        }
-
-        let roundDraw = !gameState.includes("");
-        if (roundDraw) {
-            alert('Draw!');
-            gameActive = false;
-            return;
+        if (circleY + circleRadius > canvas.height || circleY - circleRadius < 0) {
+            circleSpeedY = -circleSpeedY;
+            score++;
+            updateScore();
         }
     }
 
-
-    function switchPlayer() {
-        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+    function updateScore() {
+        scoreDisplay.textContent = score;
     }
 
-    function resetGame() {
-        currentPlayer = 'X';
-        gameActive = true;
-        gameState = ['', '', '', '', '', '', '', '', ''];
-        cells.forEach(cell => {
-            cell.textContent = '';
-            cell.classList.remove('X', 'O');
-        });
+    function gameLoop() {
+        if (!gameRunning) return;
+        updateCircle();
+        drawCircle();
+        requestAnimationFrame(gameLoop);
     }
 
-    cells.forEach(cell => cell.addEventListener('click', handleCellClick));
-    resetButton.addEventListener('click', resetGame);
+    startButton.addEventListener('click', () => {
+        if (!gameRunning) {
+            gameRunning = true;
+            score = 0;
+            updateScore();
+            gameLoop();
+        }
+    });
+
 </script>
 </body>
 </html>
