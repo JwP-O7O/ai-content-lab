@@ -5,4 +5,4 @@
 | **Model** | `Gemini 2.0` |
 | **Cycles** | 10 |
 | **Internet** | 🌍 CONNECTED |
-| **Laatste Actie** | 🛠️ Systeem geüpgraded |
+| **Laatste Actie** | 🌐 Web App: voeg_maanfaseinformatie_toe.html |
