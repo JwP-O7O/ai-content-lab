@@ -28,17 +28,26 @@ class GitPublisher:
             logger.success(f"📦 Lokaal ge-commit: '{commit_msg}'")
 
             # 4. Push
-            try:
-                push_res = subprocess.run(['git', 'push'], capture_output=True, text=True)
-                if push_res.returncode == 0:
-                    logger.success("🚀 Succesvol gepusht naar GitHub!")
-                    return {"status": "published"}
+            push_res = subprocess.run(['git', 'push'], capture_output=True, text=True)
+            if push_res.returncode == 0:
+                logger.success("🚀 Succesvol gepusht naar GitHub!")
+                return {"status": "published"}
+            else:
+                logger.warning(f"⚠️ Push mislukt: {push_res.stderr}")
+                if "authentication required" in push_res.stderr.lower():
+                    logger.error("❌ Authenticatie mislukt. Controleer je GitHub credentials of SSH-configuratie.")
+                    return {"status": "push_failed_authentication"}
+                elif "failed to push some refs" in push_res.stderr.lower():
+                    logger.error("❌ Push mislukt: Merge conflict of andere ref-gerelateerde problemen.  Los de conflicten lokaal op en probeer opnieuw.")
+                    return {"status": "push_failed_conflict"}
                 else:
-                    logger.warning(f"⚠️ Push mislukt: {push_res.stderr}")
-                    return {"status": "committed_local_only"}
-            except Exception:
-                 return {"status": "committed_local_only"}
+                    logger.error(f"❌ Onbekende push-fout: {push_res.stderr}")
+                    return {"status": "push_failed_unknown"}
 
+
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Git commando mislukt: {e}.  Uitvoer: {e.stderr}")
+            return {"status": "error"}
         except Exception as e:
-            logger.error(f"Git fout: {e}")
+            logger.error(f"Onverwachte Git fout: {e}")
             return {"status": "error"}
