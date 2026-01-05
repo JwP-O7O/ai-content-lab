@@ -2,158 +2,151 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Direct Command Game</title>
+<title>Game Loop Example</title>
 <style>
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
-    margin: 0;
-    padding: 0;
+    font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
 }
 
-.container {
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+#gameContainer {
+    background-color: white;
     padding: 20px;
-    width: 80%;
-    max-width: 600px;
-}
-
-h1 {
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     text-align: center;
-    color: #333;
 }
 
-.game-area {
-    margin-bottom: 20px;
+#gameCanvas {
     border: 1px solid #ccc;
-    padding: 10px;
-    border-radius: 4px;
-    background-color: #f9f9f9;
-}
-
-#commandInput {
-    width: 100%;
-    padding: 10px;
     margin-bottom: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 16px;
 }
 
-#commandButton {
+#scoreDisplay {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+#startButton, #stopButton {
     background-color: #4CAF50;
     color: white;
     padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s ease;
+    font-size: 1em;
+    margin: 5px;
 }
 
-#commandButton:hover {
+#startButton:hover, #stopButton:hover {
     background-color: #3e8e41;
 }
 
-#outputArea {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-    overflow-y: auto;
-    height: 150px;
-    background-color: #f9f9f9;
+#message {
+    font-style: italic;
+    color: #777;
 }
 
-.command-log {
-    margin-bottom: 5px;
-}
-
-.command-log.error {
-    color: red;
-}
 </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Direct Command Game</h1>
-
-    <div class="game-area">
-        <input type="text" id="commandInput" placeholder="Enter command here">
-        <button id="commandButton">Execute Command</button>
-    </div>
-
-    <div id="outputArea"></div>
-
+<div id="gameContainer">
+    <h1>Game Loop Demo</h1>
+    <canvas id="gameCanvas" width="400" height="300"></canvas>
+    <div id="scoreDisplay">Score: <span id="score">0</span></div>
+    <button id="startButton">Start</button>
+    <button id="stopButton">Stop</button>
+    <div id="message"></div>
 </div>
 
 <script>
-    const commandInput = document.getElementById('commandInput');
-    const commandButton = document.getElementById('commandButton');
-    const outputArea = document.getElementById('outputArea');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('score');
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
+    const message = document.getElementById('message');
 
-    function executeCommand(command) {
-        let output = "";
+    let score = 0;
+    let animationFrameId;
+    let gameRunning = false;
+    let circleX = canvas.width / 2;
+    let circleY = canvas.height / 2;
+    let circleRadius = 20;
+    let circleSpeedX = 2;
+    let circleSpeedY = 2;
 
-        try {
-            switch (command.toLowerCase()) {
-                case 'hello':
-                    output = "Hello, world!";
-                    break;
-                case 'date':
-                    output = new Date().toLocaleDateString();
-                    break;
-                case 'time':
-                    output = new Date().toLocaleTimeString();
-                    break;
-                case '':
-                    output = "Please enter a command.";
-                    break;
-                default:
-                    output = "Unknown command.";
-            }
 
-            logCommand(command, output, false);
+    function drawCircle() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
+        ctx.arc(circleX, circleY, circleRadius, 0, Math.PI * 2);
+        ctx.fillStyle = 'blue';
+        ctx.fill();
+    }
 
-        } catch (error) {
-            logCommand(command, `Error: ${error.message}`, true);
+    function updateCircle() {
+        circleX += circleSpeedX;
+        circleY += circleSpeedY;
+
+        if (circleX + circleRadius > canvas.width || circleX - circleRadius < 0) {
+            circleSpeedX = -circleSpeedX;
+            score++;
+            updateScore();
+        }
+        if (circleY + circleRadius > canvas.height || circleY - circleRadius < 0) {
+            circleSpeedY = -circleSpeedY;
+            score++;
+            updateScore();
+        }
+    }
+
+
+    function gameLoop() {
+        if (!gameRunning) return; // Stop the loop if the game is not running
+        updateCircle();
+        drawCircle();
+        animationFrameId = requestAnimationFrame(gameLoop);
+    }
+
+    function updateScore() {
+        scoreDisplay.textContent = score;
+    }
+
+
+    function startGame() {
+        if (!gameRunning) {
+            gameRunning = true;
+            score = 0;
+            updateScore();
+            message.textContent = "";
+            gameLoop();
+            startButton.disabled = true;
+            stopButton.disabled = false;
         }
 
     }
 
-    function logCommand(command, result, isError) {
-        const logEntry = document.createElement('div');
-        logEntry.classList.add('command-log');
-        if (isError) {
-            logEntry.classList.add('error');
+    function stopGame() {
+        if (gameRunning) {
+            gameRunning = false;
+            cancelAnimationFrame(animationFrameId);
+            startButton.disabled = false;
+            stopButton.disabled = true;
+            message.textContent = "Game stopped.";
         }
-
-        logEntry.innerHTML = `<strong>> ${command}</strong><br>${result}`;
-        outputArea.appendChild(logEntry);
-        outputArea.scrollTop = outputArea.scrollHeight;  // Auto-scroll to bottom
     }
 
 
-    commandButton.addEventListener('click', () => {
-        const command = commandInput.value;
-        executeCommand(command);
-        commandInput.value = '';  // Clear input
-    });
+    startButton.addEventListener('click', startGame);
+    stopButton.addEventListener('click', stopGame);
 
-    commandInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-            const command = commandInput.value;
-            executeCommand(command);
-            commandInput.value = '';
-        }
-    });
 
 </script>
 
