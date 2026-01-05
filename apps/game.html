@@ -2,203 +2,149 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Speelveld</title>
+<title>Game Loop Example</title>
 <style>
 body {
     font-family: Arial, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    margin: 0;
+    min-height: 100vh;
     background-color: #f0f0f0;
+    margin: 0;
 }
 
-#game-container {
+.container {
     background-color: #fff;
+    padding: 20px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
     text-align: center;
 }
 
-#grid-container {
-    display: grid;
-    grid-template-columns: repeat(10, 40px);
-    grid-template-rows: repeat(10, 40px);
-    gap: 2px;
-    margin-top: 20px;
-}
-
-.grid-cell {
-    width: 40px;
-    height: 40px;
-    background-color: #eee;
+#gameCanvas {
     border: 1px solid #ccc;
-    box-sizing: border-box;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 20px;
-    cursor: pointer;
+    margin-bottom: 10px;
 }
 
-.grid-cell.active {
-    background-color: #b0e2ff;
+#scoreDisplay {
+    font-size: 1.2em;
+    margin-bottom: 10px;
 }
 
-#controls {
-    margin-top: 20px;
-}
-
-button {
-    background-color: #4CAF50;
-    color: white;
+#startButton, #stopButton {
     padding: 10px 20px;
+    font-size: 1em;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 16px;
-    margin: 0 10px;
+    margin: 5px;
 }
 
-button:hover {
-    background-color: #3e8e41;
+#startButton {
+    background-color: #4CAF50;
+    color: white;
+}
+
+#stopButton {
+    background-color: #f44336;
+    color: white;
 }
 </style>
 </head>
 <body>
 
-<div id="game-container">
-    <h1>Speelveld</h1>
-    <div id="grid-container">
-        </div>
-    <div id="controls">
-        <button id="startButton">Start</button>
-        <button id="pauseButton">Pauze</button>
-        <button id="resetButton">Reset</button>
-    </div>
+<div class="container">
+    <h1>Game Loop Example</h1>
+    <canvas id="gameCanvas" width="400" height="300"></canvas>
+    <div id="scoreDisplay">Score: 0</div>
+    <button id="startButton">Start</button>
+    <button id="stopButton">Stop</button>
 </div>
 
 <script>
-    const gridContainer = document.getElementById('grid-container');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('scoreDisplay');
     const startButton = document.getElementById('startButton');
-    const pauseButton = document.getElementById('pauseButton');
-    const resetButton = document.getElementById('resetButton');
-    let grid = [];
-    let gameInterval;
-    let isPaused = false;
-    let generationCount = 0;
+    const stopButton = document.getElementById('stopButton');
 
+    let score = 0;
+    let gameRunning = false;
+    let animationFrameId;
 
-    function initializeGrid() {
-        grid = [];
-        gridContainer.innerHTML = '';
-        for (let row = 0; row < 10; row++) {
-            grid[row] = [];
-            for (let col = 0; col < 10; col++) {
-                grid[row][col] = 0; // 0 = dead, 1 = alive
-                const cell = document.createElement('div');
-                cell.classList.add('grid-cell');
-                cell.dataset.row = row;
-                cell.dataset.col = col;
-                cell.addEventListener('click', () => toggleCell(row, col));
-                gridContainer.appendChild(cell);
-            }
+    // Game object (example: a simple square)
+    let square = {
+        x: 50,
+        y: 50,
+        size: 20,
+        speedX: 2,
+        speedY: 2,
+        color: 'blue'
+    };
+
+    function drawSquare() {
+        ctx.fillStyle = square.color;
+        ctx.fillRect(square.x, square.y, square.size, square.size);
+    }
+
+    function updateSquare() {
+        square.x += square.speedX;
+        square.y += square.speedY;
+
+        // Bounce off the walls
+        if (square.x + square.size > canvas.width || square.x < 0) {
+            square.speedX = -square.speedX;
         }
-        updateGridDisplay();
-    }
-
-
-    function toggleCell(row, col) {
-        grid[row][col] = 1 - grid[row][col]; // Toggle between 0 and 1
-        updateGridDisplay();
-    }
-
-    function updateGridDisplay() {
-        const cells = document.querySelectorAll('.grid-cell');
-        cells.forEach(cell => {
-            const row = parseInt(cell.dataset.row);
-            const col = parseInt(cell.dataset.col);
-            cell.classList.toggle('active', grid[row][col] === 1);
-        });
-    }
-
-    function getNeighborCount(row, col) {
-        let count = 0;
-        for (let i = -1; i <= 1; i++) {
-            for (let j = -1; j <= 1; j++) {
-                if (i === 0 && j === 0) continue;
-                const neighborRow = row + i;
-                const neighborCol = col + j;
-
-                if (neighborRow >= 0 && neighborRow < 10 && neighborCol >= 0 && neighborCol < 10) {
-                    count += grid[neighborRow][neighborCol];
-                }
-            }
+        if (square.y + square.size > canvas.height || square.y < 0) {
+            square.speedY = -square.speedY;
         }
-        return count;
+
     }
 
 
-    function updateGame() {
-        const nextGrid = grid.map(row => [...row]); // Deep copy
-        for (let row = 0; row < 10; row++) {
-            for (let col = 0; col < 10; col++) {
-                const neighbors = getNeighborCount(row, col);
-                if (grid[row][col] === 1) {
-                    // Cell is alive
-                    if (neighbors < 2 || neighbors > 3) {
-                        nextGrid[row][col] = 0; // Dies
-                    }
-                } else {
-                    // Cell is dead
-                    if (neighbors === 3) {
-                        nextGrid[row][col] = 1; // Becomes alive
-                    }
-                }
-            }
-        }
-        grid = nextGrid;
-        updateGridDisplay();
-        generationCount++;
+    function updateScore() {
+        score++;
+        scoreDisplay.textContent = 'Score: ' + score;
     }
 
 
-    function startGame() {
-        if (!gameInterval) {
-            isPaused = false;
-            gameInterval = setInterval(updateGame, 250); // Adjust speed here (milliseconds)
-        }
-    }
+    function gameLoop() {
+        if (!gameRunning) return;
 
-    function pauseGame() {
-        isPaused = true;
-        clearInterval(gameInterval);
-        gameInterval = null;
-    }
+        // Clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    function resetGame() {
-        pauseGame();
-        generationCount = 0;
-        initializeGrid();
+        // Update game objects
+        updateSquare();
+
+        // Draw game objects
+        drawSquare();
+
+
+        updateScore();
+        animationFrameId = requestAnimationFrame(gameLoop);
     }
 
 
     startButton.addEventListener('click', () => {
-        if(isPaused){
-            isPaused = false;
-            startGame();
-        } else {
-            startGame();
+        if (!gameRunning) {
+            gameRunning = true;
+            score = 0;
+            scoreDisplay.textContent = 'Score: 0';
+            gameLoop();
         }
     });
 
-    pauseButton.addEventListener('click', pauseGame);
-    resetButton.addEventListener('click', resetGame);
+    stopButton.addEventListener('click', () => {
+        gameRunning = false;
+        cancelAnimationFrame(animationFrameId);
+    });
 
-    initializeGrid();
+    // Optional: initial draw to show the square before game starts
+    drawSquare();
 </script>
+
 </body>
 </html>
 ```
