@@ -1,98 +1,129 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moving Background</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden; /* Prevent scrollbars */
-            font-family: sans-serif;
-            background-color: #87CEEB; /* Light blue sky */
-            color: #333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
+<title>Dynamische Achtergrond</title>
+<style>
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #111;
+    font-family: sans-serif;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    flex-direction: column;
+}
 
-        .background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1; /* Place behind other content */
-            overflow: hidden;
-        }
+#background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
 
-        .cloud {
-            position: absolute;
-            background-color: rgba(255, 255, 255, 0.7); /* Semi-transparent white */
-            border-radius: 50%;
-            animation: moveClouds 20s linear infinite; /* Animation defined in JS */
-        }
+.star {
+    position: absolute;
+    background-color: #fff;
+    border-radius: 50%;
+    animation: twinkle 5s linear infinite;
+}
 
-        @keyframes moveClouds {
-            from {
-                transform: translateX(100vw);
-            }
-            to {
-                transform: translateX(-100vw);
-            }
-        }
+.cloud {
+    position: absolute;
+    background: #eee;
+    border-radius: 50%;
+    opacity: 0.7;
+    animation: float 20s linear infinite;
+}
 
-        /* Responsive adjustments */
-        @media (max-width: 600px) {
-            /* Adjust cloud size/position for smaller screens */
-            .cloud {
-                /* Add any specific adjustments here, e.g., smaller size */
-            }
-        }
-    </style>
+h1 {
+    font-size: 3em;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+p {
+    font-size: 1.2em;
+    text-align: center;
+    padding: 0 20px;
+}
+
+@keyframes twinkle {
+    0% { opacity: 0; }
+    50% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+@keyframes float {
+    0% { transform: translateX(-100px); }
+    100% { transform: translateX(100vw); }
+}
+
+@media (max-width: 600px) {
+    h1 {
+        font-size: 2em;
+    }
+    p {
+        font-size: 1em;
+    }
+}
+</style>
 </head>
 <body>
-    <div class="background">
-        <!-- Clouds will be dynamically added here -->
-    </div>
+    <h1>Welkom!</h1>
+    <p>Geniet van de dynamische achtergrond.</p>
+    <div id="background"></div>
 
     <script>
-        const background = document.querySelector('.background');
-        const numberOfClouds = 10; // Adjust for more or fewer clouds
-        const cloudColors = ['#F0F8FF', '#FAFAFA', '#FFFFFF']; // Possible cloud colors
+        const background = document.getElementById('background');
 
-        function getRandomSize() {
-            return Math.random() * 100 + 50; // Random size between 50 and 150
+        function createStar() {
+            const star = document.createElement('div');
+            star.classList.add('star');
+            const size = Math.random() * 3 + 1;
+            const x = Math.random() * 100 + 'vw';
+            const y = Math.random() * 100 + 'vh';
+            const animationDelay = Math.random() * 10 + 's';
+
+            star.style.width = size + 'px';
+            star.style.height = size + 'px';
+            star.style.left = x;
+            star.style.top = y;
+            star.style.animationDelay = animationDelay;
+            background.appendChild(star);
         }
 
-        function getRandomPosition() {
-            return Math.random() * 100; // Random top position (percentage)
-        }
-
-        function getRandomAnimationDuration() {
-            return Math.random() * 20 + 10; // Random animation duration (10 to 30 seconds)
-        }
-        
-        function getRandomCloudColor() {
-            const randomIndex = Math.floor(Math.random() * cloudColors.length);
-            return cloudColors[randomIndex];
-        }
-
-
-        for (let i = 0; i < numberOfClouds; i++) {
+        function createCloud() {
             const cloud = document.createElement('div');
             cloud.classList.add('cloud');
-            cloud.style.width = getRandomSize() + 'px';
-            cloud.style.height = cloud.style.width; // Make it a circle
-            cloud.style.top = getRandomPosition() + '%';
-            cloud.style.left =  Math.random() * 100 + '%'; // Random horizontal start position
-            cloud.style.animationDuration = getRandomAnimationDuration() + 's';
-            cloud.style.backgroundColor = getRandomCloudColor(); // Set random cloud color
-            cloud.style.opacity = Math.random() * 0.5 + 0.3; // Random opacity (0.3 to 0.8)
-            cloud.style.borderRadius = "50%"; // Ensures circle shape
+            const size = Math.random() * 80 + 20;
+            const x = -size + 'px';
+            const y = Math.random() * 100 + 'vh';
+            const animationDuration = Math.random() * 20 + 10 + 's';
+
+            cloud.style.width = size + 'px';
+            cloud.style.height = size/2 + 'px';
+            cloud.style.borderRadius = size/2 + 'px';
+            cloud.style.left = x;
+            cloud.style.top = y;
+            cloud.style.animationDuration = animationDuration;
             background.appendChild(cloud);
+
         }
+
+
+        for (let i = 0; i < 100; i++) {
+            createStar();
+        }
+
+        for (let i = 0; i < 5; i++) {
+            createCloud();
+        }
+
     </script>
 </body>
 </html>
