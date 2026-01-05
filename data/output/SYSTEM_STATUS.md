@@ -5,4 +5,4 @@
 | **Model** | `Gemini 2.0` |
 | **Cycles** | 6 |
 | **Internet** | 🌍 CONNECTED |
-| **Laatste Actie** | 🌐 Web App: voeg_kleurvariatie_toe.html |
+| **Laatste Actie** | Monitoring... |
