@@ -2,203 +2,191 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Game</title>
+<title>WebArchitect - Gameplay</title>
 <style>
 body {
     font-family: sans-serif;
-    background-color: #f0f0f0;
-    margin: 0;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
 }
 
 #game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
-    text-align: center;
 }
 
-#game-canvas {
-    border: 1px solid #ccc;
+#game-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 30px);
+    grid-template-rows: repeat(10, 30px);
+    gap: 2px;
     margin-bottom: 10px;
 }
 
-#score-display {
-    font-size: 1.2em;
-    margin-bottom: 10px;
+.grid-cell {
+    width: 30px;
+    height: 30px;
+    background-color: #eee;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 
-#instructions {
-    font-size: 0.9em;
-    color: #666;
-    margin-bottom: 20px;
+.grid-cell:hover {
+    background-color: #ddd;
+}
+
+.grid-cell.active {
+    background-color: #4CAF50; /* Green */
+}
+
+#controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
 }
 
 button {
-    background-color: #4CAF50;
+    padding: 10px 15px;
+    background-color: #008CBA;
     color: white;
-    padding: 10px 20px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 1em;
+    transition: background-color 0.2s ease;
 }
 
 button:hover {
-    background-color: #3e8e41;
+    background-color: #0077a0;
 }
 
-#game-over {
-    display: none;
-    font-size: 1.5em;
-    color: red;
-    margin-top: 20px;
+#score {
+    font-size: 1.2em;
+    margin-bottom: 10px;
 }
 </style>
 </head>
 <body>
-
-<div id="game-container">
-    <h1>Simple Game</h1>
-    <p id="instructions">Use arrow keys to move the square. Avoid the obstacles!</p>
-    <canvas id="game-canvas" width="400" height="400"></canvas>
-    <div id="score-display">Score: <span id="score">0</span></div>
-    <button id="restart-button" style="display:none;">Restart</button>
-    <div id="game-over">Game Over!</div>
-</div>
+    <div id="game-container">
+        <div id="score">Score: <span id="score-value">0</span></div>
+        <div id="game-grid"></div>
+        <div id="controls">
+            <button id="start-button">Start</button>
+            <button id="reset-button">Reset</button>
+        </div>
+    </div>
 
 <script>
-const canvas = document.getElementById('game-canvas');
-const ctx = canvas.getContext('2d');
-const scoreDisplay = document.getElementById('score');
-const gameOverDisplay = document.getElementById('game-over');
-const restartButton = document.getElementById('restart-button');
-const instructions = document.getElementById('instructions');
+    const gridSize = 10;
+    const grid = document.getElementById('game-grid');
+    const scoreDisplay = document.getElementById('score-value');
+    const startButton = document.getElementById('start-button');
+    const resetButton = document.getElementById('reset-button');
+    let gameInterval;
+    let score = 0;
+    let activeCells = [];
+    let gameRunning = false;
 
-// Player properties
-let playerX = 200;
-let playerY = 350;
-const playerSize = 20;
-const playerSpeed = 5;
+    // Function to create the grid
+    function createGrid() {
+        for (let i = 0; i < gridSize * gridSize; i++) {
+            const cell = document.createElement('div');
+            cell.classList.add('grid-cell');
+            cell.dataset.index = i;
+            grid.appendChild(cell);
+        }
+    }
 
-// Obstacle properties
-const obstacleWidth = 20;
-const obstacleHeight = 20;
-let obstacles = [];
-let obstacleSpeed = 2; // Initial obstacle speed
-let score = 0;
-let gameRunning = false;
+    // Function to get all cells
+    function getCells() {
+        return document.querySelectorAll('.grid-cell');
+    }
 
-// Function to generate obstacles
-function generateObstacle() {
-    const obstacleX = Math.random() * (canvas.width - obstacleWidth);
-    obstacles.push({ x: obstacleX, y: -obstacleHeight, width: obstacleWidth, height: obstacleHeight });
-}
+    // Function to activate a random cell
+    function activateRandomCell() {
+        const cells = getCells();
+        const randomIndex = Math.floor(Math.random() * cells.length);
 
-
-// Game Loop function
-function gameLoop() {
-    if (!gameRunning) return; // Stop the loop if the game is not running
-
-    // Clear the canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Obstacle movement and collision detection
-    for (let i = 0; i < obstacles.length; i++) {
-        obstacles[i].y += obstacleSpeed;
-
-        // Draw obstacles
-        ctx.fillStyle = 'red';
-        ctx.fillRect(obstacles[i].x, obstacles[i].y, obstacles[i].width, obstacles[i].height);
-
-
-        // Collision detection
-        if (playerX < obstacles[i].x + obstacles[i].width &&
-            playerX + playerSize > obstacles[i].x &&
-            playerY < obstacles[i].y + obstacles[i].height &&
-            playerY + playerSize > obstacles[i].y) {
-            gameOver();
-            return;
+        if (activeCells.length > 0) {
+            deactivateCells();
         }
 
-        // Remove obstacles that have gone off-screen
-        if (obstacles[i].y > canvas.height) {
-            obstacles.splice(i, 1);
-            i--; // Adjust index after removing an element
+        activeCells = [randomIndex]; // Store the active cell index
+        cells[randomIndex].classList.add('active');
+    }
+
+    function deactivateCells() {
+        const cells = getCells();
+        activeCells.forEach(index => {
+            cells[index].classList.remove('active');
+        });
+        activeCells = [];
+    }
+
+
+    function handleCellClick(event) {
+        if (!gameRunning) return;
+
+        const clickedIndex = parseInt(event.target.dataset.index);
+
+        if (activeCells.includes(clickedIndex)) {
             score++;
             scoreDisplay.textContent = score;
+            activateRandomCell();
+        } else {
+            gameOver();
         }
     }
 
 
-    // Draw player
-    ctx.fillStyle = 'blue';
-    ctx.fillRect(playerX, playerY, playerSize, playerSize);
+    function startGame() {
+        if (gameRunning) return;
+        score = 0;
+        scoreDisplay.textContent = score;
+        gameRunning = true;
+        activateRandomCell();
 
-    // Generate new obstacles with some probability
-    if (Math.random() < 0.02) {  //Adjust this value for frequency
-        generateObstacle();
+        gameInterval = setInterval(() => {
+            if (gameRunning) {
+                activateRandomCell();
+            }
+        }, 1500);
+    }
+
+    function gameOver() {
+        clearInterval(gameInterval);
+        gameRunning = false;
+        alert(`Game Over! Final Score: ${score}`);
+        deactivateCells();
+    }
+
+    function resetGame() {
+        clearInterval(gameInterval);
+        gameRunning = false;
+        score = 0;
+        scoreDisplay.textContent = score;
+        deactivateCells();
     }
 
 
+    // Event Listeners
+    startButton.addEventListener('click', startGame);
+    resetButton.addEventListener('click', resetGame);
 
-    requestAnimationFrame(gameLoop); // Request the next frame
-}
-
-
-
-// Keydown event listener for player movement
-document.addEventListener('keydown', (e) => {
-    if (!gameRunning) return;
-    switch (e.key) {
-        case 'ArrowLeft':
-            playerX = Math.max(0, playerX - playerSpeed);
-            break;
-        case 'ArrowRight':
-            playerX = Math.min(canvas.width - playerSize, playerX + playerSpeed);
-            break;
-        case 'ArrowUp':
-            // No vertical movement
-            break;
-        case 'ArrowDown':
-            // No vertical movement
-            break;
-    }
-});
-
-
-
-function startGame() {
-    score = 0;
-    scoreDisplay.textContent = score;
-    playerX = 200;
-    playerY = 350;
-    obstacles = [];
-    obstacleSpeed = 2;
-    gameRunning = true;
-    gameOverDisplay.style.display = 'none';
-    restartButton.style.display = 'none'; // Hide the restart button at the start
-    instructions.style.display = 'none'; // Hide the instructions
-    gameLoop();
-}
-
-function gameOver() {
-    gameRunning = false;
-    gameOverDisplay.style.display = 'block';
-    restartButton.style.display = 'block';
-}
-
-
-
-// Start the game when the page loads
-startGame();
-
-restartButton.addEventListener('click', startGame);
-
+    // Initialize grid and event listeners for each cell.
+    createGrid();
+    getCells().forEach(cell => {
+        cell.addEventListener('click', handleCellClick);
+    });
 </script>
 </body>
 </html>
