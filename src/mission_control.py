@@ -2,6 +2,7 @@ import time
 import os
 import re
 import math
+import json
 from rich.console import Console
 from rich.layout import Layout
 from rich.panel import Panel
@@ -12,7 +13,6 @@ from rich import box
 
 console = Console()
 
-# --- CONFIGURATIE ---
 AGENT_CONFIG = {
     "ResearchAgent":    {"c": "bright_yellow", "i": "🌍", "tag": "ZOEKT"},
     "WebArchitect":     {"c": "bright_cyan",   "i": "🌐", "tag": "BOUWT"},
@@ -49,10 +49,21 @@ def get_scanner_line(frame, width=30, color="#ffffff"):
     if 0 <= pos+1 < width: chars[pos+1] = f"[bold {color}]•[/]"
     return "".join(chars)
 
+def get_current_mission_title():
+    try:
+        if os.path.exists("data/current_mission.json"):
+            with open("data/current_mission.json", 'r') as f:
+                data = json.load(f)
+                title = data.get('title', 'NO MISSION')
+                # Max lengte afkappen
+                return title[:20].upper()
+    except: pass
+    return "FREE ROAM"
+
 def parse_log_line(line):
     line = line.strip()
     if not line: return None
-    skip = ["Cycle #", "Ruststand", "---", "WAIT", "IDLE", "HERSTART", "Nieuwe functionaliteit", "Geen nieuwe orders"]
+    skip = ["Cycle #", "Ruststand", "---", "WAIT", "IDLE", "HERSTART", "Nieuwe functionaliteit", "Geen nieuwe orders", "Error while finding module"]
     if any(s in line for s in skip): return None
 
     cfg = {"c": "dim white", "i": "•", "tag": "SYS"}
@@ -74,36 +85,28 @@ def parse_log_line(line):
 def get_changed_files_data():
     logs = get_file_tail("logs/autonomous_agents/agent.log", lines=250)
     files = []
-    seen = set() # Voorkom dubbele entries
-    
+    seen = set()
     for line in reversed(logs):
         if "FILE:" in line or "Code geschreven naar" in line or "App gebouwd" in line:
             parts = line.split(' - ')
             msg = parts[-1].strip()
-            
-            # Extract filename
             raw_file = msg.replace("FILE:", "").replace("Code geschreven naar:", "").replace("App gebouwd/geüpdatet:", "").strip()
             if "|" in raw_file: raw_file = raw_file.split("|")[0].strip()
             
-            # Extract time
+            # Filter init files uit de lijst
+            if "__init__" in raw_file: continue
+            
             try: time_part = line.split(" - ")[0].split(" ")[1].split(",")[0]
             except: time_part = "--:--"
 
             if raw_file not in seen:
                 files.append((time_part, raw_file))
                 seen.add(raw_file)
-            
-            if len(files) >= 5: break # Top 5 files
-            
+            if len(files) >= 5: break
     return files
 
 def generate_layout(frame):
     layout = Layout()
-    
-    # INDELING:
-    # 1. Top Bar (Header) - 3 regels
-    # 2. Evidence Locker (Top Focus) - 7 regels (Vast formaat voor stabiliteit)
-    # 3. Feed (De rest)
     layout.split_column(
         Layout(name="top_bar", size=3),
         Layout(name="evidence", size=7),
@@ -113,23 +116,19 @@ def generate_layout(frame):
     main_color = get_smooth_color(frame, speed=0.08)
     sec_color = get_smooth_color(frame, speed=0.08, offset=2.0)
     
-    # --- 1. TOP BAR ---
-    scanner = get_scanner_line(frame, width=25, color=main_color)
+    # --- TOP BAR ---
+    scanner = get_scanner_line(frame, width=20, color=main_color)
+    mission = get_current_mission_title()
+    
     header_grid = Table.grid(expand=True)
     header_grid.add_column(justify="left", ratio=1)
     header_grid.add_column(justify="center", ratio=2)
     header_grid.add_column(justify="right", ratio=1)
-    header_grid.add_row(f"[bold {main_color}]PHOENIX V14[/]", scanner, f"MODE: [bold white]WATCHDOG[/]")
+    header_grid.add_row(f"[bold {main_color}]PHOENIX V15[/]", scanner, f"OP: [bold white]{mission}[/]")
     layout["top_bar"].update(Panel(header_grid, style="on black", border_style=main_color, box=box.HEAVY_EDGE))
 
-    # --- 2. EVIDENCE LOCKER (BOVENAAN) ---
-    files_table = Table(
-        show_header=True, 
-        header_style=f"bold {sec_color}", 
-        box=None, 
-        expand=True,
-        padding=(0,1)
-    )
+    # --- EVIDENCE ---
+    files_table = Table(show_header=True, header_style=f"bold {sec_color}", box=None, expand=True, padding=(0,1))
     files_table.add_column("TIMESTAMP", style="dim white", width=12)
     files_table.add_column("MODIFIED ASSETS", style="bold white")
 
@@ -138,19 +137,11 @@ def generate_layout(frame):
         files_table.add_row("--:--:--", "[dim italic]Wachten op wijzigingen...[/]")
     else:
         for t, f in recent_files:
-            # Highlight mapnamen voor leesbaarheid
-            f_styled = f.replace("/", f"[dim {main_color}]/[/]")
-            files_table.add_row(t, f_styled)
+            files_table.add_row(t, f)
 
-    # We gebruiken de secundaire kleur voor dit paneel om het te onderscheiden
-    layout["evidence"].update(Panel(
-        files_table, 
-        title=f"[bold {sec_color}]EVIDENCE LOCKER[/]", 
-        border_style=sec_color, 
-        box=box.ROUNDED
-    ))
+    layout["evidence"].update(Panel(files_table, title=f"[bold {sec_color}]EVIDENCE LOCKER[/]", border_style=sec_color, box=box.ROUNDED))
 
-    # --- 3. FEED (ONDER) ---
+    # --- FEED ---
     log_table = Table(show_header=False, box=None, expand=True, padding=(0, 1))
     log_table.add_column("I", width=2, justify="center")
     log_table.add_column("Tag", width=6)
@@ -167,12 +158,7 @@ def generate_layout(frame):
     for icon, tag, msg, color in display_logs:
         log_table.add_row(f"[{color}]{icon}[/]", f"[bold {color}]{tag}[/]", f"[white]{msg}[/]")
 
-    layout["feed"].update(Panel(
-        log_table, 
-        title=f"[bold {main_color}]ACTIVITY STREAM[/]", 
-        border_style=main_color, 
-        box=box.ROUNDED
-    ))
+    layout["feed"].update(Panel(log_table, title=f"[bold {main_color}]ACTIVITY STREAM[/]", border_style=main_color, box=box.ROUNDED))
 
     return layout
 

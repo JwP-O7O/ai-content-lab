@@ -1,0 +1,239 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Pixel Puzzle Pop</title>
+<style>
+body {
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+
+#game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+#grid-container {
+    display: grid;
+    grid-template-columns: repeat(10, 30px); /* Adjust for desired grid size */
+    grid-gap: 2px;
+    margin-bottom: 10px;
+}
+
+.pixel {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #ddd;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+#score-board {
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    padding: 10px 15px;
+    font-size: 1em;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+    background-color: #4CAF50;
+    color: white;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+</style>
+</head>
+<body>
+
+    <div id="game-container">
+        <h1>Pixel Puzzle Pop</h1>
+        <div id="score-board">Score: <span id="score">0</span></div>
+        <div id="grid-container"></div>
+        <div class="controls">
+            <button id="undo-button" disabled>Undo (<span id="undo-count">3</span>)</button>
+            <button id="new-game-button">New Game</button>
+        </div>
+    </div>
+
+
+<script>
+const gridContainer = document.getElementById('grid-container');
+const scoreDisplay = document.getElementById('score');
+const undoButton = document.getElementById('undo-button');
+const undoCountDisplay = document.getElementById('undo-count');
+const newGameButton = document.getElementById('new-game-button');
+
+let grid = [];
+let rows = 10;
+let cols = 10;
+let score = 0;
+let undoCount = 3;
+let history = []; // To store game states for undo
+
+const colors = ['red', 'green', 'blue', 'yellow', 'purple', 'orange']; // Define colors
+let isGameOver = false;
+
+function generateGrid() {
+    grid = [];
+    for (let i = 0; i < rows; i++) {
+        grid[i] = [];
+        for (let j = 0; j < cols; j++) {
+            grid[i][j] = colors[Math.floor(Math.random() * colors.length)];
+        }
+    }
+}
+
+function renderGrid() {
+    gridContainer.innerHTML = '';
+    for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+            const pixel = document.createElement('div');
+            pixel.classList.add('pixel');
+            pixel.style.backgroundColor = grid[i][j];
+            pixel.dataset.row = i;
+            pixel.dataset.col = j;
+            pixel.addEventListener('click', pixelClicked);
+            gridContainer.appendChild(pixel);
+        }
+    }
+}
+
+
+function pixelClicked(event) {
+    if (isGameOver) return; // Prevent clicks if game over
+    const row = parseInt(event.target.dataset.row);
+    const col = parseInt(event.target.dataset.col);
+
+    const color = grid[row][col];
+    if (!color) return; // Already cleared
+
+    const group = findGroup(row, col, color);
+    if (group.length > 1) {
+        saveGameState(); // Save the state before modification
+        clearGroup(group);
+        calculateScore(group.length);
+        updateScoreboard();
+        renderGrid();
+        if(isGridFull()) {
+            gameOver();
+        }
+    }
+}
+
+function findGroup(row, col, color, visited = []) {
+    if (row < 0 || row >= rows || col < 0 || col >= cols || grid[row][col] !== color || visited.some(p => p[0] === row && p[1] === col)) {
+        return visited;
+    }
+
+    visited.push([row, col]);
+
+    findGroup(row + 1, col, color, visited);
+    findGroup(row - 1, col, color, visited);
+    findGroup(row, col + 1, color, visited);
+    findGroup(row, col - 1, color, visited);
+
+    return visited;
+}
+
+function clearGroup(group) {
+    group.forEach(pixel => {
+        grid[pixel[0]][pixel[1]] = null; // Use null to represent cleared pixels
+    });
+}
+
+function calculateScore(groupSize) {
+    score += (groupSize - 1) * (groupSize - 1); // Score calculation
+}
+
+function updateScoreboard() {
+    scoreDisplay.textContent = score;
+}
+
+function isGridFull() {
+    for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+            if (grid[i][j]) { // Check for any non-null pixels
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+function gameOver() {
+    isGameOver = true;
+    alert(`Game Over! Final Score: ${score}`);
+}
+
+function saveGameState() {
+    history.push(JSON.parse(JSON.stringify(grid))); // Deep copy
+    if (history.length > 3) { // Limit history size
+        history.shift();
+    }
+    updateUndoButton();
+}
+
+
+function undo() {
+    if (history.length > 0 && undoCount > 0) {
+        grid = history.pop();
+        undoCount--;
+        updateUndoButton();
+        renderGrid();
+    }
+}
+
+
+function updateUndoButton() {
+    undoCountDisplay.textContent = undoCount;
+    undoButton.disabled = undoCount <= 0 || history.length === 0;
+}
+
+
+function newGame() {
+    score = 0;
+    undoCount = 3;
+    history = [];
+    isGameOver = false; // Reset game over state
+    generateGrid();
+    renderGrid();
+    updateScoreboard();
+    updateUndoButton();
+}
+
+
+// Event Listeners
+undoButton.addEventListener('click', undo);
+newGameButton.addEventListener('click', newGame);
+
+// Initial game setup
+newGame();
+
+</script>
+</body>
+</html>
+```

@@ -9,7 +9,6 @@ class FeatureArchitect:
         self.src_dir = "src"
 
     def _find_file(self, partial_name):
-        """Zoekt een bestaand bestand in src/"""
         for root, dirs, files in os.walk(self.src_dir):
             for file in files:
                 if partial_name in file:
@@ -17,13 +16,17 @@ class FeatureArchitect:
         return None
 
     async def build_feature(self, instruction):
-        logger.info(f"[{self.name}] ⚙️ Code Feature bouwen: {instruction[:50]}...")
+        logger.info(f"[{self.name}] ⚙️ Feature bouwen: {instruction[:50]}...")
         
-        # 1. Probeer te zien of we een bestaand bestand moeten hebben
+        # 🚫 VEILIGHEIDSPROTOCOL: Verbied __init__.py
+        if "__init__" in instruction:
+            logger.warning(f"[{self.name}] 🚫 Wijzigen van __init__.py is verboden om crashes te voorkomen.")
+            return {"status": "skipped"}
+
+        # 1. Zoek bestaand bestand
         target_file = None
         existing_code = ""
         
-        # Slimme gok: zoek naar woorden die op .py lijken in de instructie
         words = instruction.split()
         for word in words:
             if ".py" in word:
@@ -31,7 +34,6 @@ class FeatureArchitect:
                 if found:
                     target_file = found
                     with open(target_file, 'r') as f: existing_code = f.read()
-                    logger.info(f"[{self.name}] ♻️ Modificeren van bestand: {target_file}")
                     break
 
         # 2. De Prompt
@@ -40,13 +42,12 @@ class FeatureArchitect:
         TAAK: {instruction}
         
         BESTAANDE CODE:
-        {existing_code[:10000]}
+        {existing_code[:8000]}
         
-        INSTRUCTIES:
-        - Als er bestaande code is: Pas deze aan/breid deze uit. Verwijder geen essentiële onderdelen.
-        - Als het nieuw is: Schrijf de volledige class/script.
-        - Geef ALLEEN de Python code terug (geen markdown blokken).
-        - Zorg voor imports, error handling en logging.
+        REGELS:
+        1. Geef ALLEEN de volledige Python code terug.
+        2. Raak GEEN __init__.py bestanden aan.
+        3. Zorg dat imports kloppen (gebruik 'from src...' waar nodig).
         """
         
         response = await self.ai.generate_text(prompt)
@@ -57,17 +58,22 @@ class FeatureArchitect:
         
         # 4. Opslaan
         if not target_file:
-            # Nieuw bestand? Vraag naam.
-            name_p = f"Bestandsnaam voor deze python code (eindigend op .py, max 1 woord): {instruction}"
+            name_p = f"Bestandsnaam (eindigend op .py): {instruction}"
             fname = await self.ai.generate_text(name_p)
             fname = fname.strip().lower().replace(" ", "_")
             if not fname.endswith(".py"): fname += ".py"
-            # Zet nieuwe bestanden standaard in execution folder als we het niet weten
+            # 🚫 DUBBELE CHECK
+            if "__init__" in fname: fname = "mod_safety_override.py"
             target_file = os.path.join("src/autonomous_agents/execution", fname)
 
         # Zorg dat map bestaat
         os.makedirs(os.path.dirname(target_file), exist_ok=True)
         
+        # 🚫 LAATSTE CHECK: Schrijf nooit naar __init__.py
+        if "__init__.py" in target_file:
+            logger.error(f"[{self.name}] 🛑 Poging tot sabotage geblokkeerd.")
+            return {"status": "failed"}
+
         with open(target_file, 'w') as f:
             f.write(code)
             
