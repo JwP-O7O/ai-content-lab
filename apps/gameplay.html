@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Game</title>
+<title>Pixel Game</title>
 <style>
 body {
     font-family: sans-serif;
@@ -15,134 +15,161 @@ body {
 }
 
 #game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
-    text-align: center;
 }
 
-#game-canvas {
+#pixel-grid {
+    display: grid;
+    grid-template-columns: repeat(30, 10px);
+    grid-template-rows: repeat(20, 10px);
     border: 1px solid #ccc;
-    margin-bottom: 10px;
 }
 
-#score {
-    font-size: 1.2em;
-    margin-bottom: 10px;
+.pixel {
+    width: 10px;
+    height: 10px;
+    border: 1px solid #eee;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.pixel.active {
+    background-color: #3498db; /* Active pixel color */
+}
+
+#controls {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
 }
 
 button {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
+    padding: 10px 15px;
     border: none;
     border-radius: 4px;
+    background-color: #2ecc71;
+    color: white;
     cursor: pointer;
-    font-size: 1em;
+    transition: background-color 0.2s ease;
 }
 
 button:hover {
-    background-color: #3e8e41;
+    background-color: #27ae60;
+}
+
+#score {
+    margin-top: 10px;
+    font-size: 1.2em;
 }
 </style>
 </head>
 <body>
 
 <div id="game-container">
-    <h1>Simple Game</h1>
-    <canvas id="game-canvas" width="400" height="300"></canvas>
-    <div id="score">Score: 0</div>
-    <button id="restart-button">Restart</button>
+    <h1>Pixel Game</h1>
+    <div id="pixel-grid"></div>
+    <div id="controls">
+        <button id="start-button">Start</button>
+        <button id="stop-button" disabled>Stop</button>
+        <button id="clear-button">Clear</button>
+    </div>
+    <div id="score">Score: <span id="score-value">0</span></div>
 </div>
 
 <script>
-    const canvas = document.getElementById('game-canvas');
-    const ctx = canvas.getContext('2d');
-    const scoreDisplay = document.getElementById('score');
-    const restartButton = document.getElementById('restart-button');
+    const pixelGrid = document.getElementById('pixel-grid');
+    const startButton = document.getElementById('start-button');
+    const stopButton = document.getElementById('stop-button');
+    const clearButton = document.getElementById('clear-button');
+    const scoreValue = document.getElementById('score-value');
 
+    const gridWidth = 30;
+    const gridHeight = 20;
+    let pixels = [];
+    let gameInterval;
     let score = 0;
-    let gameOver = false;
-    let playerX = 50;
-    let playerY = canvas.height - 30;
-    let obstacleX = canvas.width;
-    let obstacleY = canvas.height - 20;
-    let obstacleWidth = 20;
-    let obstacleSpeed = 3;
 
-    function drawPlayer() {
-        ctx.fillStyle = 'blue';
-        ctx.fillRect(playerX, playerY, 20, 20);
+    // Initialize grid
+    for (let row = 0; row < gridHeight; row++) {
+        for (let col = 0; col < gridWidth; col++) {
+            const pixel = document.createElement('div');
+            pixel.classList.add('pixel');
+            pixel.dataset.row = row;
+            pixel.dataset.col = col;
+            pixel.addEventListener('click', () => togglePixel(pixel));
+            pixelGrid.appendChild(pixel);
+            pixels.push(pixel);
+        }
     }
 
-    function drawObstacle() {
-        ctx.fillStyle = 'red';
-        ctx.fillRect(obstacleX, obstacleY, obstacleWidth, 10);
+    function getRandomPixel() {
+      const row = Math.floor(Math.random() * gridHeight);
+      const col = Math.floor(Math.random() * gridWidth);
+      const index = row * gridWidth + col;
+      return pixels[index];
+    }
+    
+    function activateRandomPixel() {
+        const pixel = getRandomPixel();
+        pixel.classList.add('active');
     }
 
-    function update() {
-        if (gameOver) return;
-
-        obstacleX -= obstacleSpeed;
-        if (obstacleX < 0) {
-            obstacleX = canvas.width;
+    function togglePixel(pixel) {
+        if (pixel.classList.contains('active')) {
+            pixel.classList.remove('active');
             score++;
-            scoreDisplay.textContent = 'Score: ' + score;
-            obstacleSpeed = Math.min(obstacleSpeed + 0.5, 10); // Increase difficulty
-        }
-
-        // Collision detection
-        if (playerX < obstacleX + obstacleWidth &&
-            playerX + 20 > obstacleX &&
-            playerY < obstacleY + 10 &&
-            playerY + 20 > obstacleY) {
-            gameOver = true;
+            scoreValue.textContent = score;
         }
     }
 
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawPlayer();
-        drawObstacle();
-    }
 
     function gameLoop() {
-        update();
-        draw();
-        if (!gameOver) {
-            requestAnimationFrame(gameLoop);
-        } else {
-            ctx.fillStyle = 'black';
-            ctx.font = '20px sans-serif';
-            ctx.fillText('Game Over! Final Score: ' + score, canvas.width / 4, canvas.height / 2);
+        // Clear active pixels (deactivate all)
+        pixels.forEach(pixel => pixel.classList.remove('active'));
+        activateRandomPixel();
+    }
+
+
+    function startGame() {
+        if (!gameInterval) {
+            score = 0;
+            scoreValue.textContent = score;
+            gameInterval = setInterval(gameLoop, 500); // Adjust speed here
+            startButton.disabled = true;
+            stopButton.disabled = false;
+            clearButton.disabled = true; // Disable clear during game
         }
     }
 
-    function resetGame() {
+
+    function stopGame() {
+        clearInterval(gameInterval);
+        gameInterval = null;
+        startButton.disabled = false;
+        stopButton.disabled = true;
+        clearButton.disabled = false; // Enable clear when stopped
+    }
+
+    function clearGrid() {
+        pixels.forEach(pixel => {
+            pixel.classList.remove('active');
+        });
         score = 0;
-        gameOver = false;
-        obstacleX = canvas.width;
-        obstacleSpeed = 3;
-        scoreDisplay.textContent = 'Score: 0';
-        gameLoop();
+        scoreValue.textContent = score;
     }
 
-    document.addEventListener('keydown', (event) => {
-        if (event.code === 'Space') {
-            playerY -= 50; // Jump
-            setTimeout(() => {
-                playerY = canvas.height - 30; // Gravity
-            }, 300);
-        }
-    });
 
+    startButton.addEventListener('click', startGame);
+    stopButton.addEventListener('click', stopGame);
+    clearButton.addEventListener('click', clearGrid);
 
-    restartButton.addEventListener('click', resetGame);
-
-    gameLoop();
 </script>
-
 </body>
 </html>
 ```
