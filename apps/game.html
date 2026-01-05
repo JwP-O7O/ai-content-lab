@@ -2,194 +2,131 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Memory Game</title>
+<title>Game Loop Example</title>
 <style>
 body {
-    font-family: Arial, sans-serif;
+    font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    margin: 0;
+    min-height: 100vh;
     background-color: #f0f0f0;
+    margin: 0;
 }
 
-.container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+#game-container {
     background-color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
-}
-
-#game-board {
-    display: grid;
-    grid-template-columns: repeat(4, 80px); /* Adjust as needed */
-    grid-gap: 10px;
-    margin-bottom: 20px;
-}
-
-.card {
-    width: 80px;
-    height: 80px;
-    background-color: #ccc;
-    border-radius: 5px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 2em;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.card.flipped {
-    background-color: #add8e6; /* Light blue */
-    color: black;
-}
-
-.card.matched {
-    background-color: #90ee90; /* Light green */
-    pointer-events: none; /* Disable clicks on matched cards */
-}
-
-
-button {
-    padding: 10px 20px;
-    font-size: 1em;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-button:hover {
-    background-color: #3e8e41;
-}
-
-#game-over-message {
-    font-size: 1.2em;
-    margin-bottom: 10px;
     text-align: center;
+}
+
+#canvas {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
 }
 
 #score {
     font-size: 1.2em;
     margin-bottom: 10px;
 }
+
+#start-button, #stop-button {
+    background-color: #4CAF50; /* Green */
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+#stop-button {
+    background-color: #f44336; /* Red */
+}
 </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Memory Game</h1>
-        <div id="score">Score: 0</div>
-        <div id="game-board"></div>
-        <div id="game-over-message" style="display:none;">Game Over!</div>
-        <button id="restart-button" onclick="restartGame()">Restart</button>
-    </div>
 
-    <script>
-        const cardValues = [];
-        const cardElements = [];
-        let flippedCards = [];
-        let matchedPairs = 0;
-        let score = 0;
+<div id="game-container">
+    <h1>Game Loop Demo</h1>
+    <canvas id="canvas" width="400" height="300"></canvas>
+    <div id="score">Score: 0</div>
+    <button id="start-button">Start</button>
+    <button id="stop-button">Stop</button>
+</div>
 
-        const gameBoard = document.getElementById('game-board');
-        const gameOverMessage = document.getElementById('game-over-message');
-        const scoreDisplay = document.getElementById('score');
 
-        function initializeGame() {
-            // Generate card values
-            const values = [];
-            for (let i = 1; i <= 8; i++) {
-                values.push(i, i);
-            }
-            // Shuffle the values
-            values.sort(() => Math.random() - 0.5);
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('score');
+    const startButton = document.getElementById('start-button');
+    const stopButton = document.getElementById('stop-button');
 
-            // Create cards
-            values.forEach((value, index) => {
-                const card = document.createElement('div');
-                card.classList.add('card');
-                card.dataset.value = value;
-                card.dataset.index = index; // Store the original index for easy lookup
-                card.addEventListener('click', flipCard);
-                gameBoard.appendChild(card);
-                cardValues.push(value);
-                cardElements.push(card);
-            });
+    let score = 0;
+    let gameRunning = false;
+    let animationFrameId; // To store the animation frame ID
+
+    // Game variables
+    let x = 50;
+    let y = 50;
+    const size = 20;
+    const speed = 2;
+
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+
+        // Draw a simple rectangle
+        ctx.fillStyle = 'blue';
+        ctx.fillRect(x, y, size, size);
+
+        // Update position
+        x += speed;
+
+        if (x > canvas.width) {
+            x = 0;
+            score++;
+            updateScore();
         }
+    }
 
 
-        function flipCard() {
-            if (flippedCards.length < 2 && !this.classList.contains('flipped') && !this.classList.contains('matched')) {
-                this.classList.add('flipped');
-                const value = this.dataset.value;
-                flippedCards.push({ card: this, value: value });
+    function updateScore() {
+        scoreDisplay.textContent = 'Score: ' + score;
+    }
 
 
-                if (flippedCards.length === 2) {
-                    setTimeout(checkMatch, 1000); // Check for match after a short delay
-                }
-            }
-        }
+    function gameLoop() {
+        if (!gameRunning) return; // Stop if game is not running
+
+        draw();
+        animationFrameId = requestAnimationFrame(gameLoop); // Request the next frame
+    }
 
 
-        function checkMatch() {
-            const [card1, card2] = flippedCards;
-            if (card1.value === card2.value) {
-                // Match!
-                card1.card.classList.add('matched');
-                card2.card.classList.add('matched');
-                matchedPairs++;
-                score += 10;
-                updateScore();
-            } else {
-                // No match
-                card1.card.classList.remove('flipped');
-                card2.card.classList.remove('flipped');
-                score -= 2;
-                updateScore();
-            }
-            flippedCards = []; // Reset flipped cards
-            if (matchedPairs === 8) {
-                gameOver();
-            }
-        }
-
-        function updateScore() {
-            scoreDisplay.textContent = `Score: ${score}`;
-        }
-
-        function gameOver() {
-            gameOverMessage.style.display = 'block';
-            // Disable card clicks (optional, since matched cards are already disabled)
-            cardElements.forEach(card => card.removeEventListener('click', flipCard));
-        }
-
-        function restartGame() {
-            // Clear the board
-            gameBoard.innerHTML = '';
-            cardValues.length = 0;
-            cardElements.length = 0;
-            flippedCards = [];
-            matchedPairs = 0;
+    startButton.addEventListener('click', () => {
+        if (!gameRunning) {
+            gameRunning = true;
             score = 0;
             updateScore();
-            gameOverMessage.style.display = 'none';
-
-            // Re-initialize the game
-            initializeGame();
+            gameLoop(); // Start the game loop
         }
+    });
 
+    stopButton.addEventListener('click', () => {
+        gameRunning = false;
+        cancelAnimationFrame(animationFrameId); // Stop the animation
+    });
 
-        // Initialize the game when the page loads
-        initializeGame();
-    </script>
+</script>
+
 </body>
 </html>
 ```
