@@ -2,10 +2,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Game</title>
+<title>Speelveld Vullen & Verwijderen</title>
 <style>
 body {
-    font-family: sans-serif;
+    font-family: Arial, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -14,27 +14,37 @@ body {
     background-color: #f0f0f0;
 }
 
-#game-container {
-    background-color: #fff;
+.container {
+    background-color: white;
+    padding: 20px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
     text-align: center;
 }
 
-#game-canvas {
+#gameBoard {
+    display: grid;
+    grid-template-columns: repeat(10, 40px);
+    grid-gap: 5px;
+    margin-top: 20px;
+}
+
+.cell {
+    width: 40px;
+    height: 40px;
+    background-color: #eee;
     border: 1px solid #ccc;
-    margin-bottom: 10px;
-}
-
-#score-display {
-    font-size: 1.2em;
-    margin-bottom: 10px;
-}
-
-#controls {
+    cursor: pointer;
     display: flex;
     justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    border-radius: 4px;
+}
+
+.cell.filled {
+    background-color: #4CAF50;
+    color: white;
 }
 
 button {
@@ -44,274 +54,67 @@ button {
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    margin: 0 5px;
+    font-size: 16px;
+    margin-top: 10px;
 }
 
 button:hover {
     background-color: #3e8e41;
 }
-
-#game-over-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-#game-over-content {
-    background-color: white;
-    padding: 20px;
-    border-radius: 8px;
-    text-align: center;
-}
 </style>
 </head>
 <body>
-
-<div id="game-container">
-    <h1>Simple Game</h1>
-    <div id="score-display">Score: <span id="score">0</span></div>
-    <canvas id="game-canvas" width="400" height="300"></canvas>
-    <div id="controls">
-        <button id="startButton">Start</button>
-        <button id="resetButton" disabled>Reset</button>
+    <div class="container">
+        <h1>Speelveld</h1>
+        <div id="gameBoard"></div>
+        <button id="fillBoardButton">Vul Speelveld</button>
+        <button id="clearBoardButton">Maak Leeg</button>
     </div>
-</div>
-
-<div id="game-over-screen">
-    <div id="game-over-content">
-        <h2>Game Over</h2>
-        <p>Your Score: <span id="final-score">0</span></p>
-        <button id="restartButton">Restart</button>
-    </div>
-</div>
 
 <script>
-    const canvas = document.getElementById('game-canvas');
-    const ctx = canvas.getContext('2d');
-    const scoreDisplay = document.getElementById('score');
-    const startButton = document.getElementById('startButton');
-    const resetButton = document.getElementById('resetButton');
-    const gameOverScreen = document.getElementById('game-over-screen');
-    const finalScoreDisplay = document.getElementById('final-score');
-    const restartButton = document.getElementById('restartButton');
+    const gameBoard = document.getElementById('gameBoard');
+    const fillBoardButton = document.getElementById('fillBoardButton');
+    const clearBoardButton = document.getElementById('clearBoardButton');
+    const boardSize = 100; // 10x10 grid
+    let cells = [];
 
-    let score = 0;
-    let gameRunning = false;
-    let requestId;
-
-    // Ball properties
-    let ballX = canvas.width / 2;
-    let ballY = canvas.height - 30;
-    let ballRadius = 10;
-    let ballSpeedX = 2;
-    let ballSpeedY = -2;
-
-    // Paddle properties
-    let paddleHeight = 10;
-    let paddleWidth = 75;
-    let paddleX = (canvas.width - paddleWidth) / 2;
-    let paddleSpeed = 7;
-    let leftPressed = false;
-    let rightPressed = false;
-
-    // Brick properties
-    let brickRowCount = 3;
-    let brickColumnCount = 5;
-    let brickWidth = 75;
-    let brickHeight = 20;
-    let brickPadding = 10;
-    let brickOffsetTop = 30;
-    let brickOffsetLeft = 30;
-    let bricks = [];
-
-    // Initialize bricks
-    function initializeBricks() {
-        for (let c = 0; c < brickColumnCount; c++) {
-            bricks[c] = [];
-            for (let r = 0; r < brickRowCount; r++) {
-                bricks[c][r] = { x: 0, y: 0, status: 1 };
-            }
-        }
-    }
-    initializeBricks();
-
-    function drawBricks() {
-        for (let c = 0; c < brickColumnCount; c++) {
-            for (let r = 0; r < brickRowCount; r++) {
-                if (bricks[c][r].status === 1) {
-                    let brickX = (c * (brickWidth + brickPadding)) + brickOffsetLeft;
-                    let brickY = (r * (brickHeight + brickPadding)) + brickOffsetTop;
-                    bricks[c][r].x = brickX;
-                    bricks[c][r].y = brickY;
-                    ctx.beginPath();
-                    ctx.rect(brickX, brickY, brickWidth, brickHeight);
-                    ctx.fillStyle = "#0095DD";
-                    ctx.fill();
-                    ctx.closePath();
-                }
-            }
+    // Initialize the game board
+    function initializeBoard() {
+        for (let i = 0; i < boardSize; i++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.dataset.index = i;
+            gameBoard.appendChild(cell);
+            cells.push(cell);
         }
     }
 
-
-    function drawBall() {
-        ctx.beginPath();
-        ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
-        ctx.fillStyle = "#0095DD";
-        ctx.fill();
-        ctx.closePath();
-    }
-
-    function drawPaddle() {
-        ctx.beginPath();
-        ctx.rect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
-        ctx.fillStyle = "#0095DD";
-        ctx.fill();
-        ctx.closePath();
-    }
-
-    function collisionDetection() {
-        for (let c = 0; c < brickColumnCount; c++) {
-            for (let r = 0; r < brickRowCount; r++) {
-                let b = bricks[c][r];
-                if (b.status === 1) {
-                    if (ballX > b.x && ballX < b.x + brickWidth && ballY > b.y && ballY < b.y + brickHeight) {
-                        ballSpeedY = -ballSpeedY;
-                        b.status = 0;
-                        score++;
-                        scoreDisplay.textContent = score;
-
-                        if (score === brickRowCount * brickColumnCount) {
-                            gameOver("You Win!");
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    function gameOver(message) {
-        gameRunning = false;
-        finalScoreDisplay.textContent = score;
-        gameOverScreen.style.display = 'flex';
-        cancelAnimationFrame(requestId);
-        resetButton.disabled = true;
-        startButton.disabled = false;
-    }
-
-
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawBricks();
-        drawBall();
-        drawPaddle();
-        collisionDetection();
-
-        if (ballX + ballSpeedX > canvas.width - ballRadius || ballX + ballSpeedX < ballRadius) {
-            ballSpeedX = -ballSpeedX;
-        }
-        if (ballY + ballSpeedY < ballRadius) {
-            ballSpeedY = -ballSpeedY;
-        } else if (ballY + ballSpeedY > canvas.height - ballRadius) {
-            if (ballX > paddleX && ballX < paddleX + paddleWidth) {
-                ballSpeedY = -ballSpeedY;
+    // Fill the board with random values
+    function fillBoard() {
+        cells.forEach(cell => {
+            if (Math.random() < 0.5) { // 50% chance to fill a cell
+                cell.classList.add('filled');
             } else {
-                gameOver("Game Over");
+                 cell.classList.remove('filled');
             }
-        }
+        });
+    }
 
-        ballX += ballSpeedX;
-        ballY += ballSpeedY;
-
-        if (rightPressed && paddleX < canvas.width - paddleWidth) {
-            paddleX += paddleSpeed;
-        } else if (leftPressed && paddleX > 0) {
-            paddleX -= paddleSpeed;
-        }
-
-         requestId = requestAnimationFrame(draw);
+    // Clear the board
+    function clearBoard() {
+        cells.forEach(cell => {
+            cell.classList.remove('filled');
+        });
     }
 
 
+    // Event listeners
+    fillBoardButton.addEventListener('click', fillBoard);
+    clearBoardButton.addEventListener('click', clearBoard);
 
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "Right" || e.key === "ArrowRight") {
-            rightPressed = true;
-        } else if (e.key === "Left" || e.key === "ArrowLeft") {
-            leftPressed = true;
-        }
-    });
-
-    document.addEventListener("keyup", (e) => {
-        if (e.key === "Right" || e.key === "ArrowRight") {
-            rightPressed = false;
-        } else if (e.key === "Left" || e.key === "ArrowLeft") {
-            leftPressed = false;
-        }
-    });
-
-
-    startButton.addEventListener('click', () => {
-        if (!gameRunning) {
-            gameRunning = true;
-            score = 0;
-            scoreDisplay.textContent = score;
-            ballX = canvas.width / 2;
-            ballY = canvas.height - 30;
-            ballSpeedX = 2;
-            ballSpeedY = -2;
-            paddleX = (canvas.width - paddleWidth) / 2;
-
-            initializeBricks();
-            startButton.disabled = true;
-            resetButton.disabled = false;
-            gameOverScreen.style.display = 'none'; // Hide game over screen if it's visible
-            draw();
-        }
-    });
-
-    resetButton.addEventListener('click', () => {
-         gameRunning = false;
-         cancelAnimationFrame(requestId);
-         score = 0;
-         scoreDisplay.textContent = score;
-         ballX = canvas.width / 2;
-         ballY = canvas.height - 30;
-         ballSpeedX = 2;
-         ballSpeedY = -2;
-         paddleX = (canvas.width - paddleWidth) / 2;
-         initializeBricks();
-         startButton.disabled = false;
-         resetButton.disabled = true;
-         ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
-    });
-
-    restartButton.addEventListener('click', () => {
-        gameRunning = true;
-        score = 0;
-        scoreDisplay.textContent = score;
-        ballX = canvas.width / 2;
-        ballY = canvas.height - 30;
-        ballSpeedX = 2;
-        ballSpeedY = -2;
-        paddleX = (canvas.width - paddleWidth) / 2;
-
-        initializeBricks();
-        gameOverScreen.style.display = 'none';
-        startButton.disabled = true;
-        resetButton.disabled = false;
-        draw();
-    });
-
+    // Initialize on page load
+    initializeBoard();
 </script>
-
 </body>
 </html>
 ```
