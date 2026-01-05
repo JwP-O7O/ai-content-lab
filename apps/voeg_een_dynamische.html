@@ -1,101 +1,243 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moving Background</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden; /* Hide scrollbars */
-            background: linear-gradient(to bottom, #87CEEB, #E0FFFF); /* Sky Blue to Light Cyan */
-            font-family: sans-serif;
-            color: #333;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+<title>Flappy Bird met Parallax</title>
+<style>
+body {
+    margin: 0;
+    overflow: hidden; /* Verberg scrollbars */
+    background-color: #71c5cf; /* Lichte blauwgroene achtergrond */
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
 
-        .sky {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: -1; /* Place behind other content */
-        }
+#game-container {
+    position: relative;
+    width: 320px; /* Standaard breedte */
+    height: 480px; /* Standaard hoogte */
+    overflow: hidden;
+    border: 2px solid #333; /* Zwarte rand */
+}
 
-        .cloud {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.7); /* Semi-transparent white */
-            border-radius: 50%;
-            animation: moveClouds 20s linear infinite; /* Adjust speed and duration */
-        }
-        @keyframes moveClouds {
-            from {
-                transform: translateX(100vw);
-            }
-            to {
-                transform: translateX(-200px); /* Move clouds off-screen */
-            }
-        }
+#background-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
 
-        /* Responsive adjustments */
-        @media (max-width: 600px) {
-            .cloud {
-                animation-duration: 30s; /* Slower on smaller screens */
-            }
-        }
+.background-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-repeat: repeat-x;
+}
 
-        .content {
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-            text-align: center;
-        }
+#layer1 {
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABAAQMAAACQxJzMAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAJQTFRF////AAAA////AAAA////AAAA////AAAA////q1v5kwAAAAF0Uk5TAEDm2GYAAAAJcEhZcwAAAGAAAABgAG1U00AAABtSURBVHicjY2BkYHAAiLgI8EBMRAQkIAQBgYGCwQBBwABM+YjAQC4wBAAABQIAAI+D/6sAAAAABJRU5ErkJggg=='); /* Simpele wolken */
+    background-size: 160px 80px;
+    animation: moveLayer1 20s linear infinite;
+    z-index: 1;
+}
 
-        h1 {
-            margin-bottom: 10px;
-        }
+#layer2 {
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABAAQMAAACQxJzMAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAJQTFRF////AAAA////AAAA////AAAA////AAAA////q1v5kwAAAAF0Uk5TAEDm2GYAAAAJcEhZcwAAAGAAAABgAG1U00AAABtSURBVHicjY2BkYHAAiLgI8EBMRAQkIAQBgYGCwQBBwABM+YjAQC4wBAAABQIAAI+D/6sAAAAABJRU5ErkJggg=='); /* Simpele wolken */
+    background-size: 320px 160px;
+    animation: moveLayer2 40s linear infinite;
+    z-index: 2;
+    opacity: 0.7; /* Maak laag 2 iets transparanter */
+}
 
-    </style>
+@keyframes moveLayer1 {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-160px);
+    }
+}
+
+@keyframes moveLayer2 {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-320px);
+    }
+}
+
+
+#ground {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 10%;
+    background-color: #8c7657; /* Bruine grond */
+    z-index: 3;
+}
+
+#bird {
+    position: absolute;
+    width: 34px;
+    height: 24px;
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACIAAAAUCAYAAABz5q08AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAAGAAAABgAG1U00AAAAWdEVYdENyZWF0aW9uIFRpbWUgMjAvMDgvMjAyM9V+1yIAAAAGdEVYdFNvZnR3YXJlIGh0dHBzOi8vaW1hZ2VtYWdpY2sub3JnL2z8J0tQAAAJ0SURBVEhL7VZdSFNRFP7/u66472zF3t12wQ0gGqg+gE7U+4B/QLwJ0gM9g1oJzC4iL0wE/wF7iL/gXoR+s0i/8LqG7t97rru7s0jP9+99y+6uXzvvY9/5j//6sEwXqWq1mX6LqRk5Xw+vB1rJ6/82+cMv6HhF0J3s2r38i0hH1a+P+jI8Y680Qn2/TqM3T6h/jI1H2N71/u4b+0hQ5+9tB1Bq7o/G86k/YxI9R+h22yW9nFpD95rR02h1f0w+0q9L6NqT98P7s2j/6jWb2j9V6g93tqP8zX+WJqUeGgq8J52oXf/tF1+Wqj7h/W7949s/tJqX8XbU+XzVn/8p2UvJ6h9e5v4j4v96fS+jP5NqD1/9X/I2k/903eQ/nN6f036J8l/I86c+yF6/U/wR+t335FzJ6J5H2o/o/p1Nq/6j6pP19+BwT43y73tS/J5/u1hX6t/44pP97eI+n13j20X/8e6c+2n5K8l+n3mR9J/8/mR9N/rP+e7eJ/f6g+j/J/yP95+T+0tJP+R6R/VvYf0T2j+z8wP9K8k/o4dK/6V1J/9B6T/9t5f09+9P0+0H/q+2l9H0/09+H/z/6H0P2n9F9J/vO2l/VfB6d8m9J/j94v8FwX09HwG+g+gU9R+h5uS0qQ0lQd9y+lX4H+g+wF9H8j9b/4D8D/J9s/sO+D+Q/oX+j5o/n1kSgAAAAASUVORK5CYII='); /* Gele vogel */
+    background-size: contain;
+    left: 50px;
+    top: 200px;
+    transition: top 0.2s ease;
+}
+
+#game-over {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  display: none;
+  z-index: 10;
+}
+
+#score {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 20px;
+  z-index: 10;
+}
+
+@media (max-width: 400px) {
+    #game-container {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 3/4;
+    }
+}
+</style>
 </head>
 <body>
-    <div class="sky">
+
+    <div id="game-container">
+        <div id="background-container">
+            <div id="layer1" class="background-layer"></div>
+            <div id="layer2" class="background-layer"></div>
         </div>
-    <div class="content">
-        <h1>Welcome!</h1>
-        <p>This is a web page with a moving cloud background.</p>
+        <div id="ground"></div>
+        <div id="bird"></div>
+        <div id="score">Score: 0</div>
+        <div id="game-over">
+          <h2>Game Over</h2>
+          <p>Score: <span id="final-score">0</span></p>
+          <button id="restart-button">Restart</button>
+        </div>
     </div>
 
     <script>
-        const sky = document.querySelector('.sky');
-        const numberOfClouds = 10; // Adjust the number of clouds
+        const bird = document.getElementById('bird');
+        const ground = document.getElementById('ground');
+        const gameContainer = document.getElementById('game-container');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const restartButton = document.getElementById('restart-button');
+        const scoreDisplay = document.getElementById('score');
+        let gameActive = false;
+        let birdPosition = 200;
+        let velocity = 0;
+        let gravity = 0.5;
+        let score = 0;
 
-        for (let i = 0; i < numberOfClouds; i++) {
-            const cloud = document.createElement('div');
-            cloud.classList.add('cloud');
+        function updateBird() {
+            if (!gameActive) return;
+            velocity += gravity;
+            birdPosition += velocity;
+            bird.style.top = birdPosition + 'px';
 
-            // Random size and position
-            const size = Math.random() * 80 + 30; // Size between 30px and 110px
-            const topPosition = Math.random() * 80; // Position clouds within the top 80% of the screen
-            const animationDelay = Math.random() * 20; // Randomize start time
+            if (birdPosition >= (gameContainer.offsetHeight - ground.offsetHeight - bird.offsetHeight)) {
+                birdPosition = gameContainer.offsetHeight - ground.offsetHeight - bird.offsetHeight;
+                velocity = 0;
+                gameOver();
+            }
 
-            cloud.style.width = `${size}px`;
-            cloud.style.height = `${size * 0.6}px`; // Make clouds slightly oblong
-            cloud.style.left = `${Math.random() * 100}vw`; // Random horizontal position
-            cloud.style.top = `${topPosition}vh`;
-            cloud.style.animationDelay = `-${animationDelay}s`; // Start at random times
-
-            sky.appendChild(cloud);
-
-            // Add some round shape
-            cloud.style.borderRadius = "50%";
-            cloud.style.filter = "blur(3px)"; // Soften the clouds.
+            if (birdPosition <= 0) {
+              birdPosition = 0;
+              velocity = 0;
+            }
         }
+
+        function flap() {
+            if (!gameActive) return;
+            velocity = -10;
+        }
+
+        function gameOver() {
+            gameActive = false;
+            finalScoreDisplay.textContent = score;
+            gameOverScreen.style.display = 'block';
+        }
+
+        function startGame() {
+            if (!gameActive) {
+                gameActive = true;
+                birdPosition = 200;
+                velocity = 0;
+                score = 0;
+                scoreDisplay.textContent = 'Score: 0';
+                gameOverScreen.style.display = 'none';
+                bird.style.top = birdPosition + 'px';
+                // Start the game loop
+                gameLoop();
+            }
+        }
+
+
+        function gameLoop() {
+          if(!gameActive) return;
+          updateBird();
+          updateScore();
+          requestAnimationFrame(gameLoop);
+        }
+
+        function updateScore() {
+          score++;
+          scoreDisplay.textContent = 'Score: ' + score;
+        }
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                startGame(); // Start het spel als de spatiebalk wordt ingedrukt
+                flap();
+            }
+        });
+
+        document.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startGame();
+            flap();
+        });
+
+
+        restartButton.addEventListener('click', startGame);
+
+        // Start the game initially on any click/touch
+        document.addEventListener('click', startGame);
+        document.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startGame();
+        }, { passive: false });
 
     </script>
 </body>

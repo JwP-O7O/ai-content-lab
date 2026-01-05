@@ -1,26 +1,22 @@
 import asyncio
 import os
 import sys
-import random
 from loguru import logger
 from datetime import datetime
 
 sys.path.append(os.getcwd())
 
 try:
-    from src.autonomous_agents.monitoring.code_health_monitor import CodeHealthMonitor
-    from src.autonomous_agents.execution.code_refactorer import CodeRefactorer
-    from src.autonomous_agents.validation.test_runner import TestRunner
-    from src.autonomous_agents.analysis.content_quality_monitor import ContentQualityMonitor
-    from src.autonomous_agents.execution.content_editor import ContentEditor
-    from src.autonomous_agents.execution.content_writer import ContentWriter
     from src.autonomous_agents.execution.git_publisher import GitPublisher
     from src.autonomous_agents.execution.github_listener import GitHubListener
     from src.autonomous_agents.execution.feature_architect import FeatureArchitect
-    from src.autonomous_agents.execution.deep_debugger import DeepDebugger
-    from src.autonomous_agents.execution.visionary_agent import VisionaryAgent
     from src.autonomous_agents.execution.web_architect import WebArchitect
-    from src.autonomous_agents.planning.evolutionary_agent import EvolutionaryAgent # NIEUW
+    from src.autonomous_agents.execution.visionary_agent import VisionaryAgent
+    
+    # NIEUWE MODULES
+    from src.autonomous_agents.planning.evolutionary_agent import EvolutionaryAgent
+    from src.autonomous_agents.planning.system_optimizer import SystemOptimizer
+    from src.autonomous_agents.learning.brain import GlobalBrain
 except ImportError as e:
     logger.critical(f"IMPORT ERROR: {e}")
     sys.exit(1)
@@ -30,28 +26,26 @@ class TermuxMasterOrchestrator:
         self.is_running = False
         self.cycle_count = 0
         
-        # HET TEAM
         self.publisher = GitPublisher()
         self.listener = GitHubListener()
         self.architect = FeatureArchitect()
         self.web_architect = WebArchitect()
         self.visionary = VisionaryAgent()
-        self.evolutionary = EvolutionaryAgent() # NIEUW: Het Brein
         
-        # Support
-        self.content_monitor = ContentQualityMonitor()
-        self.content_editor = ContentEditor()
-        self.content_writer = ContentWriter()
+        # SLIMME AGENTS
+        self.evolutionary = EvolutionaryAgent()
+        self.optimizer = SystemOptimizer() # De Monteur
+        self.brain = GlobalBrain()         # Het Geheugen
 
     async def _update_remote_status(self, last_action):
         try:
             with open("data/output/SYSTEM_STATUS.md", "w") as f:
-                f.write(f"# 🔵 All In AI - System Status\n\n")
+                f.write(f"# 🔵 All In AI - Self-Evolving System\n\n")
                 f.write(f"| Metric | Waarde |\n|---|---|\n")
-                f.write(f"| **Model** | `Gemini 2.0 Flash Lite` |\n")
+                f.write(f"| **Model** | `Gemini 2.0` |\n")
                 f.write(f"| **Cycles** | {self.cycle_count} |\n")
+                f.write(f"| **Status** | 🧠 LEARNING & OPTIMIZING |\n")
                 f.write(f"| **Laatste Actie** | {last_action} |\n")
-                f.write(f"| **Status** | ✅ EVOLVING |\n")
         except: pass
 
     async def run_improvement_cycle(self):
@@ -59,36 +53,50 @@ class TermuxMasterOrchestrator:
         logger.info(f"--- 🔄 Cycle #{self.cycle_count} ---")
         last_action = "Monitoring..."
         
-        # STAP 1: EVOLUTIE (Zelfbedenken) - Elke 3 rondes
+        # 1. ZELF-OPTIMALISATIE (Elke 4 cycles)
+        if self.cycle_count % 4 == 0:
+            await self.optimizer.optimize_system()
+            
+        # 2. EVOLUTIE (Elke 3 cycles)
         if self.cycle_count % 3 == 0:
-            logger.info("🧬 Tijd voor evolutie...")
             await self.evolutionary.propose_improvement()
 
-        # STAP 2: UITVOEREN (Orders checken)
+        # 3. ORDER VERWERKING
         orders = await self.listener.check_for_orders()
         if orders.get("status") == "new_tasks":
             for task in orders['tasks']:
                 
-                # A. WEB
-                if "WEB:" in task['title'].upper():
-                    logger.info(f"🌐 Web Taak: {task['title']}")
-                    # Voeg de body toe voor context
-                    full_prompt = f"{task['title']}\nDetails: {task['body']}"
-                    res = await self.web_architect.build_website(full_prompt)
+                # A. SYSTEM & CODE TAAK (Python)
+                if "SYSTEM:" in task['title'].upper() or "CODE:" in task['title'].upper():
+                    logger.info(f"⚙️ Systeem Taak: {task['title']}")
+                    # Geef het brein context mee!
+                    context = self.brain.get_context()
+                    full_prompt = f"{task['title']} {task['body']}\n\nCONTEXT:\n{context}"
                     
+                    res = await self.architect.build_feature(full_prompt)
                     if res['status'] == 'built':
                         await self.publisher.publish_changes()
-                        live_url = f"https://JwP-O7O.github.io/ai-content-lab/apps/{res['filename']}"
-                        msg = f"✅ **Update Live!**\n\n👉 [**SPEEL HIER**]({live_url})"
-                        task['issue_obj'].create_comment(msg)
-                        # Sluit het issue als het klaar is
+                        task['issue_obj'].create_comment(f"✅ **Systeem Update Uitgevoerd**\nBestand: `{res['file']}`")
                         task['issue_obj'].edit(state='closed')
-                        last_action = f"🌐 Web App Update: {res['filename']}"
+                        
+                        # LEERMOMENT
+                        self.brain.add_lesson("successful_patterns", f"Python fix voor {task['title']}")
+                        last_action = "🛠️ Systeem geüpgraded"
 
-                # B. IMAGE
+                # B. WEB TAAK
+                elif "WEB:" in task['title'].upper():
+                    logger.info(f"🌐 Web Taak: {task['title']}")
+                    res = await self.web_architect.build_website(f"{task['title']} {task['body']}")
+                    if res['status'] == 'built':
+                        await self.publisher.publish_changes()
+                        url = f"https://JwP-O7O.github.io/ai-content-lab/apps/{res['filename']}"
+                        task['issue_obj'].create_comment(f"✅ **App Online**\n\n👉 [**OPEN APP**]({url})")
+                        task['issue_obj'].edit(state='closed')
+                        last_action = f"🌐 Web App: {res['filename']}"
+
+                # C. ART TAAK
                 elif "IMG:" in task['title'].upper():
-                    prompt = task['title'].replace("IMG:", "").strip()
-                    res = self.visionary.generate_image(prompt)
+                    res = self.visionary.generate_image(task['title'].replace("IMG:", ""))
                     if res['status'] == 'success':
                         await self.publisher.publish_changes()
                         img = os.path.basename(res['file'])
@@ -97,7 +105,6 @@ class TermuxMasterOrchestrator:
                         task['issue_obj'].edit(state='closed')
                         last_action = "🎨 Art gemaakt"
 
-        # STAP 3: PUBLICEREN
         await self._update_remote_status(last_action)
         await self.publisher.publish_changes()
         
@@ -106,7 +113,7 @@ class TermuxMasterOrchestrator:
 
     async def run_autonomous_loop(self):
         self.is_running = True
-        logger.info("🧠 All In AI - ONLINE & EVOLVING")
+        logger.info("🧠 All In AI - ZELF-LEREND SYSTEEM ONLINE")
         while self.is_running:
             try:
                 await self.run_improvement_cycle()
