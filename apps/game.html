@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Game Loop</title>
+<title>Game Loop Example</title>
 <style>
 body {
     font-family: sans-serif;
@@ -22,154 +22,108 @@ body {
     text-align: center;
 }
 
-#canvas {
+#gameCanvas {
     border: 1px solid #ccc;
     margin-bottom: 10px;
 }
 
-#score {
-    font-size: 1.2em;
-    margin-bottom: 10px;
-}
-
-#startButton, #stopButton {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    margin: 5px;
-}
-
-#stopButton {
-    background-color: #f44336;
-}
-
-#startButton:hover, #stopButton:hover {
-    opacity: 0.8;
+#status {
+    margin-top: 10px;
+    color: #333;
 }
 </style>
 </head>
 <body>
 
 <div id="gameContainer">
-    <h1>Game Loop Example</h1>
-    <canvas id="canvas" width="400" height="300"></canvas>
-    <div id="score">Score: 0</div>
-    <div>
-        <button id="startButton">Start</button>
-        <button id="stopButton">Stop</button>
-    </div>
+    <canvas id="gameCanvas" width="400" height="300"></canvas>
+    <div id="status">Loading...</div>
 </div>
 
 <script>
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const scoreDisplay = document.getElementById('score');
-const startButton = document.getElementById('startButton');
-const stopButton = document.getElementById('stopButton');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusElement = document.getElementById('status');
 
-let score = 0;
-let gameRunning = false;
-let animationFrameId;
+    let isRunning = true;
+    let frameCount = 0;
+    let startTime = performance.now();
+    let lastRenderTime = 0;
 
-// Game object - example (can be anything)
-let gameObjects = [];
+    // Game variables
+    let x = canvas.width / 2;
+    let y = canvas.height / 2;
+    let speed = 2;
 
-// Game object class
-class GameObject {
-    constructor(x, y, size, color) {
-        this.x = x;
-        this.y = y;
-        this.size = size;
-        this.color = color;
-        this.speedX = (Math.random() - 0.5) * 2; // Random horizontal speed
-        this.speedY = (Math.random() - 0.5) * 2; // Random vertical speed
-    }
 
-    update() {
-        this.x += this.speedX;
-        this.y += this.speedY;
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
 
-        // Bounce off the walls
-        if (this.x + this.size > canvas.width || this.x - this.size < 0) {
-            this.speedX = -this.speedX;
-        }
-        if (this.y + this.size > canvas.height || this.y - this.size < 0) {
-            this.speedY = -this.speedY;
-        }
-    }
-
-    draw() {
-        ctx.fillStyle = this.color;
+        // Draw a simple circle
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.arc(x, y, 10, 0, Math.PI * 2);
+        ctx.fillStyle = 'blue';
         ctx.fill();
+        ctx.closePath();
     }
-}
 
 
-function createGameObject() {
-    const size = 10 + Math.random() * 20; // Random size
-    const x = Math.random() * (canvas.width - size * 2) + size;
-    const y = Math.random() * (canvas.height - size * 2) + size;
-    const colors = ['red', 'green', 'blue', 'yellow', 'purple'];
-    const color = colors[Math.floor(Math.random() * colors.length)];
-    gameObjects.push(new GameObject(x, y, size, color));
-}
+    function update(deltaTime) {
+        // Update game state (e.g., movement)
+        x += speed * deltaTime / 16;
+        if (x > canvas.width || x < 0) {
+            speed = -speed; // Reverse direction
+        }
+    }
 
 
-function updateScore() {
-    score++;
-    scoreDisplay.textContent = `Score: ${score}`;
-}
+    function gameLoop(currentTime) {
+        if (!isRunning) return;
+
+        const deltaTime = currentTime - lastRenderTime;
+        lastRenderTime = currentTime;
+
+        update(deltaTime);
+        draw();
+
+        frameCount++;
+        requestAnimationFrame(gameLoop);
+    }
 
 
-function gameLoop() {
-    if (!gameRunning) return;
+    function calculateFPS(currentTime) {
+        const elapsedTime = currentTime - startTime;
+        const fps = frameCount / (elapsedTime / 1000);
+        statusElement.textContent = `FPS: ${fps.toFixed(2)}`;
+    }
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
 
-    // Update game objects and draw them
-    gameObjects.forEach(obj => {
-        obj.update();
-        obj.draw();
+    function start() {
+        isRunning = true;
+        startTime = performance.now();
+        frameCount = 0;
+        lastRenderTime = performance.now();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function stop() {
+        isRunning = false;
+        calculateFPS(performance.now());
+    }
+
+    // Initialize
+    statusElement.textContent = "Click to Start";
+    canvas.addEventListener('click', () => {
+        if (!isRunning) {
+            start();
+            statusElement.textContent = "Running. Click to Stop";
+        } else {
+            stop();
+            statusElement.textContent = "Stopped. Click to Start";
+        }
     });
 
-    // Example: Increase the score every few frames (adjust as needed)
-    if (score % 60 === 0) {  // Update score every second (assuming 60fps)
-        updateScore();
-    }
-
-    animationFrameId = requestAnimationFrame(gameLoop);
-}
-
-
-function startGame() {
-    if (gameRunning) return; // Prevent multiple starts
-    gameRunning = true;
-    score = 0; // Reset score when starting
-    scoreDisplay.textContent = `Score: ${score}`;
-    gameObjects = []; // Clear previous objects
-    // Populate with initial objects
-    for (let i = 0; i < 5; i++) { //Example: create 5 initial game objects
-        createGameObject();
-    }
-    gameLoop();
-}
-
-function stopGame() {
-    gameRunning = false;
-    cancelAnimationFrame(animationFrameId);
-}
-
-
-
-startButton.addEventListener('click', startGame);
-stopButton.addEventListener('click', stopGame);
 </script>
-
 </body>
 </html>
 ```
