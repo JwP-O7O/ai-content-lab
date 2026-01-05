@@ -21,6 +21,7 @@ async def safe_read_file(filepath, chunk_size=8192):
             logging.error(f"File not found: {filepath}")
             raise FileNotFoundError(f"File not found: {filepath}")
 
+        import aiofiles  # Import aiofiles inside the function where it's used.
         async with aiofiles.open(filepath, mode='r', encoding='utf-8') as f:
             while True:
                 chunk = await f.read(chunk_size)
@@ -30,12 +31,16 @@ async def safe_read_file(filepath, chunk_size=8192):
     except FileNotFoundError as e:
         logging.error(f"File error: {e}")
         raise
+    except ImportError as e:  # Handle the ImportError
+        logging.error(f"aiofiles not installed: {e}.  Install with: pip install aiofiles")
+        raise  # Re-raise to signal the issue
     except IOError as e:
         logging.error(f"IO error during read: {e}")
         raise
     except Exception as e:
         logging.error(f"Unexpected error during read: {e}")
         raise
+
 
 async def process_file_content(filepath):
     """
@@ -81,5 +86,4 @@ async def main():
         print(f"An error occurred: {e}")
 
 if __name__ == "__main__":
-    import aiofiles  #  Import aiofiles here to avoid import issues.
     asyncio.run(main())
