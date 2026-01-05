@@ -5,150 +5,209 @@
 <title>Simple Game</title>
 <style>
 body {
-    font-family: sans-serif;
+    font-family: Arial, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    background-color: #f0f0f0;
+    height: 100vh;
     margin: 0;
+    background-color: #f0f0f0;
 }
 
 #game-container {
-    background-color: #fff;
-    border-radius: 10px;
+    background-color: white;
+    border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
-    width: 300px;
 }
 
-#game-canvas {
-    border: 1px solid #ccc;
-    margin-bottom: 10px;
-}
-
-#score-display {
+#score {
     font-size: 1.2em;
     margin-bottom: 10px;
 }
 
-#controls {
-    display: flex;
-    justify-content: space-around;
-    margin-top: 10px;
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(4, 60px);
+    grid-gap: 10px;
+    margin-bottom: 20px;
 }
 
-button {
+.cell {
+    width: 60px;
+    height: 60px;
+    background-color: #eee;
+    border-radius: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5em;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.cell:hover {
+    background-color: #ddd;
+}
+
+.cell.active {
+    background-color: #add8e6; /* Light blue for active cell */
+}
+
+#start-button {
+    padding: 10px 20px;
+    font-size: 1em;
     background-color: #4CAF50;
     color: white;
-    padding: 10px 20px;
     border: none;
-    border-radius: 5px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 1em;
+    transition: background-color 0.2s;
 }
 
-button:hover {
+#start-button:hover {
     background-color: #3e8e41;
+}
+
+#game-over {
+    font-size: 1.5em;
+    color: red;
+    margin-top: 10px;
+    display: none;
 }
 </style>
 </head>
 <body>
 
 <div id="game-container">
-    <h1>Simple Game</h1>
-    <canvas id="game-canvas" width="200" height="200"></canvas>
-    <div id="score-display">Score: 0</div>
-    <div id="controls">
-        <button id="start-button">Start</button>
-        <button id="reset-button">Reset</button>
+    <h1>Memory Game</h1>
+    <div id="score">Score: 0</div>
+    <div id="game-board">
+        <!-- Cells will be generated here -->
     </div>
+    <button id="start-button">Start Game</button>
+    <div id="game-over">Game Over!</div>
 </div>
 
 <script>
-const canvas = document.getElementById('game-canvas');
-const ctx = canvas.getContext('2d');
-const scoreDisplay = document.getElementById('score-display');
+const gameBoard = document.getElementById('game-board');
+const scoreDisplay = document.getElementById('score');
 const startButton = document.getElementById('start-button');
-const resetButton = document.getElementById('reset-button');
+const gameOverDisplay = document.getElementById('game-over');
 
+let cards = [];
+let revealedCards = [];
 let score = 0;
-let gameRunning = false;
-let circleX = canvas.width / 2;
-let circleY = canvas.height / 2;
-let circleRadius = 10;
-let circleSpeedX = 2;
-let circleSpeedY = 2;
+let gameStarted = false;
+let timeoutId;
+let canClick = true; // Prevent multiple clicks during reveal
 
-function drawCircle() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.beginPath();
-    ctx.arc(circleX, circleY, circleRadius, 0, Math.PI * 2);
-    ctx.fillStyle = 'blue';
-    ctx.fill();
-}
-
-function updateCircle() {
-    if (!gameRunning) return;
-
-    circleX += circleSpeedX;
-    circleY += circleSpeedY;
-
-    if (circleX + circleRadius > canvas.width || circleX - circleRadius < 0) {
-        circleSpeedX = -circleSpeedX;
-        score++;
-        updateScore();
+function createCards() {
+    const cardValues = [];
+    for (let i = 1; i <= 8; i++) {
+        cardValues.push(i, i); // Create pairs
     }
-    if (circleY + circleRadius > canvas.height || circleY - circleRadius < 0) {
-        circleSpeedY = -circleSpeedY;
-        score++;
-        updateScore();
+    // Shuffle the cards
+    cardValues.sort(() => 0.5 - Math.random());
+
+    cards = cardValues.map((value, index) => ({
+        id: index,
+        value: value,
+        revealed: false
+    }));
+}
+
+function renderBoard() {
+    gameBoard.innerHTML = '';
+    cards.forEach(card => {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.id = card.id;
+        if (card.revealed) {
+            cell.textContent = card.value;
+            cell.classList.add('active');
+        } else {
+            cell.textContent = ''; // Or display a default card back image/symbol
+        }
+        cell.addEventListener('click', cardClickHandler);
+        gameBoard.appendChild(cell);
+    });
+}
+
+
+function cardClickHandler(event) {
+    if (!gameStarted || !canClick) return;
+
+    const cardId = parseInt(event.target.dataset.id);
+    const card = cards.find(card => card.id === cardId);
+
+    if (card && !card.revealed) {
+        revealCard(card);
     }
 }
 
-function updateScore() {
-    scoreDisplay.textContent = 'Score: ' + score;
+
+function revealCard(card) {
+    if (!gameStarted || !canClick) return;
+    card.revealed = true;
+    renderBoard();
+    revealedCards.push(card);
+
+    if (revealedCards.length === 2) {
+        canClick = false; // Disable clicking while checking
+
+        const [card1, card2] = revealedCards;
+        if (card1.value === card2.value) {
+            score++;
+            scoreDisplay.textContent = `Score: ${score}`;
+            revealedCards = [];
+            canClick = true;
+            // Check for win condition (all cards revealed)
+            if (score === 8) {
+                gameOver(true); // Player wins
+            }
+        } else {
+            // Cards don't match, hide after a short delay
+            timeoutId = setTimeout(() => {
+                card1.revealed = false;
+                card2.revealed = false;
+                renderBoard();
+                revealedCards = [];
+                canClick = true;
+            }, 1000); // 1 second delay
+        }
+    }
 }
 
-function gameLoop() {
-    updateCircle();
-    drawCircle();
-    requestAnimationFrame(gameLoop);
-}
 
 function startGame() {
-    if (!gameRunning) {
-        gameRunning = true;
-        score = 0;
-        updateScore();
-        gameLoop();
-        startButton.textContent = "Stop";
-    } else {
-        stopGame();
-    }
-}
-
-function stopGame() {
-    gameRunning = false;
-    startButton.textContent = "Start";
-}
-
-function resetGame() {
-    stopGame();
-    circleX = canvas.width / 2;
-    circleY = canvas.height / 2;
-    circleSpeedX = 2;
-    circleSpeedY = 2;
+    createCards();
     score = 0;
-    updateScore();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    scoreDisplay.textContent = `Score: ${score}`;
+    gameOverDisplay.style.display = 'none';
+    gameStarted = true;
+    renderBoard();
 }
+
+function gameOver(win = false) {
+    gameStarted = false;
+    clearTimeout(timeoutId); // Clear any pending timeouts
+    if(win){
+        gameOverDisplay.textContent = "Congratulations! You Win!";
+    }
+    else {
+        gameOverDisplay.textContent = "Game Over!";
+    }
+    gameOverDisplay.style.display = 'block';
+}
+
+
 
 startButton.addEventListener('click', startGame);
-resetButton.addEventListener('click', resetGame);
-</script>
 
+
+</script>
 </body>
 </html>
 ```
