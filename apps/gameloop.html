@@ -2,151 +2,138 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Game Loop Demo</title>
+<title>Pixel Grid Game</title>
 <style>
 body {
     font-family: sans-serif;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     height: 100vh;
     margin: 0;
     background-color: #f0f0f0;
 }
 
 #gameContainer {
+    display: grid;
+    border: 2px solid #333;
     background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-#gameCanvas {
+.pixel {
+    width: 20px;
+    height: 20px;
     border: 1px solid #ccc;
-    margin-bottom: 10px;
+    box-sizing: border-box;
 }
 
-#scoreDisplay {
-    font-size: 1.2em;
-    margin-bottom: 10px;
-}
-
-#startButton, #resetButton {
+button {
+    padding: 10px 20px;
+    margin: 10px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
     background-color: #4CAF50;
     color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1em;
-    margin: 5px;
+    transition: background-color 0.2s ease;
 }
 
-#startButton:hover, #resetButton:hover {
+button:hover {
     background-color: #3e8e41;
+}
+
+#controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
 }
 </style>
 </head>
 <body>
 
-<div id="gameContainer">
-    <h1>Game Loop Demo</h1>
-    <div id="scoreDisplay">Score: <span id="score">0</span></div>
-    <canvas id="gameCanvas" width="400" height="300"></canvas>
-    <button id="startButton">Start</button>
-    <button id="resetButton">Reset</button>
+<h1>Pixel Grid Game</h1>
 
+<div id="gameContainer">
+    <!-- Pixel grid will be generated here -->
 </div>
 
+<div id="controls">
+    <button id="startButton">Start/Stop</button>
+</div>
+
+
 <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const scoreDisplay = document.getElementById('score');
-    const startButton = document.getElementById('startButton');
-    const resetButton = document.getElementById('resetButton');
+const gameContainer = document.getElementById('gameContainer');
+const startButton = document.getElementById('startButton');
 
-    let score = 0;
-    let gameRunning = false;
-    let animationFrameId;
+let gridWidth = 20;
+let gridHeight = 20;
+let pixels = [];
+let gameRunning = false;
+let intervalId;
 
-    // Game variables (example)
-    let circleX = canvas.width / 2;
-    let circleY = canvas.height / 2;
-    let circleRadius = 20;
-    let circleSpeedX = 2;
-    let circleSpeedY = 2;
+function createGrid() {
+    gameContainer.innerHTML = ''; // Clear existing grid
+    gameContainer.style.gridTemplateColumns = `repeat(${gridWidth}, 1fr)`;
+    gameContainer.style.gridTemplateRows = `repeat(${gridHeight}, 1fr)`;
 
+    pixels = []; // Clear pixel array
+    for (let i = 0; i < gridWidth * gridHeight; i++) {
+        const pixel = document.createElement('div');
+        pixel.classList.add('pixel');
+        pixel.dataset.index = i; // Store index for later use
 
-    function drawCircle() {
-        ctx.beginPath();
-        ctx.arc(circleX, circleY, circleRadius, 0, Math.PI * 2);
-        ctx.fillStyle = 'blue';
-        ctx.fill();
+        pixel.addEventListener('click', () => {
+            pixel.style.backgroundColor = pixel.style.backgroundColor ? '' : 'blue';
+        });
+
+        gameContainer.appendChild(pixel);
+        pixels.push(pixel);
     }
+}
 
 
-
-    function update() {
-        if (!gameRunning) return;
-
-        // Clear the canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-
-        // Update circle position
-        circleX += circleSpeedX;
-        circleY += circleSpeedY;
-
-        // Bounce off the walls
-        if (circleX + circleRadius > canvas.width || circleX - circleRadius < 0) {
-            circleSpeedX = -circleSpeedX;
-        }
-        if (circleY + circleRadius > canvas.height || circleY - circleRadius < 0) {
-            circleSpeedY = -circleSpeedY;
-        }
-
-        drawCircle();
-
-
-        score++; // Simple score increment
-        scoreDisplay.textContent = score;
-
-        animationFrameId = requestAnimationFrame(update);
-    }
-
-
-
-    function startGame() {
-        if (!gameRunning) {
-            gameRunning = true;
-            score = 0;
-            scoreDisplay.textContent = score;
-            animationFrameId = requestAnimationFrame(update);
+function gameLoop() {
+    // Example: Randomly change pixel colors
+    for (let i = 0; i < pixels.length; i++) {
+        if (Math.random() < 0.1) { // 10% chance to change color
+            pixels[i].style.backgroundColor = (pixels[i].style.backgroundColor === 'red') ? '' : 'red';
         }
     }
+}
 
 
-    function resetGame() {
-        stopGame();
-        score = 0;
-        scoreDisplay.textContent = score;
-        circleX = canvas.width / 2;
-        circleY = canvas.height / 2;
+function startGame() {
+    if (!gameRunning) {
+        gameRunning = true;
+        intervalId = setInterval(gameLoop, 100); // Run gameLoop every 100ms
+        startButton.textContent = 'Stop';
     }
+}
 
-
-    function stopGame() {
+function stopGame() {
+    if (gameRunning) {
         gameRunning = false;
-        cancelAnimationFrame(animationFrameId);
+        clearInterval(intervalId);
+        startButton.textContent = 'Start';
     }
+}
+
+startButton.addEventListener('click', () => {
+    if (gameRunning) {
+        stopGame();
+    } else {
+        startGame();
+    }
+});
 
 
-
-    startButton.addEventListener('click', startGame);
-    resetButton.addEventListener('click', resetGame);
+createGrid(); // Initial grid creation
 </script>
-
 </body>
 </html>
 ```
