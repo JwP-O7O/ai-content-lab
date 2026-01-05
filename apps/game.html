@@ -2,147 +2,105 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Game of Squares</title>
+<title>Speelveld Generatie en Klik Event</title>
 <style>
 body {
     font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    margin: 0;
+    min-height: 100vh;
     background-color: #f0f0f0;
+    margin: 0;
 }
 
 #game-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-}
-
-#game-board {
     display: grid;
-    grid-template-columns: repeat(10, 40px);
+    grid-template-columns: repeat(10, 50px);
     grid-gap: 5px;
-    margin-bottom: 20px;
+    background-color: #ddd;
+    padding: 10px;
+    border-radius: 5px;
 }
 
-.square {
-    width: 40px;
-    height: 40px;
+.cell {
+    width: 50px;
+    height: 50px;
     background-color: #eee;
     border: 1px solid #ccc;
-    cursor: pointer;
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 20px;
-    border-radius: 5px;
-}
-
-.square.filled {
-    background-color: #4CAF50;
-    color: white;
-}
-
-#game-over-message {
-    font-size: 1.5em;
-    color: red;
-    display: none;
-    margin-bottom: 10px;
-}
-
-button {
-    background-color: #008CBA;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
     cursor: pointer;
-    font-size: 1em;
+    border-radius: 3px;
+    transition: background-color 0.2s;
 }
 
-button:hover {
-    background-color: #0077A0;
+.cell:hover {
+    background-color: #ddd;
+}
+
+.clicked {
+    background-color: #b0e2ff; /* Light blue for clicked cells */
+}
+
+#message {
+    margin-top: 20px;
+    font-size: 1.2em;
+    color: #333;
 }
 </style>
 </head>
 <body>
 
 <div id="game-container">
-    <h1>Game of Squares</h1>
-    <div id="game-over-message">Game Over!</div>
-    <div id="game-board"></div>
-    <button id="reset-button">Reset</button>
 </div>
 
+<div id="message"></div>
+
 <script>
-const gameBoard = document.getElementById('game-board');
-const gameOverMessage = document.getElementById('game-over-message');
-const resetButton = document.getElementById('reset-button');
-const gridSize = 10;
-let squares = [];
-let gameOver = false;
+const gameContainer = document.getElementById('game-container');
+const messageElement = document.getElementById('message');
+let gameBoard = [];
+let clickedCells = [];
+const rows = 10;
+const cols = 10;
 
-function createBoard() {
-    for (let i = 0; i < gridSize * gridSize; i++) {
-        const square = document.createElement('div');
-        square.classList.add('square');
-        square.dataset.index = i;
-        gameBoard.appendChild(square);
-        squares.push(square);
-    }
-}
-
-
-function fillSquares() {
-    if (gameOver) return;
-
-    squares.forEach(square => {
-        square.classList.remove('filled');
-        square.textContent = '';
-    });
-
-    let filledCount = 0;
-    while (filledCount < 25) {
-        const randomIndex = Math.floor(Math.random() * squares.length);
-        if (!squares[randomIndex].classList.contains('filled')) {
-            squares[randomIndex].classList.add('filled');
-            squares[randomIndex].textContent = Math.floor(Math.random() * 9) + 1; //numbers 1-9
-            filledCount++;
+function generateBoard() {
+    gameBoard = [];
+    gameContainer.innerHTML = '';
+    for (let row = 0; row < rows; row++) {
+        gameBoard[row] = [];
+        for (let col = 0; col < cols; col++) {
+            gameBoard[row][col] = 0; // 0 represents an empty cell
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.dataset.row = row;
+            cell.dataset.col = col;
+            cell.addEventListener('click', cellClick);
+            gameContainer.appendChild(cell);
         }
     }
 }
 
 
-function checkGameOver() {
-    if(gameOver) return;
-    let filledSquares = squares.filter(square => square.classList.contains('filled'));
-    if (filledSquares.length === 0){
-        gameOver = true;
-        gameOverMessage.style.display = 'block';
+function cellClick(event) {
+    const row = parseInt(event.target.dataset.row);
+    const col = parseInt(event.target.dataset.col);
+
+    if (clickedCells.some(cell => cell.row === row && cell.col === col)) {
+        return; // Already clicked
     }
-}
 
-function resetGame() {
-    gameOver = false;
-    gameOverMessage.style.display = 'none';
-    squares.forEach(square => {
-        square.classList.remove('filled');
-        square.textContent = '';
-    });
-    fillSquares();
+
+    clickedCells.push({ row, col });
+    event.target.classList.add('clicked');
+    messageElement.textContent = `Cell geklikt: Rij ${row + 1}, Kolom ${col + 1}`;
 }
 
 
-createBoard();
-fillSquares();
-
-resetButton.addEventListener('click', resetGame);
+generateBoard();
 
 </script>
 </body>
