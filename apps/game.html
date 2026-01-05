@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Game</title>
+<title>Game Loop Example</title>
 <style>
 body {
     font-family: sans-serif;
@@ -14,190 +14,117 @@ body {
     background-color: #f0f0f0;
 }
 
-#game-container {
+#gameContainer {
     background-color: #fff;
-    border-radius: 10px;
+    border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
 }
 
-#game-canvas {
+#gameCanvas {
     border: 1px solid #ccc;
     margin-bottom: 10px;
 }
 
-#score-display {
+#scoreDisplay {
     font-size: 1.2em;
     margin-bottom: 10px;
 }
 
-#controls {
-    display: flex;
-    justify-content: center;
-}
-
-button {
+#startButton, #stopButton {
     background-color: #4CAF50;
     color: white;
-    padding: 10px 20px;
-    margin: 0 10px;
     border: none;
-    border-radius: 5px;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
     cursor: pointer;
-    font-size: 1em;
+    border-radius: 4px;
 }
 
-button:hover {
-    background-color: #3e8e41;
+#stopButton {
+    background-color: #f44336;
 }
+
 </style>
 </head>
 <body>
-    <div id="game-container">
-        <h1>Simple Game</h1>
-        <canvas id="game-canvas" width="400" height="300"></canvas>
-        <div id="score-display">Score: <span id="score">0</span></div>
-        <div id="controls">
-            <button id="start-button">Start</button>
-            <button id="reset-button">Reset</button>
-        </div>
-    </div>
 
-    <script>
-        const canvas = document.getElementById('game-canvas');
-        const ctx = canvas.getContext('2d');
-        const scoreDisplay = document.getElementById('score');
-        const startButton = document.getElementById('start-button');
-        const resetButton = document.getElementById('reset-button');
+<div id="gameContainer">
+    <h1>Simple Game Loop</h1>
+    <canvas id="gameCanvas" width="400" height="300"></canvas>
+    <div id="scoreDisplay">Score: 0</div>
+    <button id="startButton">Start</button>
+    <button id="stopButton">Stop</button>
+</div>
 
-        let score = 0;
-        let gameRunning = false;
-        let food = { x: 0, y: 0 };
-        let snake = [{ x: 10, y: 10 }];
-        let dx = 1;
-        let dy = 0;
-        const gridSize = 20;
-        const canvasSize = { width: canvas.width, height: canvas.height };
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
 
-        function getRandomPosition() {
-            return {
-                x: Math.floor(Math.random() * (canvasSize.width / gridSize)) * gridSize,
-                y: Math.floor(Math.random() * (canvasSize.height / gridSize)) * gridSize
-            };
+    let score = 0;
+    let isGameRunning = false;
+    let animationFrameId;
+
+    // Game object (example: a simple square)
+    let square = {
+        x: 50,
+        y: 50,
+        size: 20,
+        color: 'blue',
+        speed: 2,
+    };
+
+    function drawSquare() {
+        ctx.fillStyle = square.color;
+        ctx.fillRect(square.x, square.y, square.size, square.size);
+    }
+
+    function updateSquare() {
+        square.x += square.speed;
+        if (square.x > canvas.width) {
+            square.x = 0; // Reset position when it goes off screen
+            score++;
+            scoreDisplay.textContent = `Score: ${score}`;
         }
-
-        function generateFood() {
-            food = getRandomPosition();
-            // Ensure food doesn't spawn on the snake
-            while (snake.some(segment => segment.x === food.x && segment.y === food.y)) {
-                food = getRandomPosition();
-            }
-        }
-
-        function draw() {
-            ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
-
-            // Draw food
-            ctx.fillStyle = 'red';
-            ctx.fillRect(food.x, food.y, gridSize, gridSize);
-
-            // Draw snake
-            ctx.fillStyle = 'green';
-            snake.forEach(segment => {
-                ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
-            });
-        }
+    }
 
 
-        function update() {
-            if (!gameRunning) return;
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
 
-            const head = { x: snake[0].x + dx * gridSize, y: snake[0].y + dy * gridSize };
+    function gameLoop() {
+        if (!isGameRunning) return;
 
-            // Check for game over (collision with walls or self)
-            if (head.x < 0 || head.x >= canvasSize.width || head.y < 0 || head.y >= canvasSize.height ||
-                snake.some(segment => segment.x === head.x && segment.y === head.y)) {
-                gameOver();
-                return;
-            }
+        clearCanvas();
+        updateSquare();
+        drawSquare();
+        animationFrameId = requestAnimationFrame(gameLoop);
+    }
 
-
-            snake.unshift(head);
-
-            // Check if snake ate the food
-            if (head.x === food.x && head.y === food.y) {
-                score++;
-                scoreDisplay.textContent = score;
-                generateFood();
-            } else {
-                snake.pop(); // Remove the tail if the snake didn't eat
-            }
-
-            draw();
-        }
-
-        function gameOver() {
-            gameRunning = false;
-            startButton.textContent = 'Start';
-            alert(`Game Over! Final Score: ${score}`);
-        }
-
-
-
-        function gameLoop() {
-            update();
-            setTimeout(gameLoop, 100); // Adjust speed here (milliseconds)
-        }
-
-        function resetGame() {
+    startButton.addEventListener('click', () => {
+        if (!isGameRunning) {
+            isGameRunning = true;
             score = 0;
-            scoreDisplay.textContent = score;
-            snake = [{ x: 10, y: 10 }];
-            dx = 1;
-            dy = 0;
-            generateFood();
-            draw();
-            gameRunning = false;
-            startButton.textContent = 'Start';
+            scoreDisplay.textContent = `Score: ${score}`;
+            gameLoop();
         }
+    });
 
+    stopButton.addEventListener('click', () => {
+        isGameRunning = false;
+        cancelAnimationFrame(animationFrameId);
+    });
 
-        // Event listeners for controls
-        document.addEventListener('keydown', (event) => {
-            if (!gameRunning) return;
-            switch (event.key) {
-                case 'ArrowUp':
-                    if (dy !== 1) { dx = 0; dy = -1; }
-                    break;
-                case 'ArrowDown':
-                    if (dy !== -1) { dx = 0; dy = 1; }
-                    break;
-                case 'ArrowLeft':
-                    if (dx !== 1) { dx = -1; dy = 0; }
-                    break;
-                case 'ArrowRight':
-                    if (dx !== -1) { dx = 1; dy = 0; }
-                    break;
-            }
-        });
-
-
-        startButton.addEventListener('click', () => {
-            if (!gameRunning) {
-                gameRunning = true;
-                startButton.textContent = 'Pause';
-                gameLoop(); // Start the game loop
-            } else {
-                gameRunning = false;
-                startButton.textContent = 'Start';
-            }
-        });
-
-        resetButton.addEventListener('click', resetGame);
-        generateFood(); // Initial food generation
-        draw();
-    </script>
+</script>
 </body>
 </html>
 ```
