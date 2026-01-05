@@ -38,14 +38,14 @@ class PublishingAgent(BaseAgent):
 
         except ValueError as ve:
             # Specifieke foutafhandeling voor ValueError (bijv. invalid data)
-            logger.error(f"Ongeldige data tijdens publicatie: {ve}", exc_info=True)
+            logger.error(f"Ongeldige data tijdens publicatie: {ve}. Actie: Verwerking van data.", exc_info=True)  # Contextuele logging
             result["status"] = ResultStatus.ERROR
             result["message"] = f"Fout: Ongeldige data. {ve}" # Geef meer specifieke error boodschap
             result["details"] = {"error_type": "ValueError", "original_message": str(ve)} # Voeg detail informatie toe
 
         except Exception as e:
             # Algemene foutafhandeling
-            logger.error(f"Algemene fout tijdens publicatie: {e}", exc_info=True)
+            logger.error(f"Algemene fout tijdens publicatie: {e}. Actie: Publicatie van item.", exc_info=True) # Contextuele logging
             result["status"] = ResultStatus.ERROR
             result["message"] = f"Fout tijdens publicatie: {e}"
             result["details"] = {"error_type": type(e).__name__, "original_message": str(e)}
