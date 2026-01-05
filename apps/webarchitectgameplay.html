@@ -1,0 +1,195 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Simple Game</title>
+<style>
+body {
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+
+#game-container {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+}
+
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(10, 30px);
+    grid-gap: 2px;
+    margin-top: 20px;
+}
+
+.cell {
+    width: 30px;
+    height: 30px;
+    background-color: #eee;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+}
+
+.cell-filled {
+    background-color: #3498db;
+    color: white;
+}
+
+#score {
+    margin-top: 10px;
+    font-size: 1.2em;
+}
+
+#controls {
+    margin-top: 20px;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+}
+
+button:hover {
+    background-color: #3e8e41;
+}
+
+</style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>Simple Game</h1>
+    <div id="score">Score: 0</div>
+    <div id="game-board"></div>
+    <div id="controls">
+        <button id="start-button">Start</button>
+    </div>
+</div>
+
+<script>
+    const gameBoard = document.getElementById('game-board');
+    const scoreDisplay = document.getElementById('score');
+    const startButton = document.getElementById('start-button');
+    let score = 0;
+    let gameInterval;
+    let isPlaying = false;
+    const boardSize = 10;
+    let board = [];
+
+
+    function createBoard() {
+        board = [];
+        gameBoard.innerHTML = '';
+        for (let i = 0; i < boardSize * boardSize; i++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.dataset.index = i;
+            cell.addEventListener('click', cellClick);
+            gameBoard.appendChild(cell);
+            board.push(0); // 0 represents an empty cell
+        }
+    }
+
+
+    function getRandomIndex() {
+        return Math.floor(Math.random() * board.length);
+    }
+
+
+    function populateBoard() {
+        // Clear existing filled cells
+        board.forEach((cell, index) => {
+            if (cell === 1) { // 1 represents a filled cell
+                const cellElement = gameBoard.children[index];
+                cellElement.classList.remove('cell-filled');
+            }
+        });
+
+        // Add a new filled cell
+        const index = getRandomIndex();
+        board[index] = 1;
+        const cellElement = gameBoard.children[index];
+        cellElement.classList.add('cell-filled');
+    }
+
+    function updateScore() {
+        score++;
+        scoreDisplay.textContent = `Score: ${score}`;
+    }
+
+
+    function cellClick(event) {
+        if (!isPlaying) return;
+
+        const index = parseInt(event.target.dataset.index);
+        if (board[index] === 1) {
+            // Cell is filled, update score and populate the board again
+            updateScore();
+            populateBoard();
+        } else {
+            // Cell is empty, game over or penalty can be added here
+            gameOver();
+        }
+    }
+
+    function gameOver() {
+        clearInterval(gameInterval);
+        isPlaying = false;
+        startButton.textContent = "Start";
+        alert(`Game Over! Final Score: ${score}`);
+        score = 0;
+        scoreDisplay.textContent = `Score: ${score}`;
+        createBoard();  // Reset the board on game over.
+    }
+
+
+
+    function startGame() {
+        if (isPlaying) return;
+
+        isPlaying = true;
+        score = 0;
+        scoreDisplay.textContent = `Score: ${score}`;
+        startButton.textContent = "Stop";
+        createBoard();
+        populateBoard(); // Initial population.
+        gameInterval = setInterval(() => {
+            populateBoard();
+        }, 2000);  // Adjust the interval to control the game speed.
+    }
+
+    function stopGame() {
+        clearInterval(gameInterval);
+        isPlaying = false;
+        startButton.textContent = "Start";
+    }
+
+    startButton.addEventListener('click', () => {
+        if (isPlaying) {
+            stopGame();
+        } else {
+            startGame();
+        }
+    });
+</script>
+
+</body>
+</html>
+```
