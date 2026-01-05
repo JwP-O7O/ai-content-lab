@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falling Stars</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #111, #222);
+            font-family: sans-serif;
+            color: #eee;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #star-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation-name: fall;
+            animation-timing-function: linear;
+            animation-fill-mode: forwards;
+        }
+
+        @keyframes fall {
+            from {
+                transform: translateY(0);
+                opacity: 0.8;
+            }
+            to {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
+        }
+
+        .controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 10;
+        }
+
+        .controls label, .controls input {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .controls {
+                left: 50%;
+                transform: translateX(-50%);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="star-container">
+        <!-- Stars will be added here by JavaScript -->
+    </div>
+
+    <div class="controls">
+        <label for="frequency">Frequency (stars/second):</label>
+        <input type="number" id="frequency" value="0.5" min="0" step="0.1">
+
+        <label for="speed">Speed (seconds):</label>
+        <input type="number" id="speed" value="3" min="1" step="0.1">
+    </div>
+
+    <script>
+        const starContainer = document.getElementById('star-container');
+        const frequencyInput = document.getElementById('frequency');
+        const speedInput = document.getElementById('speed');
+
+        let starInterval;
+
+        function createStar() {
+            const star = document.createElement('div');
+            const size = Math.random() * 3 + 1; // Random size between 1 and 4
+            const xPosition = Math.random() * 100; // Random horizontal position
+            const animationDuration = parseFloat(speedInput.value); // Use value from input
+
+            star.classList.add('star');
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+            star.style.left = `${xPosition}vw`;
+            star.style.top = `${Math.random() * -20}vh`; // Start above the screen
+            star.style.animationDuration = `${animationDuration}s`;
+            star.style.animationDelay = `-${Math.random() * animationDuration}s`; // Stagger the stars
+
+
+            starContainer.appendChild(star);
+
+
+            // Remove the star after animation
+            star.addEventListener('animationend', () => {
+                star.remove();
+            });
+        }
+
+
+        function startStarCreation() {
+            clearInterval(starInterval); // Clear any existing interval
+            const frequency = parseFloat(frequencyInput.value);
+            if (frequency > 0) {
+                starInterval = setInterval(createStar, 1000 / frequency);
+            }
+        }
+
+        // Initial star creation
+        startStarCreation();
+
+
+        // Listen for changes in the controls
+        frequencyInput.addEventListener('change', startStarCreation);
+        speedInput.addEventListener('change', () => {
+             startStarCreation(); // Restart the animation
+        });
+    </script>
+</body>
+</html>
