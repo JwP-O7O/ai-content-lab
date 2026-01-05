@@ -34,14 +34,22 @@ class GitPublisher:
                 return {"status": "published"}
             else:
                 logger.warning(f"⚠️ Push mislukt: {push_res.stderr}")
-                if "authentication required" in push_res.stderr.lower():
-                    logger.error("❌ Authenticatie mislukt. Controleer je GitHub credentials of SSH-configuratie.")
+                stderr = push_res.stderr.lower()
+
+                if "authentication required" in stderr:
+                    logger.error("❌ Authenticatie mislukt. Controleer je GitHub credentials (username/password of token) in de Git configuratie of controleer je SSH-configuratie.")
                     return {"status": "push_failed_authentication"}
-                elif "failed to push some refs" in push_res.stderr.lower():
-                    logger.error("❌ Push mislukt: Merge conflict of andere ref-gerelateerde problemen.  Los de conflicten lokaal op en probeer opnieuw.")
+                elif "failed to push some refs" in stderr or "non-fast-forward" in stderr:
+                    logger.error("❌ Push mislukt: Merge conflict of andere ref-gerelateerde problemen.  Trek de laatste veranderingen van de remote (git pull) en los eventuele conflicten op. Probeer dan opnieuw te pushen.")
                     return {"status": "push_failed_conflict"}
+                elif "could not resolve host" in stderr or "connection refused" in stderr:
+                    logger.error("❌ Push mislukt: Netwerkprobleem. Controleer je internetverbinding en of de remote repository bereikbaar is (bijv. GitHub).")
+                    return {"status": "push_failed_network"}
+                elif "remote rejected" in stderr:
+                    logger.error("❌ Push mislukt: De remote repository heeft de push afgewezen. Dit kan komen door beveiligingsinstellingen of andere regels op de remote.  Controleer de instellingen van je repository op GitHub.")
+                    return {"status": "push_failed_remote_rejected"}
                 else:
-                    logger.error(f"❌ Onbekende push-fout: {push_res.stderr}")
+                    logger.error(f"❌ Onbekende push-fout: {push_res.stderr}.  Probeer 'git push --verbose' voor meer details.")
                     return {"status": "push_failed_unknown"}
 
 
