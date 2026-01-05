@@ -2,10 +2,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Speelveld</title>
+<title>Game Loop Example</title>
 <style>
 body {
-    font-family: Arial, sans-serif;
+    font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -14,112 +14,113 @@ body {
     background-color: #f0f0f0;
 }
 
-#game-container {
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+#gameContainer {
+    background-color: white;
     padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     text-align: center;
 }
 
-#grid-container {
-    display: grid;
-    grid-template-columns: repeat(10, 40px);
-    grid-gap: 5px;
-    margin-top: 10px;
+#gameCanvas {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
 }
 
-.grid-cell {
-    width: 40px;
-    height: 40px;
-    background-color: #eee;
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 20px;
-    color: #333;
+#scoreDisplay {
+    font-size: 1.2em;
+    margin-bottom: 10px;
 }
 
-.filled {
-    background-color: #4CAF50; /* Groen */
-    color: white;
-}
-
-.empty {
-    background-color: #eee;
-}
-
-button {
+#startButton {
     background-color: #4CAF50;
     color: white;
-    padding: 10px 15px;
+    padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 16px;
-    margin-top: 10px;
+    font-size: 1em;
 }
 
-button:hover {
+#startButton:hover {
     background-color: #3e8e41;
 }
 </style>
 </head>
 <body>
 
-<div id="game-container">
-    <h1>Speelveld</h1>
-    <div id="grid-container">
-    </div>
-    <button id="fill-button">Vul Speelveld</button>
-    <button id="clear-button">Leeg Speelveld</button>
+<div id="gameContainer">
+    <canvas id="gameCanvas" width="400" height="300"></canvas>
+    <div id="scoreDisplay">Score: <span id="scoreValue">0</span></div>
+    <button id="startButton">Start Game</button>
 </div>
 
 <script>
-const gridContainer = document.getElementById('grid-container');
-const fillButton = document.getElementById('fill-button');
-const clearButton = document.getElementById('clear-button');
-const gridSize = 10;
-let grid = [];
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreDisplay = document.getElementById('scoreValue');
+const startButton = document.getElementById('startButton');
 
-function createGrid() {
-    for (let i = 0; i < gridSize * gridSize; i++) {
-        const cell = document.createElement('div');
-        cell.classList.add('grid-cell', 'empty');
-        cell.dataset.index = i;
-        gridContainer.appendChild(cell);
-        grid.push(cell);
+let score = 0;
+let gameRunning = false;
+let animationFrameId;
+
+// Game object - example (could be anything, e.g., a moving square)
+const gameObject = {
+    x: 50,
+    y: 50,
+    size: 20,
+    speed: 2,
+    color: 'blue'
+};
+
+function draw() {
+    // Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw the game object
+    ctx.fillStyle = gameObject.color;
+    ctx.fillRect(gameObject.x, gameObject.y, gameObject.size, gameObject.size);
+
+    // Example: Move the game object
+    gameObject.x += gameObject.speed;
+
+    // Bounce off the walls
+    if (gameObject.x + gameObject.size > canvas.width || gameObject.x < 0) {
+        gameObject.speed = -gameObject.speed;
+        score++; // Example: Increment score on bounce
+        scoreDisplay.textContent = score;
     }
 }
 
-function fillGrid() {
-    grid.forEach(cell => {
-        if (Math.random() > 0.6) { // 60% kans op vullen
-            cell.classList.remove('empty');
-            cell.classList.add('filled');
-            cell.textContent = 'X';
-        } else {
-            cell.classList.remove('filled');
-            cell.classList.add('empty');
-            cell.textContent = '';
-        }
-    });
+function gameLoop() {
+    if (!gameRunning) return; // Stop the loop if the game isn't running
+    draw();
+    animationFrameId = requestAnimationFrame(gameLoop);
 }
 
-function clearGrid() {
-    grid.forEach(cell => {
-        cell.classList.remove('filled');
-        cell.classList.add('empty');
-        cell.textContent = '';
-    });
+function startGame() {
+    if (!gameRunning) {
+        gameRunning = true;
+        score = 0; // Reset score on start
+        scoreDisplay.textContent = score;
+        animationFrameId = requestAnimationFrame(gameLoop);
+        startButton.textContent = "Stop Game";
+    } else {
+        stopGame();
+    }
 }
 
-createGrid();
+function stopGame() {
+    gameRunning = false;
+    cancelAnimationFrame(animationFrameId);
+    startButton.textContent = "Start Game";
+}
 
-fillButton.addEventListener('click', fillGrid);
-clearButton.addEventListener('click', clearGrid);
+
+startButton.addEventListener('click', startGame);
+
+
 </script>
 </body>
 </html>
