@@ -80,7 +80,7 @@ class MemoryLoader:
             logging.error(f"Memory loading timed out after {timeout} seconds.")
             with self._memory_loading_lock:
                 self._memory = None  # Reset memory om onverwachte resultaten te voorkomen
-            return None  # Of gooi een custom exception: raise MemoryLoadingTimeoutError()
+            return None
         with self._memory_loading_lock:
             return self._memory
 
