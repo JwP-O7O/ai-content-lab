@@ -1,7 +1,7 @@
 import asyncio
 import os
 import sys
-import subprocess
+import random
 from loguru import logger
 from datetime import datetime
 
@@ -11,7 +11,6 @@ try:
     from src.autonomous_agents.monitoring.code_health_monitor import CodeHealthMonitor
     from src.autonomous_agents.execution.code_refactorer import CodeRefactorer
     from src.autonomous_agents.validation.test_runner import TestRunner
-    from src.autonomous_agents.learning.pattern_learner import PatternLearner
     from src.autonomous_agents.analysis.content_quality_monitor import ContentQualityMonitor
     from src.autonomous_agents.execution.content_editor import ContentEditor
     from src.autonomous_agents.execution.content_writer import ContentWriter
@@ -20,7 +19,8 @@ try:
     from src.autonomous_agents.execution.feature_architect import FeatureArchitect
     from src.autonomous_agents.execution.deep_debugger import DeepDebugger
     from src.autonomous_agents.execution.visionary_agent import VisionaryAgent
-    from src.autonomous_agents.execution.web_architect import WebArchitect # NIEUW
+    from src.autonomous_agents.execution.web_architect import WebArchitect
+    from src.autonomous_agents.planning.evolutionary_agent import EvolutionaryAgent # NIEUW
 except ImportError as e:
     logger.critical(f"IMPORT ERROR: {e}")
     sys.exit(1)
@@ -30,16 +30,15 @@ class TermuxMasterOrchestrator:
         self.is_running = False
         self.cycle_count = 0
         
-        # Het Team
+        # HET TEAM
         self.publisher = GitPublisher()
         self.listener = GitHubListener()
-        self.architect = FeatureArchitect() # Python
-        self.web_architect = WebArchitect() # HTML/JS (Nieuw)
-        self.debugger = DeepDebugger()
+        self.architect = FeatureArchitect()
+        self.web_architect = WebArchitect()
         self.visionary = VisionaryAgent()
+        self.evolutionary = EvolutionaryAgent() # NIEUW: Het Brein
         
-        self.code_monitor = CodeHealthMonitor()
-        self.refactorer = CodeRefactorer()
+        # Support
         self.content_monitor = ContentQualityMonitor()
         self.content_editor = ContentEditor()
         self.content_writer = ContentWriter()
@@ -50,8 +49,9 @@ class TermuxMasterOrchestrator:
                 f.write(f"# 🔵 All In AI - System Status\n\n")
                 f.write(f"| Metric | Waarde |\n|---|---|\n")
                 f.write(f"| **Model** | `Gemini 2.0 Flash Lite` |\n")
+                f.write(f"| **Cycles** | {self.cycle_count} |\n")
                 f.write(f"| **Laatste Actie** | {last_action} |\n")
-                f.write(f"| **Status** | ✅ OPERATIONAL |\n")
+                f.write(f"| **Status** | ✅ EVOLVING |\n")
         except: pass
 
     async def run_improvement_cycle(self):
@@ -59,62 +59,45 @@ class TermuxMasterOrchestrator:
         logger.info(f"--- 🔄 Cycle #{self.cycle_count} ---")
         last_action = "Monitoring..."
         
+        # STAP 1: EVOLUTIE (Zelfbedenken) - Elke 3 rondes
+        if self.cycle_count % 3 == 0:
+            logger.info("🧬 Tijd voor evolutie...")
+            await self.evolutionary.propose_improvement()
+
+        # STAP 2: UITVOEREN (Orders checken)
         orders = await self.listener.check_for_orders()
         if orders.get("status") == "new_tasks":
             for task in orders['tasks']:
                 
-                # A. WEBSITE BOUWEN (NIEUW)
+                # A. WEB
                 if "WEB:" in task['title'].upper():
                     logger.info(f"🌐 Web Taak: {task['title']}")
-                    res = await self.web_architect.build_website(f"{task['title']} {task['body']}")
+                    # Voeg de body toe voor context
+                    full_prompt = f"{task['title']}\nDetails: {task['body']}"
+                    res = await self.web_architect.build_website(full_prompt)
                     
                     if res['status'] == 'built':
-                        # Eerst pushen
                         await self.publisher.publish_changes()
-                        
-                        # Live link genereren
-                        # Jouw GitHub gebruikersnaam is JwP-O7O
                         live_url = f"https://JwP-O7O.github.io/ai-content-lab/apps/{res['filename']}"
-                        
-                        msg = f"✅ **Website Online!**\n\nJe kunt de app hier bekijken en spelen:\n👉 [**KLIK OM TE OPENEN**]({live_url})\n\n*(Geef GitHub Pages 1-2 minuten om te updaten)*"
+                        msg = f"✅ **Update Live!**\n\n👉 [**SPEEL HIER**]({live_url})"
                         task['issue_obj'].create_comment(msg)
-                        last_action = f"🌐 Web App: {res['filename']}"
+                        # Sluit het issue als het klaar is
+                        task['issue_obj'].edit(state='closed')
+                        last_action = f"🌐 Web App Update: {res['filename']}"
 
-                # B. CODE BOUWEN (PYTHON)
-                elif task['type'] == 'code':
-                    logger.info(f"⚙️ Code taak: {task['title']}")
-                    res = await self.architect.build_feature(f"{task['title']} {task['body']}")
-                    if res['status'] == 'built':
-                        await self.publisher.publish_changes()
-                        msg = f"✅ **Python Code Gebouwd!**\nBestand: `{res['file']}`"
-                        task['issue_obj'].create_comment(msg)
-                        last_action = f"🏗️ Code: {res['file']}"
-
-                # C. AFBEELDING MAKEN
+                # B. IMAGE
                 elif "IMG:" in task['title'].upper():
                     prompt = task['title'].replace("IMG:", "").strip()
-                    logger.info(f"🎨 Foto taak: {prompt}")
-                    res = self.visionary.generate_image(prompt, "github_order")
+                    res = self.visionary.generate_image(prompt)
                     if res['status'] == 'success':
                         await self.publisher.publish_changes()
-                        img_filename = os.path.basename(res['file'])
-                        blob_url = f"https://github.com/JwP-O7O/ai-content-lab/blob/main/data/images/{img_filename}"
-                        raw_url = f"https://raw.githubusercontent.com/JwP-O7O/ai-content-lab/main/data/images/{img_filename}"
-                        msg = f"✅ **Afbeelding Gegenereerd!**\n\n👉 [**KLIK HIER OM TE ZIEN**]({blob_url})\n\n![Preview]({raw_url})"
-                        task['issue_obj'].create_comment(msg)
-                        last_action = "🎨 Afbeelding gemaakt"
+                        img = os.path.basename(res['file'])
+                        url = f"https://raw.githubusercontent.com/JwP-O7O/ai-content-lab/main/data/images/{img}"
+                        task['issue_obj'].create_comment(f"![Art]({url})")
+                        task['issue_obj'].edit(state='closed')
+                        last_action = "🎨 Art gemaakt"
 
-                # D. CONTENT SCHRIJVEN
-                elif task['type'] == 'content':
-                    with open(f"data/output/task_{datetime.now().strftime('%S')}.md", 'w') as f: f.write(task['title'])
-                    last_action = "✍️ Artikel gestart"
-
-        # Content Pipeline & Publish
-        content = await self.content_monitor.analyze()
-        if content['status'] == 'issues':
-            await self.content_editor.fix_content(content['details'])
-            await self.content_writer.expand_content()
-
+        # STAP 3: PUBLICEREN
         await self._update_remote_status(last_action)
         await self.publisher.publish_changes()
         
@@ -123,15 +106,15 @@ class TermuxMasterOrchestrator:
 
     async def run_autonomous_loop(self):
         self.is_running = True
-        logger.info("🧠 All In AI - ONLINE")
+        logger.info("🧠 All In AI - ONLINE & EVOLVING")
         while self.is_running:
             try:
                 await self.run_improvement_cycle()
-                logger.info("💤 Ruststand (30 sec)...")
-                await asyncio.sleep(30) 
+                logger.info("💤 Ruststand (20 sec)...")
+                await asyncio.sleep(20) 
             except Exception as e:
                 logger.error(f"❌ Loop fout: {e}")
-                await asyncio.sleep(30)
+                await asyncio.sleep(20)
 
 if __name__ == "__main__":
     asyncio.run(TermuxMasterOrchestrator().run_autonomous_loop())
