@@ -15,14 +15,14 @@ body {
 }
 
 #gameContainer {
-    background-color: white;
-    padding: 20px;
+    background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
     text-align: center;
 }
 
-#gameCanvas {
+#canvas {
     border: 1px solid #ccc;
     margin-bottom: 10px;
 }
@@ -33,13 +33,13 @@ body {
 }
 
 #startButton, #stopButton {
-    padding: 10px 20px;
-    font-size: 1em;
     background-color: #4CAF50;
     color: white;
+    padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    font-size: 1em;
     margin: 5px;
 }
 
@@ -53,95 +53,90 @@ body {
 </style>
 </head>
 <body>
+    <div id="gameContainer">
+        <h1>Game Loop Example</h1>
+        <canvas id="canvas" width="400" height="300"></canvas>
+        <div id="scoreDisplay">Score: 0</div>
+        <button id="startButton">Start</button>
+        <button id="stopButton">Stop</button>
 
-<div id="gameContainer">
-    <canvas id="gameCanvas" width="400" height="300"></canvas>
-    <div id="scoreDisplay">Score: <span id="score">0</span></div>
-    <button id="startButton">Start</button>
-    <button id="stopButton">Stop</button>
-</div>
+        <script>
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const scoreDisplay = document.getElementById('scoreDisplay');
+            const startButton = document.getElementById('startButton');
+            const stopButton = document.getElementById('stopButton');
 
-<script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const scoreDisplay = document.getElementById('score');
-const startButton = document.getElementById('startButton');
-const stopButton = document.getElementById('stopButton');
+            let score = 0;
+            let animationFrameId;
+            let isRunning = false;
 
-let score = 0;
-let gameRunning = false;
-let animationFrameId;
-
-// Game object - example (can be expanded)
-const gameObject = {
-    x: canvas.width / 2,
-    y: canvas.height / 2,
-    size: 20,
-    color: 'blue',
-    speed: 2,
-    directionX: 1, // 1 or -1
-    directionY: 1  // 1 or -1
-};
+            // Game object (example: a moving square)
+            let square = {
+                x: 50,
+                y: 50,
+                size: 20,
+                speedX: 2,
+                speedY: 2,
+                color: 'blue'
+            };
 
 
-function drawGameObject() {
-    ctx.fillStyle = gameObject.color;
-    ctx.fillRect(gameObject.x - gameObject.size / 2, gameObject.y - gameObject.size / 2, gameObject.size, gameObject.size);
-}
+            function drawSquare() {
+                ctx.fillStyle = square.color;
+                ctx.fillRect(square.x, square.y, square.size, square.size);
+            }
 
-function updateGameObject() {
-    gameObject.x += gameObject.speed * gameObject.directionX;
-    gameObject.y += gameObject.speed * gameObject.directionY;
+            function updateSquare() {
+                square.x += square.speedX;
+                square.y += square.speedY;
 
-    // Bounce off the walls
-    if (gameObject.x + gameObject.size / 2 > canvas.width || gameObject.x - gameObject.size / 2 < 0) {
-        gameObject.directionX *= -1;
-        score++;
-    }
-    if (gameObject.y + gameObject.size / 2 > canvas.height || gameObject.y - gameObject.size / 2 < 0) {
-        gameObject.directionY *= -1;
-        score++;
-    }
-
-    scoreDisplay.textContent = score;
-}
+                // Bounce off walls
+                if (square.x + square.size > canvas.width || square.x < 0) {
+                    square.speedX = -square.speedX;
+                }
+                if (square.y + square.size > canvas.height || square.y < 0) {
+                    square.speedY = -square.speedY;
+                }
+            }
 
 
-function clearCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
+            function clearCanvas() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+
+            function updateScore() {
+                score++;
+                scoreDisplay.textContent = 'Score: ' + score;
+            }
 
 
-function gameLoop() {
-    if (!gameRunning) return; // Stop if game is not running
+            function gameLoop() {
+                if (!isRunning) return;
 
-    clearCanvas();
-    updateGameObject();
-    drawGameObject();
+                clearCanvas();
+                updateSquare();
+                drawSquare();
+                updateScore();
 
-    animationFrameId = requestAnimationFrame(gameLoop);
-}
+                animationFrameId = requestAnimationFrame(gameLoop);
+            }
 
+            startButton.addEventListener('click', () => {
+                if (!isRunning) {
+                    isRunning = true;
+                    score = 0; // Reset score when starting
+                    scoreDisplay.textContent = 'Score: 0';
+                    gameLoop();
+                }
+            });
 
-function startGame() {
-    if (!gameRunning) {
-        gameRunning = true;
-        score = 0;
-        scoreDisplay.textContent = score;
-        gameLoop();
-    }
-}
-
-
-function stopGame() {
-    gameRunning = false;
-    cancelAnimationFrame(animationFrameId);
-}
-
-startButton.addEventListener('click', startGame);
-stopButton.addEventListener('click', stopGame);
-</script>
-
+            stopButton.addEventListener('click', () => {
+                isRunning = false;
+                cancelAnimationFrame(animationFrameId);
+            });
+        </script>
+    </div>
 </body>
 </html>
 ```
