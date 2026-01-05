@@ -1,0 +1,96 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Game Loop Example</title>
+<style>
+body {
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+
+.container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+#gameCanvas {
+    border: 1px solid #ccc;
+    margin-top: 10px;
+}
+
+#scoreDisplay {
+    font-size: 1.2em;
+    margin-top: 10px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Game Loop Example</h1>
+    <canvas id="gameCanvas" width="400" height="300"></canvas>
+    <div id="scoreDisplay">Score: 0</div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+
+    let score = 0;
+    let circleX = 50;
+    let circleY = 50;
+    let circleSpeedX = 2;
+    let circleSpeedY = 2;
+    const circleRadius = 20;
+
+    function drawCircle() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
+        ctx.arc(circleX, circleY, circleRadius, 0, Math.PI * 2);
+        ctx.fillStyle = 'red';
+        ctx.fill();
+    }
+
+    function updateCircle() {
+        circleX += circleSpeedX;
+        circleY += circleSpeedY;
+
+        // Bounce off walls
+        if (circleX + circleRadius > canvas.width || circleX - circleRadius < 0) {
+            circleSpeedX = -circleSpeedX;
+            score++; // Increase score on each bounce
+        }
+        if (circleY + circleRadius > canvas.height || circleY - circleRadius < 0) {
+            circleSpeedY = -circleSpeedY;
+            score++; // Increase score on each bounce
+        }
+    }
+
+    function updateScore() {
+        scoreDisplay.textContent = 'Score: ' + score;
+    }
+
+
+    function gameLoop() {
+        updateCircle();
+        drawCircle();
+        updateScore();
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Start the game loop
+    gameLoop();
+</script>
+</body>
+</html>
+```
