@@ -111,6 +111,10 @@
             explosion.style.top = Math.random() * window.innerHeight + 'px';
             explosionContainer.appendChild(explosion);
 
+            // Dynamische kleur op basis van score
+            const hue = Math.min(Math.max(0, (score / 30) * 360), 360); // Kleur tussen blauw en rood
+            explosion.style.backgroundColor = `hsla(${hue}, 100%, 50%, 0.5)`;
+
             // Activeer de animatie
             explosion.classList.add('active');
 
