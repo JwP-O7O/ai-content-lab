@@ -16,6 +16,7 @@
             justify-content: center;
             height: 100vh;
             text-align: center;
+            overflow: hidden; /* Prevent scrollbars when particles are active */
         }
 
         #game-container {
@@ -70,6 +71,7 @@
             font-weight: bold;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
             animation: levelUp 2s ease-in-out forwards;
+            position: relative; /* For particle effects */
         }
 
         @keyframes levelUp {
@@ -83,6 +85,28 @@
             }
             100% {
                 transform: scale(1);
+                opacity: 0;
+            }
+        }
+
+        /* Particle effects */
+        .particle {
+            position: absolute;
+            background-color: #fff;
+            border-radius: 50%;
+            width: 10px;
+            height: 10px;
+            opacity: 0;
+            animation: particleAnimation 2s ease-in-out forwards;
+        }
+
+        @keyframes particleAnimation {
+            0% {
+                transform: translate(0, 0) scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(calc(var(--x) * 1px), calc(var(--y) * 1px)) scale(1);
                 opacity: 0;
             }
         }
@@ -101,16 +125,55 @@
         </div>
     </div>
 
+    <audio id="level-up-sound" src="" preload="auto"></audio>
+
     <script>
         let score = 0;
         const scoreDisplay = document.getElementById('score');
         const addButton = document.getElementById('add-score-button');
         const levelUpOverlay = document.getElementById('level-up-overlay');
+        const levelUpSound = document.getElementById('level-up-sound');
+
+        // Function to play sound
+        function playSound(soundId) {
+            const sound = document.getElementById(soundId);
+            if (sound) {
+                sound.currentTime = 0; // Rewind to the beginning
+                sound.play();
+            }
+        }
+
+        // Function to create particle effects
+        function createParticles(count) {
+            const animationElement = document.querySelector('.level-up-animation');
+            if (!animationElement) return;
+
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                const x = (Math.random() - 0.5) * 200; // Adjust for spread
+                const y = (Math.random() - 0.5) * 200; // Adjust for spread
+                particle.style.setProperty('--x', x);
+                particle.style.setProperty('--y', y);
+                particle.style.left = '50%';
+                particle.style.top = '50%';
+                particle.style.transform = 'translate(-50%, -50%)';
+                animationElement.appendChild(particle);
+            }
+        }
+
 
         function showLevelUpAnimation() {
             levelUpOverlay.style.display = 'flex';
+            playSound('level-up-sound'); // Play sound effect
+            createParticles(20); // Create particle effects
+
             setTimeout(() => {
                 levelUpOverlay.style.display = 'none';
+                // Remove particles after animation
+                const particles = document.querySelectorAll('.particle');
+                particles.forEach(particle => particle.remove());
+
             }, 2000);
         }
 
@@ -122,6 +185,13 @@
                 showLevelUpAnimation();
             }
         }
+
+        // Preload sound
+        levelUpSound.src = 'data:audio/mpeg;base64,//Insert base64 encoded sound here'; // Replace with base64 encoded sound or URL
+        // Example base64 sound:  (replace with your own sound, e.g. from https://www.base64encode.org/)
+        // Example: data:audio/mpeg;base64,/+MYxAAAAANIAAAAAExBTUUzLgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA...
+        // To generate a base64 encoded sound, replace the above line.  Otherwise the sound won't play.
+
 
         addButton.addEventListener('click', () => {
             updateScore(score + 1);
