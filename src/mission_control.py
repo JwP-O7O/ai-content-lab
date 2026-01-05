@@ -13,6 +13,8 @@ console = Console()
 
 # 🎨 KLEUREN & ICOON CONFIGURATIE
 AGENT_CONFIG = {
+    "StaffingAgent":    {"color": "bold white",   "icon": "👔", "act": "HUURT"},
+    "QualityAssurance": {"color": "bold red",     "icon": "🛡️", "act": "TEST"},
     "ResearchAgent":    {"color": "bold yellow",  "icon": "🌍", "act": "ZOEKT"},
     "WebArchitect":     {"color": "bold cyan",    "icon": "🌐", "act": "BOUWT"},
     "FeatureArchitect": {"color": "bold green",   "icon": "⚙️", "act": "CODET"},
