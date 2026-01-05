@@ -4,7 +4,7 @@
 <head>
 <title>Game Loop Example</title>
 <style>
-body {
+  body {
     font-family: sans-serif;
     display: flex;
     justify-content: center;
@@ -12,109 +12,134 @@ body {
     height: 100vh;
     margin: 0;
     background-color: #f0f0f0;
-}
+  }
 
-#gameContainer {
+  #gameContainer {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
-}
+  }
 
-#gameCanvas {
+  #gameCanvas {
     border: 1px solid #ccc;
     margin-bottom: 10px;
-}
+  }
 
-#scoreDisplay {
+  #scoreDisplay {
     font-size: 1.2em;
     margin-bottom: 10px;
-}
+  }
 
-#startButton, #stopButton {
+  button {
+    background-color: #4CAF50;
+    color: white;
     padding: 10px 20px;
-    font-size: 1em;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    margin: 5px;
-}
+    font-size: 1em;
+  }
 
-#startButton {
-    background-color: #4CAF50;
-    color: white;
-}
-
-#stopButton {
-    background-color: #f44336;
-    color: white;
-}
+  button:hover {
+    background-color: #3e8e41;
+  }
 </style>
 </head>
 <body>
 
 <div id="gameContainer">
-    <h1>Simple Game Loop</h1>
-    <canvas id="gameCanvas" width="400" height="300"></canvas>
+    <h1>Game Loop Example</h1>
     <div id="scoreDisplay">Score: <span id="scoreValue">0</span></div>
-    <div>
-        <button id="startButton">Start</button>
-        <button id="stopButton">Stop</button>
-    </div>
-
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const scoreDisplay = document.getElementById('scoreValue');
-        const startButton = document.getElementById('startButton');
-        const stopButton = document.getElementById('stopButton');
-
-        let score = 0;
-        let animationFrameId;
-        let gameRunning = false;
-
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
-
-            // Draw a simple shape (e.g., a circle)
-            ctx.beginPath();
-            ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 10, 0, 2 * Math.PI);
-            ctx.fillStyle = 'blue';
-            ctx.fill();
-            ctx.closePath();
-        }
-
-
-        function updateScore() {
-            score++;
-            scoreDisplay.textContent = score;
-        }
-
-
-        function gameLoop() {
-            if (!gameRunning) return;
-
-            draw();
-            updateScore();
-            animationFrameId = requestAnimationFrame(gameLoop);
-        }
-
-        startButton.addEventListener('click', () => {
-            if (!gameRunning) {
-                gameRunning = true;
-                score = 0;
-                scoreDisplay.textContent = score;
-                gameLoop();
-            }
-        });
-
-        stopButton.addEventListener('click', () => {
-            gameRunning = false;
-            cancelAnimationFrame(animationFrameId); // Stop the animation
-        });
-    </script>
+    <canvas id="gameCanvas" width="400" height="300"></canvas>
+    <button id="startButton">Start Game</button>
 </div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('scoreValue');
+    const startButton = document.getElementById('startButton');
+
+    let score = 0;
+    let gameRunning = false;
+    let frameCount = 0;
+    let lastTime = 0; // For delta time calculation
+
+    // Game object (example: a simple moving rectangle)
+    const gameObject = {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        width: 20,
+        height: 20,
+        speed: 5,
+        directionX: 1, // 1 or -1 for right/left movement
+        directionY: 1  // 1 or -1 for up/down movement
+    };
+
+
+    function update(deltaTime) {
+        if (!gameRunning) return;
+
+        // Simple movement: bounce off the edges
+        gameObject.x += gameObject.speed * gameObject.directionX * deltaTime;
+        gameObject.y += gameObject.speed * gameObject.directionY * deltaTime;
+
+        if (gameObject.x + gameObject.width > canvas.width || gameObject.x < 0) {
+            gameObject.directionX *= -1; // Reverse direction
+            score++;
+            updateScore();
+        }
+        if (gameObject.y + gameObject.height > canvas.height || gameObject.y < 0) {
+            gameObject.directionY *= -1; // Reverse direction
+            score++;
+            updateScore();
+        }
+    }
+
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+
+        // Draw the game object
+        ctx.fillStyle = 'blue';
+        ctx.fillRect(gameObject.x, gameObject.y, gameObject.width, gameObject.height);
+    }
+
+    function updateScore() {
+        scoreDisplay.textContent = score;
+    }
+
+    function gameLoop(currentTime) {
+        if (!gameRunning) return;
+
+        const deltaTime = (currentTime - lastTime) / 1000; // Time since last frame in seconds
+        lastTime = currentTime;
+
+        update(deltaTime);
+        draw();
+
+        frameCount++;
+        requestAnimationFrame(gameLoop); // Request the next frame
+    }
+
+
+    startButton.addEventListener('click', () => {
+        if (!gameRunning) {
+            gameRunning = true;
+            score = 0;
+            updateScore();
+            lastTime = performance.now(); // Reset time for accurate delta time
+            requestAnimationFrame(gameLoop); // Start the game loop
+            startButton.textContent = "Stop Game";
+        } else {
+            gameRunning = false;
+            startButton.textContent = "Start Game";
+        }
+    });
+
+</script>
 
 </body>
 </html>
