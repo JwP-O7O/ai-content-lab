@@ -1,402 +1,263 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Space Shooter with Power-ups</title>
-<style>
-body {
-    background-color: #000;
-    color: #fff;
-    font-family: sans-serif;
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power-Up Game</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #2980b9, #6dd5fa);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
 
-#gameContainer {
-    position: relative;
-    width: 100%;
-    max-width: 600px;
-    height: 80vh;
-    border: 2px solid #fff;
-    overflow: hidden;
-}
+        #game-container {
+            position: relative;
+            width: 80%;
+            height: 80%;
+            max-width: 600px;
+            max-height: 600px;
+            border-radius: 20px;
+            background-color: rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
 
-#gameCanvas {
-    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAACpJREFUABA7wTsBwEAABMDz/9L/p1/0/0f/xX/0XwzAxQ2o0s0oAAAAASUVORK5CYII=') repeat;
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-}
+        #player {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #f39c12;
+            border-radius: 50%;
+            left: 50%;
+            bottom: 20px;
+            transform: translateX(-50%);
+            transition: bottom 0.2s ease;
+            z-index: 2;
+        }
+
+        .power-up {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #e74c3c;
+            animation: float 5s linear infinite;
+            z-index: 1;
+        }
+
+        .power-up.speed {
+            background-color: #2ecc71;
+        }
+
+        .power-up.shield {
+            background-color: #9b59b6;
+        }
 
 
-#scoreDisplay {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    font-size: 1.2em;
-}
+        @keyframes float {
+            0% {
+                transform: translateY(0) translateX(0);
+            }
+            50% {
+                transform: translateY(20px) translateX(10px);
+            }
+            100% {
+                transform: translateY(0) translateX(0);
+            }
+        }
 
-#gameOverScreen {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    z-index: 10;
-}
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 1.2em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
 
-#gameOverScreen h2 {
-    font-size: 2em;
-    margin-bottom: 20px;
-}
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+            z-index: 3;
+        }
 
-#gameOverScreen p {
-    font-size: 1.2em;
-    margin-bottom: 10px;
-}
+        #game-over h2 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
 
-#gameOverScreen button {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    font-size: 1em;
-    cursor: pointer;
-}
-
-#powerUpContainer {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  display: flex;
-  gap: 10px;
-}
-
-.powerUpIcon {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.3);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 1em;
-  cursor: pointer;
-}
-</style>
+        #game-over button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+    </style>
 </head>
 <body>
-
-<div id="gameContainer">
-    <canvas id="gameCanvas"></canvas>
-    <div id="scoreDisplay">Score: <span id="score">0</span></div>
-    <div id="powerUpContainer"></div>
-    <div id="gameOverScreen">
-        <h2>Game Over</h2>
-        <p>Your Score: <span id="finalScore"></span></p>
-        <button id="restartButton">Restart</button>
+    <div id="game-container">
+        <div id="score">Score: 0</div>
+        <div id="player"></div>
+        <div id="game-over">
+            <h2>Game Over</h2>
+            <p>Score: <span id="final-score"></span></p>
+            <button onclick="resetGame()">Restart</button>
+        </div>
     </div>
-</div>
+    <script>
+        const gameContainer = document.getElementById('game-container');
+        const player = document.getElementById('player');
+        const scoreDisplay = document.getElementById('score');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalScoreDisplay = document.getElementById('final-score');
 
+        let score = 0;
+        let powerUps = [];
+        let playerBottom = 20;
+        let gameRunning = true;
+        let playerSpeedMultiplier = 1;
+        let shieldActive = false;
 
-<script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const scoreDisplay = document.getElementById('score');
-    const finalScoreDisplay = document.getElementById('finalScore');
-    const gameOverScreen = document.getElementById('gameOverScreen');
-    const restartButton = document.getElementById('restartButton');
-    const powerUpContainer = document.getElementById('powerUpContainer');
-
-    let gameWidth = canvas.width;
-    let gameHeight = canvas.height;
-    let score = 0;
-    let gameLoop;
-    let player = {
-        x: gameWidth / 2,
-        y: gameHeight - 50,
-        width: 20,
-        height: 30,
-        color: '#0f0',
-        speed: 5,
-        shieldActive: false,
-    };
-    let bullets = [];
-    let asteroids = [];
-    let powerUps = [];
-    let lastAsteroidSpawn = 0;
-    const asteroidSpawnInterval = 1000;
-    let lastPowerUpSpawn = 0;
-    const powerUpSpawnInterval = 15000;
-    const powerUpDuration = 5000;
-
-    function resizeCanvas() {
-        canvas.width = document.getElementById('gameContainer').offsetWidth;
-        canvas.height = document.getElementById('gameContainer').offsetHeight;
-        gameWidth = canvas.width;
-        gameHeight = canvas.height;
-        player.x = gameWidth / 2;
-        player.y = gameHeight - 50;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    function getRandom(min, max) {
-        return Math.random() * (max - min) + min;
-    }
-
-    function spawnAsteroid() {
-        asteroids.push({
-            x: getRandom(0, gameWidth),
-            y: 0,
-            width: getRandom(20, 40),
-            height: getRandom(20, 40),
-            speed: getRandom(1, 3),
-            color: '#f00',
-        });
-    }
-
-    function spawnPowerUp() {
-        const powerUpType = 'shield';
-        powerUps.push({
-            x: getRandom(0, gameWidth),
-            y: 0,
-            width: 20,
-            height: 20,
-            type: powerUpType,
-            color: '#ff0',
-            speed: 1,
-        });
-    }
-
-    function drawPlayer() {
-        ctx.fillStyle = player.color;
-        ctx.fillRect(player.x - player.width / 2, player.y - player.height / 2, player.width, player.height);
-        if (player.shieldActive) {
-            ctx.strokeStyle = '#00f';
-            ctx.lineWidth = 5;
-            ctx.beginPath();
-            ctx.arc(player.x, player.y, player.width / 2 + 10, 0, 2 * Math.PI);
-            ctx.stroke();
+        function getRandomPosition() {
+            return {
+                x: Math.random() * (gameContainer.offsetWidth - 20),
+                y: Math.random() * (gameContainer.offsetHeight - 20)
+            };
         }
-    }
 
-
-    function drawBullets() {
-        bullets.forEach(bullet => {
-            ctx.fillStyle = '#ff0';
-            ctx.fillRect(bullet.x, bullet.y, 2, 8);
-        });
-    }
-
-    function drawAsteroids() {
-        asteroids.forEach(asteroid => {
-            ctx.fillStyle = asteroid.color;
-            ctx.fillRect(asteroid.x - asteroid.width / 2, asteroid.y - asteroid.height / 2, asteroid.width, asteroid.height);
-        });
-    }
-    function drawPowerUps() {
-      powerUps.forEach(powerUp => {
-          ctx.fillStyle = powerUp.color;
-          ctx.fillRect(powerUp.x - powerUp.width / 2, powerUp.y - powerUp.height / 2, powerUp.width, powerUp.height);
-      });
-  }
-
-    function updatePlayer() {
-        if (keys['ArrowLeft'] && player.x > player.width / 2) {
-            player.x -= player.speed;
+        function createPowerUp(type) {
+            const powerUp = document.createElement('div');
+            powerUp.classList.add('power-up', type);
+            const position = getRandomPosition();
+            powerUp.style.left = position.x + 'px';
+            powerUp.style.top = position.y + 'px';
+            powerUp.dataset.type = type;
+            gameContainer.appendChild(powerUp);
+            powerUps.push(powerUp);
         }
-        if (keys['ArrowRight'] && player.x < gameWidth - player.width / 2) {
-            player.x += player.speed;
-        }
-    }
 
-
-    function updateBullets() {
-        bullets.forEach((bullet, index) => {
-            bullet.y -= 10;
-            if (bullet.y < 0) {
-                bullets.splice(index, 1);
+        function spawnPowerUps() {
+            if (Math.random() < 0.02) {
+                createPowerUp('speed');
             }
-        });
-    }
-
-    function updateAsteroids() {
-        asteroids.forEach((asteroid, index) => {
-            asteroid.y += asteroid.speed;
-            if (asteroid.y > gameHeight) {
-                asteroids.splice(index, 1);
+            if (Math.random() < 0.02) {
+                createPowerUp('shield');
             }
-        });
-    }
-
-    function updatePowerUps() {
-      powerUps.forEach((powerUp, index) => {
-          powerUp.y += powerUp.speed;
-          if (powerUp.y > gameHeight) {
-              powerUps.splice(index, 1);
-          }
-      });
-  }
+        }
 
 
-    function checkBulletAsteroidCollisions() {
-        bullets.forEach((bullet, bulletIndex) => {
-            asteroids.forEach((asteroid, asteroidIndex) => {
-                if (bullet.x > asteroid.x - asteroid.width / 2 &&
-                    bullet.x < asteroid.x + asteroid.width / 2 &&
-                    bullet.y > asteroid.y - asteroid.height / 2 &&
-                    bullet.y < asteroid.y + asteroid.height / 2) {
-                    bullets.splice(bulletIndex, 1);
-                    asteroids.splice(asteroidIndex, 1);
+        function updateScore() {
+            scoreDisplay.textContent = 'Score: ' + score;
+        }
+
+        function checkCollision(powerUp) {
+            const playerRect = player.getBoundingClientRect();
+            const powerUpRect = powerUp.getBoundingClientRect();
+            return !(playerRect.right < powerUpRect.left ||
+                     playerRect.left > powerUpRect.right ||
+                     playerRect.bottom < powerUpRect.top ||
+                     playerRect.top > powerUpRect.bottom);
+        }
+
+        function handlePowerUp(powerUp) {
+            const type = powerUp.dataset.type;
+
+            if (type === 'speed') {
+                playerSpeedMultiplier = 2;
+                setTimeout(() => playerSpeedMultiplier = 1, 5000);
+            }
+            if (type === 'shield') {
+                shieldActive = true;
+                player.style.backgroundColor = '#2ecc71';
+                setTimeout(() => {
+                    shieldActive = false;
+                    player.style.backgroundColor = '#f39c12';
+                }, 5000);
+            }
+
+            powerUp.remove();
+            powerUps = powerUps.filter(p => p !== powerUp);
+        }
+
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            spawnPowerUps();
+
+            powerUps.forEach(powerUp => {
+                if (checkCollision(powerUp)) {
+                    handlePowerUp(powerUp);
                     score += 10;
                     updateScore();
                 }
             });
-        });
-    }
 
-    function checkPlayerAsteroidCollisions() {
-        asteroids.forEach((asteroid) => {
-            if (player.x > asteroid.x - asteroid.width / 2 &&
-                player.x < asteroid.x + asteroid.width / 2 &&
-                player.y > asteroid.y - asteroid.height / 2 &&
-                player.y < asteroid.y + asteroid.height / 2) {
-                if(player.shieldActive){
-                    asteroids.splice(asteroids.findIndex(a => a === asteroid), 1);
-                    player.shieldActive = false;
-                    setTimeout(() => {
-                        updatePowerUpIcons();
-                    }, 0);
-                    return;
-                }
-                gameOver();
+            playerBottom = Math.max(20, playerBottom - 0.5 * playerSpeedMultiplier);
+            player.style.bottom = playerBottom + 'px';
+
+            if (playerBottom <= 0) {
+                 if (!shieldActive) {
+                    gameOver();
+                 } else {
+                     playerBottom = 20;
+                     player.style.backgroundColor = '#f39c12';
+                     shieldActive = false;
+                 }
+            }
+
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            finalScoreDisplay.textContent = score;
+            gameOverScreen.style.display = 'block';
+        }
+
+        function resetGame() {
+            score = 0;
+            updateScore();
+            playerBottom = 20;
+            playerSpeedMultiplier = 1;
+            shieldActive = false;
+            player.style.backgroundColor = '#f39c12';
+            powerUps.forEach(powerUp => powerUp.remove());
+            powerUps = [];
+            gameOverScreen.style.display = 'none';
+            gameRunning = true;
+            gameLoop();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                player.style.transform = 'translateX(-' + 5 * playerSpeedMultiplier + 'px)';
+            } else if (e.key === 'ArrowRight') {
+                player.style.transform = 'translateX(' + 5 * playerSpeedMultiplier + 'px)';
             }
         });
-    }
 
-    function checkPlayerPowerUpCollisions() {
-      powerUps.forEach((powerUp, index) => {
-          if (player.x > powerUp.x - powerUp.width / 2 &&
-              player.x < powerUp.x + powerUp.width / 2 &&
-              player.y > powerUp.y - powerUp.height / 2 &&
-              player.y < powerUp.y + powerUp.height / 2) {
-              applyPowerUp(powerUp.type);
-              powerUps.splice(index, 1);
-          }
-      });
-  }
+        document.addEventListener('keyup', () => {
+            player.style.transform = 'translateX(-50%)';
+        });
 
-  function applyPowerUp(type) {
-        if (type === 'shield') {
-            player.shieldActive = true;
-            setTimeout(() => {
-                player.shieldActive = false;
-                updatePowerUpIcons();
-            }, powerUpDuration);
-        }
-        updatePowerUpIcons();
-    }
-
-
-    function updateScore() {
-        scoreDisplay.innerText = score;
-    }
-
-    function gameOver() {
-        clearInterval(gameLoop);
-        finalScoreDisplay.innerText = score;
-        gameOverScreen.style.display = 'flex';
-    }
-
-
-    function gameLoopFunction() {
-        ctx.clearRect(0, 0, gameWidth, gameHeight);
-
-        updatePlayer();
-        updateBullets();
-        updateAsteroids();
-        updatePowerUps();
-        checkBulletAsteroidCollisions();
-        checkPlayerAsteroidCollisions();
-        checkPlayerPowerUpCollisions();
-
-
-        drawPlayer();
-        drawBullets();
-        drawAsteroids();
-        drawPowerUps();
-    }
-
-    function spawnManagement() {
-      const now = Date.now();
-      if (now - lastAsteroidSpawn > asteroidSpawnInterval) {
-          spawnAsteroid();
-          lastAsteroidSpawn = now;
-      }
-      if (now - lastPowerUpSpawn > powerUpSpawnInterval) {
-          spawnPowerUp();
-          lastPowerUpSpawn = now;
-      }
-  }
-
-
-    function gameLoopWrapper() {
-      gameLoopFunction();
-      spawnManagement();
-    }
-
-    function startGame() {
-        score = 0;
-        updateScore();
-        player.x = gameWidth / 2;
-        player.y = gameHeight - 50;
-        bullets = [];
-        asteroids = [];
-        powerUps = [];
-        gameOverScreen.style.display = 'none';
-        gameLoop = setInterval(gameLoopWrapper, 20);
-    }
-
-    restartButton.addEventListener('click', startGame);
-
-    let keys = {};
-    document.addEventListener('keydown', (e) => {
-        keys[e.code] = true;
-        if (e.code === 'Space') {
-            bullets.push({ x: player.x, y: player.y - 10 });
-        }
-    });
-
-    document.addEventListener('keyup', (e) => {
-        keys[e.code] = false;
-    });
-
-    function updatePowerUpIcons() {
-        powerUpContainer.innerHTML = '';
-        if (player.shieldActive) {
-            const shieldIcon = document.createElement('div');
-            shieldIcon.classList.add('powerUpIcon');
-            shieldIcon.style.backgroundColor = 'rgba(0,0,255,0.7)';
-            shieldIcon.textContent = '🛡️';
-            powerUpContainer.appendChild(shieldIcon);
-        }
-    }
-
-    startGame();
-</script>
+        gameLoop();
+    </script>
 </body>
 </html>
