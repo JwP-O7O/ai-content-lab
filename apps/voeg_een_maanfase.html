@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maanfase Info</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #1e1e2e;
+            color: #cdd6f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+
+        .container {
+            position: relative;
+            text-align: center;
+        }
+
+        #moon {
+            width: 150px;
+            height: 150px;
+            background-color: #313244;
+            border-radius: 50%;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        #moon:hover {
+            transform: scale(1.1);
+        }
+
+        .tooltip {
+            position: absolute;
+            background-color: #45475a;
+            color: #cdd6f4;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            z-index: 1;
+            display: none;
+            width: 200px;
+            text-align: left;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .tooltip::before {
+            content: "";
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #45475a transparent transparent transparent;
+        }
+
+        #moon:hover .tooltip {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            #moon {
+                width: 100px;
+                height: 100px;
+            }
+            .tooltip {
+                width: 150px;
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="moon">
+            <div class="tooltip">
+                <div id="moonPhase"></div>
+                <div id="moonPhaseDescription"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function getMoonPhase() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
+
+            const lunarPhase = (day + 0.5 + (month < 3 ? 0 : month === 3 ? 0.9 : 0.9 + (month - 3) * 0.984) + 2 * (year % 100) + Math.floor((year % 100) / 4) + Math.floor(year / 400) - Math.floor(year / 100) - 2) % 29.530588853;
+
+
+            let phaseName = "";
+            let description = "";
+
+            if (lunarPhase < 1.84566) {
+                phaseName = "Nieuwe Maan";
+                description = "De maan is onzichtbaar, de zon verlicht de kant die wij niet zien.";
+            } else if (lunarPhase < 5.53699) {
+                phaseName = "Wassende Halve Maan";
+                description = "Een smalle sikkel van de maan wordt zichtbaar.";
+            } else if (lunarPhase < 9.22831) {
+                phaseName = "Eerste Kwartier";
+                description = "De helft van de maan is zichtbaar (een kwart).";
+            } else if (lunarPhase < 12.91963) {
+                phaseName = "Wassende Maan";
+                description = "De maan wordt voller, meer dan de helft is zichtbaar.";
+            } else if (lunarPhase < 16.61095) {
+                phaseName = "Volle Maan";
+                description = "De hele maan is zichtbaar, de zon verlicht de hele kant die wij zien.";
+            } else if (lunarPhase < 20.273) {
+                phaseName = "Afnemende Maan";
+                description = "De maan neemt af in grootte, meer dan de helft is zichtbaar.";
+            } else if (lunarPhase < 23.96168) {
+                phaseName = "Laatste Kwartier";
+                description = "De helft van de maan is zichtbaar (een kwart), aan de andere kant.";
+            } else if (lunarPhase < 27.65301) {
+                phaseName = "Afnemende Halve Maan";
+                description = "Een smalle sikkel van de maan wordt kleiner.";
+            } else {
+                phaseName = "Nieuwe Maan";
+                description = "De maan is onzichtbaar, de zon verlicht de kant die wij niet zien.";
+            }
+
+
+            document.getElementById('moonPhase').textContent = "Huidige Maanfase: " + phaseName;
+            document.getElementById('moonPhaseDescription').textContent = description;
+        }
+
+        getMoonPhase();
+    </script>
+</body>
+</html>
