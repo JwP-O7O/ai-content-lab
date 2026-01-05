@@ -36,7 +36,6 @@ def get_file_tail(filepath, lines=80):
     except: return []
 
 def get_smooth_color(frame, speed=0.05, offset=0):
-    """Vloeiende RGB golf"""
     t = frame * speed + offset
     r = int(math.sin(t) * 127 + 128)
     g = int(math.sin(t + 2.0) * 127 + 128)
@@ -44,25 +43,12 @@ def get_smooth_color(frame, speed=0.05, offset=0):
     return f"#{r:02x}{g:02x}{b:02x}"
 
 def get_scanner_line(frame, width=30, color="#ffffff"):
-    """
-    Kleine, felle stip met 'glow' trail
-    """
-    # Positie berekenen
     pos = int((math.sin(frame * 0.2) + 1) / 2 * (width - 1))
-    
-    # Donkere rail als achtergrond
     chars = [f"[dim grey15]─[/]"] * width
     
-    # 1. De Felle Kop (Puntje)
-    if 0 <= pos < width: 
-        chars[pos] = f"[bold white]●[/]"
-    
-    # 2. De Glow (Korte trail links en rechts)
-    # Direct naast de kop (Fel gekleurd)
+    if 0 <= pos < width: chars[pos] = f"[bold white]●[/]"
     if 0 <= pos-1 < width: chars[pos-1] = f"[bold {color}]•[/]"
     if 0 <= pos+1 < width: chars[pos+1] = f"[bold {color}]•[/]"
-    
-    # Iets verder weg (Dim gekleurd)
     if 0 <= pos-2 < width: chars[pos-2] = f"[dim {color}]·[/]"
     if 0 <= pos+2 < width: chars[pos+2] = f"[dim {color}]·[/]"
     
@@ -72,7 +58,6 @@ def parse_log_line(line):
     line = line.strip()
     if not line: return None
     
-    # FILTER RUIS
     skip = ["Cycle #", "Ruststand", "---", "WAIT", "IDLE", "HERSTART", "Nieuwe functionaliteit", "Geen nieuwe orders"]
     if any(s in line for s in skip): return None
 
@@ -85,13 +70,13 @@ def parse_log_line(line):
     if "ERROR" in line: cfg = {"c": "bold red", "i": "☠️", "tag": "FAIL"}
     if "SUCCESS" in line: cfg = {"c": "bold green", "i": "✔", "tag": "OK"}
     if "ImportError" in line: cfg = {"c": "bold red", "i": "🚑", "tag": "FIX"}
+    if "FAIL" in line: cfg = {"c": "bold red", "i": "☠️", "tag": "FAIL"}
 
     parts = line.split(' - ')
     msg = parts[-1].strip() if len(parts) > 1 else line
     msg = re.sub(r'\[.*?\]', '', msg).strip()
     
-    # --- UPDATE: LANGERE TEKST VOOR WIDESCREEN ---
-    # Hier zat de limiet op 40, nu op 85 voor je S21 Ultra
+    # Widescreen lengte
     if len(msg) > 85: msg = msg[:82] + "..."
 
     return (cfg['i'], cfg['tag'], msg, cfg['c'])
@@ -109,7 +94,6 @@ def get_active_agent_info():
 def generate_layout(frame):
     layout = Layout()
     
-    # Header en Stats in 1 smalle balk, rest is feed
     layout.split_column(
         Layout(name="top_bar", size=3),
         Layout(name="feed", ratio=1)
@@ -127,7 +111,7 @@ def generate_layout(frame):
     header_grid.add_column(justify="right", ratio=1)
     
     header_grid.add_row(
-        f"[bold {main_color}]PHOENIX V10[/]",
+        f"[bold {main_color}]PHOENIX V11[/]",
         scanner,
         f"ACT: [bold white]{active_agent}[/]"
     )
@@ -143,14 +127,13 @@ def generate_layout(frame):
     log_table = Table(
         show_header=False,
         box=None,
-        expand=True, # Dit dwingt de tabel naar de randen
+        expand=True,
         padding=(0, 1)
     )
     
-    # Kolom definities
     log_table.add_column("Icon", width=2, justify="center")
     log_table.add_column("Tag", width=6, justify="left")
-    log_table.add_column("Message", ratio=1) # Neemt ALLE overgebleven ruimte in
+    log_table.add_column("Message", ratio=1)
 
     raw_logs = get_file_tail("logs/autonomous_agents/agent.log", lines=40)
     display_logs = []
@@ -180,8 +163,9 @@ def generate_layout(frame):
 if __name__ == "__main__":
     console.clear()
     frame = 0
-    with Live(generate_layout(0), refresh_per_second=12) as live:
+    # FIX: screen=True voorkomt knipperen, refresh op 4 is rustiger
+    with Live(generate_layout(0), refresh_per_second=4, screen=True) as live:
         while True:
             live.update(generate_layout(frame))
             frame += 1
-            time.sleep(0.05)
+            time.sleep(0.25)

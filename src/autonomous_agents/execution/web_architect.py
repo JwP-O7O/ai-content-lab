@@ -12,42 +12,47 @@ class WebArchitect:
 
     async def build_website(self, instruction):
         logger.info(f"[{self.name}] 🏗️ Analyseren van instructie: {instruction[:50]}...")
-        
-        # Probeer te achterhalen of we een bestaand bestand moeten updaten
-        target_file = None
+
         existing_code = ""
-        
-        # Simpele check: staat er een bestandsnaam in de instructie?
+        target_file = None
         files = [f for f in os.listdir(self.output_dir) if f.endswith('.html')]
+
+        # Eerst kijken of er een relevante bestandsnaam is in de instructie
         for f in files:
             if f in instruction:
                 target_file = f
-                with open(os.path.join(self.output_dir, f), 'r') as read_f:
-                    existing_code = read_f.read()
-                logger.info(f"[{self.name}] ♻️ Update bestaande app: {target_file}")
-                break
+                filepath = os.path.join(self.output_dir, f)  # Bepaal het filepath direct hier
+                try:
+                    with open(filepath, 'r') as read_f:
+                        existing_code = read_f.read()
+                    logger.info(f"[{self.name}] ♻️ Update bestaande app: {target_file}")
+                    break  # Stop zodra er een match is gevonden
+                except FileNotFoundError:
+                    logger.error(f"[{self.name}] ⚠️ Bestand niet gevonden: {f}")
+                    target_file = None  # Reset target_file als het bestand niet kan worden gelezen
+                    existing_code = ""
 
         # Prompt bouwen
         prompt = f"""
         Je bent een Expert Web Developer (HTML5/JS/CSS).
         TAAK: {instruction}
-        
+
         BESTAANDE CODE (Indien van toepassing, anders leeg):
-        {existing_code[:15000]} 
-        
+        {existing_code[:15000]}
+
         REGELS:
         1. Geef ALLEEN de volledige HTML code terug. Geen markdown, geen uitleg.
-        2. Als er bestaande code is: INTEGREER de nieuwe feature. Verwijder de oude werkende code niet zomaar.
+        2. Als er bestaande code is: INTEGREER de nieuwe feature in de bestaande code. Verwijder de oude werkende code niet zomaar.
         3. Zorg dat CSS en JS in één bestand zitten (<style> en <script>).
         4. Zorg voor een moderne, mooie UI.
         """
-        
+
         response = await self.ai.generate_text(prompt)
-        
+
         if not response: return {"status": "failed"}
 
         # Schoonmaak
-        clean_html = response.replace("```html", "").replace("```", "").strip()
+        clean_html = response.replace("", "").replace("", "").strip()
         if "<!DOCTYPE html>" not in clean_html:
             clean_html = "<!DOCTYPE html>\n" + clean_html
 
@@ -64,9 +69,12 @@ class WebArchitect:
             filename = target_file
 
         filepath = os.path.join(self.output_dir, filename)
-        
-        with open(filepath, 'w') as f:
-            f.write(clean_html)
-            
-        logger.success(f"[{self.name}] 🚀 App gebouwd/geüpdatet: {filename}")
-        return {"status": "built", "filename": filename, "file": filepath}
+
+        try:
+            with open(filepath, 'w') as f:
+                f.write(clean_html)
+            logger.success(f"[{self.name}] 🚀 App gebouwd/geüpdatet: {filename}")
+            return {"status": "built", "filename": filename, "file": filepath}
+        except Exception as e:
+            logger.error(f"[{self.name}] ⚠️ Fout bij het schrijven van bestand {filename}: {e}")
+            return {"status": "failed", "error": str(e)}
