@@ -91,6 +91,25 @@
                 transform: translate(random( -100px, 100px), 200px) rotate(360deg);
             }
         }
+
+        .shield {
+            position: fixed;
+            border-radius: 50%;
+            border: 5px solid #007bff;
+            opacity: 0.7;
+            animation: shield-animation 1s ease-out forwards;
+        }
+
+        @keyframes shield-animation {
+            from {
+                opacity: 0.7;
+                transform: scale(0);
+            }
+            to {
+                opacity: 0;
+                transform: scale(2);
+            }
+        }
     </style>
 </head>
 <body>
@@ -98,6 +117,7 @@
         <h1>Power-up Visual Effects</h1>
         <button class="power-up-button" onclick="activatePowerUp('sparkle')">Sparkle</button>
         <button class="power-up-button" onclick="activatePowerUp('confetti')">Confetti</button>
+        <button class="power-up-button" onclick="activatePowerUp('shield')">Shield</button>
     </div>
 
     <script>
@@ -130,6 +150,19 @@
             }, 2000);
         }
 
+        function createShield(x, y) {
+            const shield = document.createElement('div');
+            shield.classList.add('visual-effect', 'shield');
+            shield.style.left = x + 'px';
+            shield.style.top = y + 'px';
+            shield.style.width = '50px';
+            shield.style.height = '50px';
+            document.body.appendChild(shield);
+            setTimeout(() => {
+                shield.remove();
+            }, 1000);
+        }
+
         function activatePowerUp(type) {
             const button = document.querySelector('.power-up-button');
             const buttonRect = button.getBoundingClientRect();
@@ -148,6 +181,8 @@
                         createConfetti(centerX + getRandomInt(-50, 50), centerY + getRandomInt(-50, 50));
                     }, i * 100);
                 }
+            } else if (type === 'shield') {
+                createShield(centerX - 25, centerY -25);
             }
         }
     </script>
