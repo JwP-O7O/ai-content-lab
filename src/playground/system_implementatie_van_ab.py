@@ -60,7 +60,9 @@ class ABTestingAgent:
         try:
             if success:
                 self.results[variation] += 1
-            logging.info(f"Recorded result for variation '{variation}': success={success}")
+            conversion_rates = self.get_conversion_rates()
+            logging.info(f"Recorded result for variation '{variation}': success={success}, tests={self.test_counts[variation]}, successes={self.results[variation]}, conversion_rate={conversion_rates.get(variation, 0.0)}%")
+
         except Exception as e:
             logging.error(f"Error recording result for variation '{variation}': {e}")
 
@@ -77,23 +79,20 @@ class ABTestingAgent:
 
     def get_conversion_rates(self):
         """
-        Calculates the conversion rates for each variation.
+        Calculates and returns the conversion rates for each variation.
 
         Returns:
             dict: A dictionary where keys are variation names and values are the conversion rates (as percentages).
         """
         conversion_rates = {}
-        try:
-            for variation in self.variations:
-                if self.test_counts[variation] > 0:  # Use test_counts for precise calculation
-                    conversion_rates[variation] = (self.results.get(variation, 0) / self.test_counts[variation]) * 100
-                else:
-                    conversion_rates[variation] = 0
-            logging.info(f"Returning conversion rates: {conversion_rates}")
-            return conversion_rates
-        except Exception as e:
-            logging.error(f"Error calculating conversion rates: {e}")
-            return {}
+        for variation in self.variations:
+            if self.test_counts[variation] > 0:
+                conversion_rate = (self.results[variation] / self.test_counts[variation]) * 100
+                conversion_rates[variation] = round(conversion_rate, 2)  # Round to 2 decimal places
+            else:
+                conversion_rates[variation] = 0.0  # Or handle as you see fit (e.g., None, NaN)
+        logging.info(f"Conversion rates: {conversion_rates}")
+        return conversion_rates
 
 
     def get_test_count(self):
