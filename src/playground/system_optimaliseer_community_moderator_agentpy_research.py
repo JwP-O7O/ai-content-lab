@@ -1,26 +1,14 @@
-import logging
-
-class BaseAgent:  # Vereist voor Optie 1 en 2. Definieer de base agent.
-    pass
-
-logger = logging.getLogger(__name__)
-
-class CommunityModeratorAgent:
-    async def initialize(self):
-        """Voer initiele setup uit.  Dit kan config ophalen, connecties initialiseren, etc."""
-        logger.info("Initialising CommunityModeratorAgent")
-        # TODO: Haal configuratie op, initialiseer connecties, etc.
-        pass
-
-
+class BaseAgent:
     async def execute(self):
-        """Hoofdfunctie voor community moderatie.
+        return {}
 
-        TODO:
-        1.  Ontvang berichten uit de community.
-        2.  Analyseer berichten voor schendingen van de regels.
-        3.  Neem actie (verwijderen, waarschuwen, etc.)
+
+class CommunityModeratorAgent(BaseAgent):
+    async def execute(self):
         """
-        logger.info("Executing CommunityModeratorAgent")
-        # TODO: Implementeer de kernmoderatie-logica hier.
+        Voert de community moderatie taken uit.  Deze methode moet worden uitgebreid
+        met logica om berichten, gebruikers en andere community-gerelateerde taken te modereren.
+        """
+        # Placeholder: vervang dit met echte moderatie logica.
+        print("Community Moderation Agent: Processing...")
         return {}
