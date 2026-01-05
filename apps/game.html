@@ -2,22 +2,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Game Loop Example</title>
+<title>Simple Game</title>
 <style>
 body {
-    font-family: sans-serif;
+    font-family: Arial, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    background-color: #f0f0f0;
+    height: 100vh;
     margin: 0;
+    background-color: #f0f0f0;
 }
 
 #game-container {
-    background-color: white;
+    background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
 }
@@ -32,67 +32,139 @@ body {
     margin-bottom: 10px;
 }
 
-#start-button, #stop-button {
-    background-color: #4CAF50; /* Green */
-    border: none;
-    color: white;
-    padding: 10px 20px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 4px 2px;
-    cursor: pointer;
-    border-radius: 4px;
+#controls {
+    display: flex;
+    justify-content: center;
 }
 
-#stop-button {
-    background-color: #f44336; /* Red */
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 0 5px;
+}
+
+button:hover {
+    background-color: #3e8e41;
+}
+
+#game-over-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#game-over-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
 }
 </style>
 </head>
 <body>
 
 <div id="game-container">
-    <h1>Game Loop Example</h1>
+    <h1>Simple Game</h1>
+    <div id="score-display">Score: <span id="score">0</span></div>
     <canvas id="game-canvas" width="400" height="300"></canvas>
-    <div id="score-display">Score: 0</div>
-    <button id="start-button">Start</button>
-    <button id="stop-button">Stop</button>
+    <div id="controls">
+        <button id="start-button">Start</button>
+        <button id="reset-button">Reset</button>
+    </div>
+</div>
+
+<div id="game-over-screen">
+    <div id="game-over-content">
+        <h2>Game Over</h2>
+        <p>Your Score: <span id="final-score">0</span></p>
+        <button id="restart-button">Restart</button>
+    </div>
 </div>
 
 <script>
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
-const scoreDisplay = document.getElementById('score-display');
+const scoreDisplay = document.getElementById('score');
 const startButton = document.getElementById('start-button');
-const stopButton = document.getElementById('stop-button');
+const resetButton = document.getElementById('reset-button');
+const gameOverScreen = document.getElementById('game-over-screen');
+const finalScoreDisplay = document.getElementById('final-score');
+const restartButton = document.getElementById('restart-button');
 
 let score = 0;
-let animationFrameId;
 let gameRunning = false;
+let gameInterval;
+let playerX = 50;
+let playerY = canvas.height - 20;
+let playerWidth = 20;
+let playerHeight = 20;
+let obstacleX;
+let obstacleY;
+let obstacleWidth = 20;
+let obstacleHeight = 20;
+let obstacleSpeed = 2;
 
-// Game object (example: a simple rectangle)
-const gameObject = {
-    x: 50,
-    y: 50,
-    width: 20,
-    height: 20,
-    color: 'blue',
-    speed: 2
-};
 
-function drawGameObject() {
-    ctx.fillStyle = gameObject.color;
-    ctx.fillRect(gameObject.x, gameObject.y, gameObject.width, gameObject.height);
+function resetGame() {
+    score = 0;
+    scoreDisplay.textContent = score;
+    playerX = 50;
+    playerY = canvas.height - 20;
+    obstacleX = canvas.width;
+    obstacleY = canvas.height - 20;
+    obstacleSpeed = 2;
+    gameOverScreen.style.display = 'none';
 }
 
-function updateGameObject() {
-    gameObject.x += gameObject.speed;
-    if (gameObject.x > canvas.width) {
-        gameObject.x = 0;
-        score++;
-        scoreDisplay.textContent = 'Score: ' + score;
+
+function startGame() {
+    resetGame();
+    gameRunning = true;
+    startButton.disabled = true; // Disable start button
+    resetButton.disabled = false; // Enable reset button
+    gameInterval = setInterval(gameLoop, 20);
+}
+
+
+function endGame() {
+    gameRunning = false;
+    clearInterval(gameInterval);
+    finalScoreDisplay.textContent = score;
+    gameOverScreen.style.display = 'flex';
+    startButton.disabled = false; // Enable start button
+    resetButton.disabled = true; // Disable reset button
+}
+
+
+function drawPlayer() {
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
+}
+
+
+function drawObstacle() {
+    ctx.fillStyle = 'red';
+    ctx.fillRect(obstacleX, obstacleY, obstacleWidth, obstacleHeight);
+}
+
+
+function checkCollision() {
+    if (playerX < obstacleX + obstacleWidth &&
+        playerX + playerWidth > obstacleX &&
+        playerY < obstacleY + obstacleHeight &&
+        playerY + playerHeight > obstacleY) {
+            endGame();
     }
 }
 
@@ -100,34 +172,53 @@ function updateGameObject() {
 function gameLoop() {
     if (!gameRunning) return;
 
-    // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Update game elements
-    updateGameObject();
+    // Update obstacle position
+    obstacleX -= obstacleSpeed;
+    if (obstacleX < -obstacleWidth) {
+        obstacleX = canvas.width; // Reset obstacle
+        score++;
+        scoreDisplay.textContent = score;
+        obstacleSpeed += 0.1; // Increase difficulty
+    }
+    
+    drawPlayer();
+    drawObstacle();
+    checkCollision();
 
-    // Draw game elements
-    drawGameObject();
-
-    // Request the next frame
-    animationFrameId = requestAnimationFrame(gameLoop);
+    // Player movement
+    if (playerX + playerWidth < canvas.width && playerX >= 0) {
+        if (keys['ArrowRight']) playerX += 2;
+        if (keys['ArrowLeft']) playerX -= 2;
+    } else if (playerX + playerWidth >= canvas.width) {
+        playerX = canvas.width - playerWidth;
+    } else if (playerX < 0) {
+        playerX = 0;
+    }
 }
 
-startButton.addEventListener('click', () => {
-    if (!gameRunning) {
-        gameRunning = true;
-        score = 0;
-        scoreDisplay.textContent = 'Score: 0';
-        gameLoop();
-    }
+
+// Event listeners
+startButton.addEventListener('click', startGame);
+resetButton.addEventListener('click', () => {
+    endGame(); // Stop the game and show the game over screen
+    resetGame();  //Reset the game
+    startButton.disabled = false;
+    resetButton.disabled = true;
+
+});
+restartButton.addEventListener('click', startGame);
+
+let keys = {};
+document.addEventListener('keydown', (e) => {
+    keys[e.key] = true;
 });
 
-stopButton.addEventListener('click', () => {
-    gameRunning = false;
-    cancelAnimationFrame(animationFrameId);
+document.addEventListener('keyup', (e) => {
+    keys[e.key] = false;
 });
 </script>
-
 </body>
 </html>
 ```
