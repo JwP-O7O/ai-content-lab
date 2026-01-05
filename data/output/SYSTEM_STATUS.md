@@ -2,6 +2,6 @@
 | Metric | Waarde |
 |---|---|
 | **Model** | `Gemini 2.0` |
-| **Cycles** | 6 |
+| **Cycles** | 7 |
 | **Status** | 🟢 ONLINE |
-| **Actie** | 🌐 Web App: confetti_kleur_variatie.html |
+| **Actie** | Monitoring... |
