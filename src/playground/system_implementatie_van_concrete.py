@@ -4,6 +4,7 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 import logging
 from tenacity import retry, stop_after_attempt, wait_exponential
+import uuid
 
 class LLMClient:
     _instance = None
@@ -15,7 +16,7 @@ class LLMClient:
         self.logger = logging.getLogger(__name__ + ".LLMClient")
         self.logger.setLevel(logging.INFO)
         handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] - %(message)s')
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
 
@@ -25,15 +26,15 @@ class LLMClient:
         return cls._instance
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
-    async def generate_text(self, prompt: str) -> str:
+    async def generate_text(self, prompt: str, request_id: str) -> str:
         """Simuleer een LLM-aanroep."""
-        self.logger.info(f"Simulating LLM call with prompt: {prompt}")
+        self.logger.info(f"Simulating LLM call with prompt: {prompt}", extra={'request_id': request_id})
         await asyncio.sleep(random.uniform(0.1, 1.0))  # Simuleer netwerklatentie
         if random.random() < 0.1:  # 10% kans op een fout
-            self.logger.error("Simulated LLM error")
+            self.logger.error("Simulated LLM error", extra={'request_id': request_id})
             raise Exception("Simulated LLM error")
         response = f"Simulated LLM response for: {prompt}"
-        self.logger.info(f"Simulated LLM response: {response}")
+        self.logger.info(f"Simulated LLM response: {response}", extra={'request_id': request_id})
         return response
 
 class ConversionAgent:
@@ -42,7 +43,7 @@ class ConversionAgent:
         self.logger = logging.getLogger(__name__ + ".ConversionAgent")
         self.logger.setLevel(logging.INFO)
         handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] - %(message)s')
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
         self.ab_test_config = ab_test_config
@@ -58,25 +59,26 @@ class ConversionAgent:
                 return None
         return None
 
-    async def _execute_conversion(self, input_data: str) -> str:
+    async def _execute_conversion(self, input_data: str, request_id: str) -> str:
         try:
             prompt = f"Convert this: '{input_data}'"
             if self.variant:
                 prompt += f" using variant: {self.variant}"
-            response = await self.llm_client.generate_text(prompt)
+            response = await self.llm_client.generate_text(prompt, request_id)
             return response
         except Exception as e:
-            self.logger.error(f"Error during conversion: {e}")
-            raise
+            self.logger.error(f"Error during conversion: {e}", extra={'request_id': request_id})
+            return "Error during conversion"
 
     async def execute(self, input_data: str) -> Dict[str, Any]:
         """
         Voert conversies uit met behulp van de LLM. Implementeert AB-testen indien geconfigureerd.
         """
+        request_id = str(uuid.uuid4())
         try:
             start_time = datetime.now()
-            self.logger.info(f"Starting conversion with input: {input_data}, variant: {self.variant if self.variant else 'base'}")
-            converted_data = await self._execute_conversion(input_data)
+            self.logger.info(f"Starting conversion with input: {input_data}, variant: {self.variant if self.variant else 'base'}", extra={'request_id': request_id})
+            converted_data = await self._execute_conversion(input_data, request_id)
             end_time = datetime.now()
             duration = end_time - start_time
             result = {
@@ -85,10 +87,10 @@ class ConversionAgent:
                 "variant": self.variant,
                 "timestamp": datetime.now().isoformat()
             }
-            self.logger.info(f"Conversion complete, result: {result}")
+            self.logger.info(f"Conversion complete, result: {result}", extra={'request_id': request_id})
             return result
         except Exception as e:
-            self.logger.error(f"Failed to execute conversion: {e}")
+            self.logger.error(f"Failed to execute conversion: {e}", extra={'request_id': request_id})
             return {"error": str(e), "timestamp": datetime.now().isoformat()}
 
 
