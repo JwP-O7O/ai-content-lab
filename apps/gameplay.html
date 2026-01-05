@@ -6,18 +6,18 @@
 <style>
 body {
     font-family: sans-serif;
+    background-color: #f0f0f0;
+    margin: 0;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    margin: 0;
-    background-color: #f0f0f0;
+    min-height: 100vh;
 }
 
 #game-container {
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
 }
@@ -27,9 +27,15 @@ body {
     margin-bottom: 10px;
 }
 
-#score {
+#score-display {
     font-size: 1.2em;
     margin-bottom: 10px;
+}
+
+#instructions {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 20px;
 }
 
 button {
@@ -37,7 +43,7 @@ button {
     color: white;
     padding: 10px 20px;
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
     font-size: 1em;
 }
@@ -45,133 +51,153 @@ button {
 button:hover {
     background-color: #3e8e41;
 }
+
+#game-over {
+    display: none;
+    font-size: 1.5em;
+    color: red;
+    margin-top: 20px;
+}
 </style>
 </head>
 <body>
 
 <div id="game-container">
-    <canvas id="game-canvas" width="400" height="300"></canvas>
-    <div id="score">Score: 0</div>
-    <button id="start-button">Start Game</button>
+    <h1>Simple Game</h1>
+    <p id="instructions">Use arrow keys to move the square. Avoid the obstacles!</p>
+    <canvas id="game-canvas" width="400" height="400"></canvas>
+    <div id="score-display">Score: <span id="score">0</span></div>
+    <button id="restart-button" style="display:none;">Restart</button>
+    <div id="game-over">Game Over!</div>
 </div>
 
 <script>
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 const scoreDisplay = document.getElementById('score');
-const startButton = document.getElementById('start-button');
+const gameOverDisplay = document.getElementById('game-over');
+const restartButton = document.getElementById('restart-button');
+const instructions = document.getElementById('instructions');
 
+// Player properties
+let playerX = 200;
+let playerY = 350;
+const playerSize = 20;
+const playerSpeed = 5;
+
+// Obstacle properties
+const obstacleWidth = 20;
+const obstacleHeight = 20;
+let obstacles = [];
+let obstacleSpeed = 2; // Initial obstacle speed
 let score = 0;
 let gameRunning = false;
-let playerX = canvas.width / 2;
-let playerY = canvas.height - 30;
-let playerWidth = 20;
-let playerHeight = 20;
-let enemyX = Math.random() * (canvas.width - 20);
-let enemyY = 0;
-let enemyWidth = 20;
-let enemyHeight = 20;
-let enemySpeed = 2;
 
-
-function drawPlayer() {
-    ctx.fillStyle = 'blue';
-    ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
-}
-
-function drawEnemy() {
-    ctx.fillStyle = 'red';
-    ctx.fillRect(enemyX, enemyY, enemyWidth, enemyHeight);
-}
-
-function updateGame() {
-    if (!gameRunning) return;
-
-    enemyY += enemySpeed;
-
-    if (enemyY > canvas.height) {
-        enemyY = 0;
-        enemyX = Math.random() * (canvas.width - 20);
-        score++;
-        scoreDisplay.textContent = 'Score: ' + score;
-
-        enemySpeed += 0.1; // Increase difficulty
-    }
-
-    if (
-        playerX < enemyX + enemyWidth &&
-        playerX + playerWidth > enemyX &&
-        playerY < enemyY + enemyHeight &&
-        playerY + playerHeight > enemyY
-    ) {
-        gameOver();
-        return;
-    }
-
-
-    clearCanvas();
-    drawPlayer();
-    drawEnemy();
+// Function to generate obstacles
+function generateObstacle() {
+    const obstacleX = Math.random() * (canvas.width - obstacleWidth);
+    obstacles.push({ x: obstacleX, y: -obstacleHeight, width: obstacleWidth, height: obstacleHeight });
 }
 
 
-function clearCanvas() {
+// Game Loop function
+function gameLoop() {
+    if (!gameRunning) return; // Stop the loop if the game is not running
+
+    // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Obstacle movement and collision detection
+    for (let i = 0; i < obstacles.length; i++) {
+        obstacles[i].y += obstacleSpeed;
+
+        // Draw obstacles
+        ctx.fillStyle = 'red';
+        ctx.fillRect(obstacles[i].x, obstacles[i].y, obstacles[i].width, obstacles[i].height);
+
+
+        // Collision detection
+        if (playerX < obstacles[i].x + obstacles[i].width &&
+            playerX + playerSize > obstacles[i].x &&
+            playerY < obstacles[i].y + obstacles[i].height &&
+            playerY + playerSize > obstacles[i].y) {
+            gameOver();
+            return;
+        }
+
+        // Remove obstacles that have gone off-screen
+        if (obstacles[i].y > canvas.height) {
+            obstacles.splice(i, 1);
+            i--; // Adjust index after removing an element
+            score++;
+            scoreDisplay.textContent = score;
+        }
+    }
+
+
+    // Draw player
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(playerX, playerY, playerSize, playerSize);
+
+    // Generate new obstacles with some probability
+    if (Math.random() < 0.02) {  //Adjust this value for frequency
+        generateObstacle();
+    }
+
+
+
+    requestAnimationFrame(gameLoop); // Request the next frame
+}
+
+
+
+// Keydown event listener for player movement
+document.addEventListener('keydown', (e) => {
+    if (!gameRunning) return;
+    switch (e.key) {
+        case 'ArrowLeft':
+            playerX = Math.max(0, playerX - playerSpeed);
+            break;
+        case 'ArrowRight':
+            playerX = Math.min(canvas.width - playerSize, playerX + playerSpeed);
+            break;
+        case 'ArrowUp':
+            // No vertical movement
+            break;
+        case 'ArrowDown':
+            // No vertical movement
+            break;
+    }
+});
+
+
+
+function startGame() {
+    score = 0;
+    scoreDisplay.textContent = score;
+    playerX = 200;
+    playerY = 350;
+    obstacles = [];
+    obstacleSpeed = 2;
+    gameRunning = true;
+    gameOverDisplay.style.display = 'none';
+    restartButton.style.display = 'none'; // Hide the restart button at the start
+    instructions.style.display = 'none'; // Hide the instructions
+    gameLoop();
 }
 
 function gameOver() {
     gameRunning = false;
-    alert('Game Over! Score: ' + score);
-    score = 0;
-    scoreDisplay.textContent = 'Score: ' + score;
-    enemySpeed = 2;
-    startButton.textContent = "Start Game";
-    clearCanvas();
-
-}
-
-function gameLoop() {
-    updateGame();
-    if (gameRunning) {
-        requestAnimationFrame(gameLoop);
-    }
+    gameOverDisplay.style.display = 'block';
+    restartButton.style.display = 'block';
 }
 
 
-startButton.addEventListener('click', () => {
-    if (!gameRunning) {
-        gameRunning = true;
-        startButton.textContent = "Stop Game";
-        playerX = canvas.width / 2; // Reset player position
-        playerY = canvas.height - 30;
-        enemyX = Math.random() * (canvas.width - 20);
-        enemyY = 0;
-        score = 0;
-        scoreDisplay.textContent = 'Score: ' + score;
-        enemySpeed = 2;
-        gameLoop();
-    } else {
-        gameRunning = false;
-        startButton.textContent = "Start Game";
-    }
 
-});
+// Start the game when the page loads
+startGame();
 
-document.addEventListener('keydown', (e) => {
-    if (!gameRunning) return;
-    if (e.key === 'ArrowLeft') {
-        playerX -= 10;
-        if (playerX < 0) {
-            playerX = 0;
-        }
-    }
-    if (e.key === 'ArrowRight') {
-        playerX += 10;
-        if (playerX + playerWidth > canvas.width) {
-            playerX = canvas.width - playerWidth;
-        }
-    }
-});
+restartButton.addEventListener('click', startGame);
 
 </script>
 </body>
