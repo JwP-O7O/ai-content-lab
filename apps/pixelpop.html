@@ -7,233 +7,267 @@
 body {
     font-family: sans-serif;
     display: flex;
-    flex-direction: column;
-    align-items: center;
     justify-content: center;
-    min-height: 100vh;
+    align-items: center;
+    height: 100vh;
     margin: 0;
     background-color: #f0f0f0;
 }
 
 #game-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
     padding: 20px;
-    margin-bottom: 20px;
+    text-align: center;
 }
 
 #grid-container {
     display: grid;
-    grid-template-columns: repeat(10, 30px); /* Adjust for desired grid size */
-    grid-gap: 2px;
-    margin-bottom: 10px;
+    grid-template-columns: repeat(8, 50px);
+    grid-template-rows: repeat(8, 50px);
+    gap: 5px;
+    margin-top: 20px;
 }
 
 .pixel {
-    width: 30px;
-    height: 30px;
-    border: 1px solid #ddd;
-    box-sizing: border-box;
+    width: 50px;
+    height: 50px;
+    border-radius: 5px;
     cursor: pointer;
+    transition: transform 0.1s ease;
 }
 
-#score-board {
-    margin-bottom: 10px;
+.pixel:hover {
+    transform: scale(1.05);
+}
+
+#score-display {
+    margin-top: 10px;
     font-size: 1.2em;
 }
 
-.controls {
-    display: flex;
-    gap: 10px;
+#timer-display {
+    margin-top: 10px;
+    font-size: 1.2em;
 }
 
-button {
-    padding: 10px 15px;
+#game-over-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#game-over-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+#game-over-score {
+    font-size: 1.5em;
+    margin-bottom: 10px;
+}
+
+#restart-button {
+    padding: 10px 20px;
     font-size: 1em;
-    cursor: pointer;
-    border: none;
-    border-radius: 4px;
     background-color: #4CAF50;
     color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
 }
 
-button:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
+#restart-button:hover {
+    background-color: #3e8e41;
 }
+
 </style>
 </head>
 <body>
 
-    <div id="game-container">
-        <h1>Pixel Puzzle Pop</h1>
-        <div id="score-board">Score: <span id="score">0</span></div>
-        <div id="grid-container"></div>
-        <div class="controls">
-            <button id="undo-button" disabled>Undo (<span id="undo-count">3</span>)</button>
-            <button id="new-game-button">New Game</button>
-        </div>
+<div id="game-container">
+    <h1>Pixel Puzzle Pop</h1>
+    <div id="grid-container"></div>
+    <div id="score-display">Score: <span id="score">0</span></div>
+    <div id="timer-display">Tijd: <span id="time">60</span></div>
+</div>
+
+<div id="game-over-screen">
+    <div id="game-over-content">
+        <h2>Game Over</h2>
+        <div id="game-over-score">Score: <span id="final-score">0</span></div>
+        <button id="restart-button">Restart</button>
     </div>
+</div>
+
 
 
 <script>
-const gridContainer = document.getElementById('grid-container');
-const scoreDisplay = document.getElementById('score');
-const undoButton = document.getElementById('undo-button');
-const undoCountDisplay = document.getElementById('undo-count');
-const newGameButton = document.getElementById('new-game-button');
+    const gridContainer = document.getElementById('grid-container');
+    const scoreDisplay = document.getElementById('score');
+    const timeDisplay = document.getElementById('time');
+    const gameOverScreen = document.getElementById('game-over-screen');
+    const gameOverScore = document.getElementById('final-score');
+    const restartButton = document.getElementById('restart-button');
 
-let grid = [];
-let rows = 10;
-let cols = 10;
-let score = 0;
-let undoCount = 3;
-let history = []; // To store game states for undo
+    const gridSize = 8;
+    let grid = [];
+    let score = 0;
+    let timeLeft = 60;
+    let timerInterval;
 
-const colors = ['red', 'green', 'blue', 'yellow', 'purple', 'orange']; // Define colors
-let isGameOver = false;
+    const colors = ['red', 'green', 'blue', 'yellow', 'purple']; // Add more colors if needed
 
-function generateGrid() {
-    grid = [];
-    for (let i = 0; i < rows; i++) {
-        grid[i] = [];
-        for (let j = 0; j < cols; j++) {
-            grid[i][j] = colors[Math.floor(Math.random() * colors.length)];
+
+    function getRandomColor() {
+        return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function createGrid() {
+        grid = [];
+        gridContainer.innerHTML = '';
+        for (let row = 0; row < gridSize; row++) {
+            grid[row] = [];
+            for (let col = 0; col < gridSize; col++) {
+                const color = getRandomColor();
+                grid[row][col] = { color: color, matched: false };
+                const pixel = document.createElement('div');
+                pixel.classList.add('pixel');
+                pixel.style.backgroundColor = color;
+                pixel.dataset.row = row;
+                pixel.dataset.col = col;
+                pixel.addEventListener('click', pixelClick);
+                gridContainer.appendChild(pixel);
+            }
         }
-    }
-}
-
-function renderGrid() {
-    gridContainer.innerHTML = '';
-    for (let i = 0; i < rows; i++) {
-        for (let j = 0; j < cols; j++) {
-            const pixel = document.createElement('div');
-            pixel.classList.add('pixel');
-            pixel.style.backgroundColor = grid[i][j];
-            pixel.dataset.row = i;
-            pixel.dataset.col = j;
-            pixel.addEventListener('click', pixelClicked);
-            gridContainer.appendChild(pixel);
-        }
-    }
-}
-
-
-function pixelClicked(event) {
-    if (isGameOver) return; // Prevent clicks if game over
-    const row = parseInt(event.target.dataset.row);
-    const col = parseInt(event.target.dataset.col);
-
-    const color = grid[row][col];
-    if (!color) return; // Already cleared
-
-    const group = findGroup(row, col, color);
-    if (group.length > 1) {
-        saveGameState(); // Save the state before modification
-        clearGroup(group);
-        calculateScore(group.length);
-        updateScoreboard();
-        renderGrid();
-        if(isGridFull()) {
-            gameOver();
-        }
-    }
-}
-
-function findGroup(row, col, color, visited = []) {
-    if (row < 0 || row >= rows || col < 0 || col >= cols || grid[row][col] !== color || visited.some(p => p[0] === row && p[1] === col)) {
-        return visited;
+        updateGridDisplay();
     }
 
-    visited.push([row, col]);
-
-    findGroup(row + 1, col, color, visited);
-    findGroup(row - 1, col, color, visited);
-    findGroup(row, col + 1, color, visited);
-    findGroup(row, col - 1, color, visited);
-
-    return visited;
-}
-
-function clearGroup(group) {
-    group.forEach(pixel => {
-        grid[pixel[0]][pixel[1]] = null; // Use null to represent cleared pixels
-    });
-}
-
-function calculateScore(groupSize) {
-    score += (groupSize - 1) * (groupSize - 1); // Score calculation
-}
-
-function updateScoreboard() {
-    scoreDisplay.textContent = score;
-}
-
-function isGridFull() {
-    for (let i = 0; i < rows; i++) {
-        for (let j = 0; j < cols; j++) {
-            if (grid[i][j]) { // Check for any non-null pixels
-                return false;
+    function updateGridDisplay() {
+        let pixelIndex = 0;
+        for (let row = 0; row < gridSize; row++) {
+            for (let col = 0; col < gridSize; col++) {
+                const pixel = gridContainer.children[pixelIndex];
+                if (pixel) {
+                    pixel.style.backgroundColor = grid[row][col].color;
+                    pixelIndex++;
+                }
             }
         }
     }
-    return true;
-}
 
-function gameOver() {
-    isGameOver = true;
-    alert(`Game Over! Final Score: ${score}`);
-}
 
-function saveGameState() {
-    history.push(JSON.parse(JSON.stringify(grid))); // Deep copy
-    if (history.length > 3) { // Limit history size
-        history.shift();
+    function pixelClick(event) {
+        const row = parseInt(event.target.dataset.row);
+        const col = parseInt(event.target.dataset.col);
+        const color = grid[row][col].color;
+
+        const matches = findMatches(row, col, color);
+
+        if (matches.length > 1) {
+            score += matches.length * 10;
+            scoreDisplay.textContent = score;
+            removeMatches(matches);
+            dropPixels();
+            refillEmpty();
+        }
     }
-    updateUndoButton();
-}
 
 
-function undo() {
-    if (history.length > 0 && undoCount > 0) {
-        grid = history.pop();
-        undoCount--;
-        updateUndoButton();
-        renderGrid();
+    function findMatches(row, col, color, visited = new Set()) {
+        const key = `${row}-${col}`;
+        if (row < 0 || row >= gridSize || col < 0 || col >= gridSize || grid[row][col].color !== color || visited.has(key)) {
+            return [];
+        }
+
+        visited.add(key);
+        let matches = [{ row, col }];
+
+        matches = matches.concat(findMatches(row + 1, col, color, visited));
+        matches = matches.concat(findMatches(row - 1, col, color, visited));
+        matches = matches.concat(findMatches(row, col + 1, color, visited));
+        matches = matches.concat(findMatches(row, col - 1, color, visited));
+        return matches;
     }
-}
 
 
-function updateUndoButton() {
-    undoCountDisplay.textContent = undoCount;
-    undoButton.disabled = undoCount <= 0 || history.length === 0;
-}
+    function removeMatches(matches) {
+        matches.forEach(match => {
+            grid[match.row][match.col].color = null; // Mark as empty
+        });
+    }
+
+    function dropPixels() {
+        for (let col = 0; col < gridSize; col++) {
+            let emptySlots = 0;
+            for (let row = gridSize - 1; row >= 0; row--) {
+                if (grid[row][col].color === null) {
+                    emptySlots++;
+                } else if (emptySlots > 0) {
+                    grid[row + emptySlots][col].color = grid[row][col].color;
+                    grid[row][col].color = null;
+                }
+            }
+        }
+    }
+
+    function refillEmpty() {
+        for (let row = 0; row < gridSize; row++) {
+            for (let col = 0; col < gridSize; col++) {
+                if (grid[row][col].color === null) {
+                    grid[row][col].color = getRandomColor();
+                }
+            }
+        }
+        updateGridDisplay();
+    }
 
 
-function newGame() {
-    score = 0;
-    undoCount = 3;
-    history = [];
-    isGameOver = false; // Reset game over state
-    generateGrid();
-    renderGrid();
-    updateScoreboard();
-    updateUndoButton();
-}
+    function startGame() {
+        score = 0;
+        scoreDisplay.textContent = score;
+        timeLeft = 60;
+        timeDisplay.textContent = timeLeft;
+        createGrid();
+        startTimer();
+        gameOverScreen.style.display = 'none';
+
+    }
+
+    function startTimer() {
+        clearInterval(timerInterval); // Clear any existing timer
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            timeDisplay.textContent = timeLeft;
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }, 1000);
+    }
+
+    function endGame() {
+        clearInterval(timerInterval);
+        gameOverScore.textContent = score;
+        gameOverScreen.style.display = 'flex';
+    }
 
 
-// Event Listeners
-undoButton.addEventListener('click', undo);
-newGameButton.addEventListener('click', newGame);
+    restartButton.addEventListener('click', startGame);
 
-// Initial game setup
-newGame();
-
+    startGame();
 </script>
+
 </body>
 </html>
 ```
