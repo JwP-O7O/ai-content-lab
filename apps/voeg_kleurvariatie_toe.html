@@ -3,74 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Falling Stars with Color</title>
+    <title>Falling Stars with Color Variation</title>
     <style>
         body {
-            margin: 0;
+            background-color: #111;
             overflow: hidden;
-            background-color: #000;
-            height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: white;
         }
 
         #container {
             position: relative;
             width: 100%;
-            height: 100%;
+            height: 80vh;
+            max-width: 600px; /* Adjust as needed */
         }
 
         .star {
             position: absolute;
-            background-color: white;
+            width: 2px;
+            height: 2px;
             border-radius: 50%;
             animation: fall linear infinite;
         }
 
         @keyframes fall {
-            to {
-                transform: translateY(100vh);
+            0% {
+                transform: translateY(-10px);
             }
+            100% {
+                transform: translateY(calc(100vh + 10px));
+            }
+        }
+
+        #controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        #colorToggle {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        #colorToggle:hover {
+            background-color: #444;
         }
     </style>
 </head>
 <body>
+    <h1>Falling Stars</h1>
     <div id="container"></div>
+    <div id="controls">
+        <button id="colorToggle">Toggle Color Variation</button>
+    </div>
+
     <script>
         const container = document.getElementById('container');
-        const numStars = 150; // Increased star count
+        const colorToggle = document.getElementById('colorToggle');
+        let colorVariationEnabled = true;
+        let starCount = 150; // Adjust for more/less stars
+        const colors = ['white', 'lightblue', 'lightgreen', 'yellow', 'pink', 'cyan', 'orange'];
 
-        function getRandomColor() {
-            const colors = ['#FFD700', '#ADD8E6', '#FFA07A', '#90EE90', '#DA70D6'];
-            return colors[Math.floor(Math.random() * colors.length)];
-        }
 
         function createStar() {
             const star = document.createElement('div');
-            const size = Math.random() * 3 + 1; // Varying sizes
-            const speed = Math.random() * 2 + 1; // Varying speed
-            const color = getRandomColor();
+            star.classList.add('star');
+            const size = Math.random() * 2 + 1; // Random size
             star.style.width = `${size}px`;
             star.style.height = `${size}px`;
-            star.style.left = `${Math.random() * 100}vw`;
-            star.style.top = `${Math.random() * -100}px`; // Start above
-            star.style.backgroundColor = color;
-            star.style.animationDuration = `${speed * 3}s`; // Vary animation duration
-            star.classList.add('star');
+            star.style.left = `${Math.random() * 100}%`;
+            star.style.animationDuration = `${Math.random() * 2 + 1}s`;  // Random speed
+
+            if (colorVariationEnabled) {
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                star.style.backgroundColor = color;
+            } else {
+                star.style.backgroundColor = 'white';
+            }
+
+
             container.appendChild(star);
-
-            star.addEventListener('animationiteration', () => {
-                star.style.left = `${Math.random() * 100}vw`; // Reset horizontal position
-                star.style.top = `${Math.random() * -10}px`;   // Reset to top, some with offset
-                star.style.animationDuration = `${Math.random() * 3 + 1}s`;
-                star.style.backgroundColor = getRandomColor();
-            });
         }
 
-        for (let i = 0; i < numStars; i++) {
-            createStar();
+        function generateStars() {
+            for (let i = 0; i < starCount; i++) {
+                createStar();
+            }
         }
+
+        generateStars();
+
+        colorToggle.addEventListener('click', () => {
+            colorVariationEnabled = !colorVariationEnabled;
+            colorToggle.textContent = colorVariationEnabled ? "Disable Color Variation" : "Enable Color Variation";
+            // Clear and regenerate stars to apply color changes
+            container.innerHTML = '';
+            generateStars();
+
+        });
+
+        // Responsive adjustment for star count (optional)
+        function adjustStarCount() {
+            if (window.innerWidth < 768) { // Example: reduce stars on small screens
+                starCount = 75;
+            } else {
+                starCount = 150;
+            }
+             container.innerHTML = '';
+            generateStars();
+        }
+
+        window.addEventListener('resize', adjustStarCount);
+        adjustStarCount(); // Initial adjustment
+
     </script>
 </body>
 </html>
