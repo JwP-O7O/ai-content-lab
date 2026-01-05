@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sterrenhemel</title>
+    <title>Sterrenhemel met Vallende Sterren</title>
     <style>
         body {
             background-color: #000;
@@ -30,6 +30,14 @@
             animation: twinkle 2s infinite;
         }
 
+        .falling-star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0));
+            animation: fall 2s linear infinite;
+        }
+
         @keyframes twinkle {
             0% {
                 opacity: 1;
@@ -42,8 +50,17 @@
             }
         }
 
+        @keyframes fall {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(calc(100vw - 100px), 100vh);
+            }
+        }
+
         @media (prefers-reduced-motion: reduce) {
-            .star {
+            .star, .falling-star {
                 animation: none;
             }
         }
@@ -54,6 +71,7 @@
     <script>
         const sky = document.getElementById('sky');
         const numberOfStars = 200;
+        const numberOfFallingStars = 3; // Added falling stars
 
         function getRandomInt(min, max) {
             return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -78,14 +96,34 @@
             sky.appendChild(star);
         }
 
+        function createFallingStar() { // Added falling stars
+            const fallingStar = document.createElement('div');
+            const startX = getRandomInt(0, window.innerWidth);
+            const animationDuration = getRandomInt(2, 4); // Randomize duration
+
+            fallingStar.classList.add('falling-star');
+            fallingStar.style.left = `${startX}px`;
+            fallingStar.style.top = `${getRandomInt(0, window.innerHeight / 2)}px`;
+            fallingStar.style.animationDuration = `${animationDuration}s`; // Use randomized duration
+            fallingStar.style.animationDelay = `${Math.random() * animationDuration}s`; // Add delay
+            sky.appendChild(fallingStar);
+        }
+
         for (let i = 0; i < numberOfStars; i++) {
             createStar();
+        }
+
+        for (let i = 0; i < numberOfFallingStars; i++) { // Added falling stars
+            createFallingStar();
         }
 
         window.addEventListener('resize', () => {
             sky.innerHTML = '';
             for (let i = 0; i < numberOfStars; i++) {
                 createStar();
+            }
+            for (let i = 0; i < numberOfFallingStars; i++) { // Added falling stars
+                createFallingStar();
             }
         });
     </script>
