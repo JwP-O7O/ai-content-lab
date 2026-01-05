@@ -6,35 +6,33 @@
 <style>
 body {
     font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    margin: 0;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    background-color: #f0f0f0;
-    margin: 0;
+    height: 100vh;
 }
 
-.game-container {
+#gameContainer {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
 }
 
 #gameCanvas {
     border: 1px solid #ccc;
-    margin-top: 10px;
-    background-color: #eee;
+    margin-bottom: 10px;
 }
 
 #scoreDisplay {
-    margin-top: 10px;
     font-size: 1.2em;
-    color: #333;
+    margin-bottom: 10px;
 }
 
-button {
+#startButton {
     background-color: #4CAF50;
     color: white;
     padding: 10px 20px;
@@ -42,18 +40,16 @@ button {
     border-radius: 4px;
     cursor: pointer;
     font-size: 1em;
-    margin-top: 15px;
 }
 
-button:hover {
+#startButton:hover {
     background-color: #3e8e41;
 }
-
 </style>
 </head>
 <body>
 
-<div class="game-container">
+<div id="gameContainer">
     <h1>Simple Game Loop</h1>
     <canvas id="gameCanvas" width="400" height="300"></canvas>
     <div id="scoreDisplay">Score: 0</div>
@@ -67,68 +63,64 @@ button:hover {
     const startButton = document.getElementById('startButton');
 
     let score = 0;
-    let isRunning = false;
-    let circleX = canvas.width / 2;
-    let circleY = canvas.height / 2;
-    let circleRadius = 20;
-    let circleSpeedX = 2;
-    let circleSpeedY = 2;
+    let gameRunning = false;
+    let playerX = 50;
+    let playerY = canvas.height / 2;
+    let playerSize = 20;
+    let speed = 2; // Increased speed
 
-    function resetGame() {
-        score = 0;
-        circleX = canvas.width / 2;
-        circleY = canvas.height / 2;
-        circleSpeedX = 2;
-        circleSpeedY = 2;
-        scoreDisplay.textContent = 'Score: 0';
-    }
 
-    function drawCircle() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.beginPath();
-        ctx.arc(circleX, circleY, circleRadius, 0, Math.PI * 2);
+    function drawPlayer() {
         ctx.fillStyle = 'blue';
-        ctx.fill();
-        ctx.closePath();
+        ctx.fillRect(playerX, playerY - playerSize/2, playerSize, playerSize);
     }
 
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
 
-    function updateCircle() {
-        circleX += circleSpeedX;
-        circleY += circleSpeedY;
+    function updateGame() {
+        if (!gameRunning) return;
 
-        if (circleX + circleRadius > canvas.width || circleX - circleRadius < 0) {
-            circleSpeedX = -circleSpeedX;
+        clearCanvas();
+        drawPlayer();
+        playerX += speed;
+
+        if (playerX > canvas.width) {
+            playerX = 0;
             score++;
             scoreDisplay.textContent = 'Score: ' + score;
         }
-        if (circleY + circleRadius > canvas.height || circleY - circleRadius < 0) {
-            circleSpeedY = -circleSpeedY;
-            score++;
-            scoreDisplay.textContent = 'Score: ' + score;
-        }
+
+        requestAnimationFrame(updateGame);
     }
 
-
-    function gameLoop() {
-        if (!isRunning) return;
-
-        updateCircle();
-        drawCircle();
-        requestAnimationFrame(gameLoop);
-    }
 
     startButton.addEventListener('click', () => {
-        if (!isRunning) {
-            isRunning = true;
-            resetGame();
-            gameLoop();
-            startButton.textContent = "Stop Game";
+        if (!gameRunning) {
+            gameRunning = true;
+            score = 0;
+            scoreDisplay.textContent = 'Score: 0';
+            playerX = 50;
+            updateGame();
+            startButton.textContent = 'Stop Game';
+
         } else {
-            isRunning = false;
-            startButton.textContent = "Start Game";
+            gameRunning = false;
+            startButton.textContent = 'Start Game';
         }
     });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (gameRunning) {
+            const rect = canvas.getBoundingClientRect();
+            playerY = e.clientY - rect.top;
+        }
+    });
+
+    // Initial draw to set up the canvas
+    drawPlayer();
+
 </script>
 
 </body>
