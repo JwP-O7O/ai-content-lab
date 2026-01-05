@@ -35,36 +35,31 @@ class PublishingAgent(BaseAgent):
                 result["status"] = ResultStatus.WARNING
                 result["message"] = "Publicatie deels succesvol, met beperkingen."
                 result["details"] = {"published_item_id": "item123", "limitations": "Sommige items niet gepubliceerd."}
-                logger.warning(f"Publicatie waarschuwing: {result['details']}") # Log de details op warning-niveau
+                logger.warning(f"Publicatie waarschuwing voor item item123: {result['details']}") # Log de details op warning-niveau
             else:
                 result["status"] = ResultStatus.SUCCESS
                 result["message"] = "Publicatie succesvol uitgevoerd."
                 result["details"] = {"published_item_id": "item123"}
-                logger.debug(f"Publicatie details: {result['details']}") # Log de details op debug-niveau
+                logger.debug(f"Publicatie succes voor item item123: {result['details']}") # Log de details op debug-niveau
 
 
         except ValueError as ve:
             # Specifieke foutafhandeling voor ValueError (bijv. invalid data)
-            logger.error(f"Ongeldige data tijdens publicatie: {ve}. Actie: Verwerking van data.", exc_info=True)  # Contextuele logging
+            logger.error(f"Fout tijdens publicatie van item: Ongeldige data: {ve}. Actie: Data verwerking.", exc_info=True)  # Contextuele logging
             result["status"] = ResultStatus.ERROR
             result["message"] = f"Fout: Ongeldige data. {ve}" # Geef meer specifieke error boodschap
-            result["details"] = {"error_type": "ValueError", "original_message": str(ve)} # Voeg detail informatie toe
+            result["details"] = {"error_type": "ValueError", "original_message": str(ve), "action": "publiceren item"} # Voeg detail informatie toe
 
         except Exception as e:
             # Algemene foutafhandeling
-            logger.error(f"Algemene fout tijdens publicatie: {e}. Actie: Publicatie van item.", exc_info=True) # Contextuele logging
+            logger.error(f"Algemene fout tijdens publicatie van item: {e}. Actie: Publicatie.", exc_info=True) # Contextuele logging
             result["status"] = ResultStatus.ERROR
             result["message"] = f"Fout tijdens publicatie: {e}"
-            result["details"] = {"error_type": type(e).__name__, "original_message": str(e)}
+            result["details"] = {"error_type": type(e).__name__, "original_message": str(e), "action": "publiceren item"}
 
         finally:
             end_time = asyncio.get_event_loop().time()
             execution_time = end_time - start_time
-            log_message = f"PublishingAgent: execute() voltooid met resultaat: {result} in {execution_time:.2f} seconden"
-            if result["status"] == ResultStatus.SUCCESS:
-                logger.info(log_message)
-            elif result["status"] == ResultStatus.WARNING:
-                logger.warning(log_message) # Log warning berichten met warning level
-            else:
-                logger.error(log_message) # Log error berichten met error level
-        return result
+            logger.info(f"PublishingAgent: execute() voltooid in {execution_time:.2f} seconden met status: {result['status']}")
+
+        return result  # Return het resultaat voor verdere verwerking.
