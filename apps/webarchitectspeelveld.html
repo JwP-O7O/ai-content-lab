@@ -1,0 +1,220 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Speelveld</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+
+#game-container {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+}
+
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(10, 40px);
+    grid-gap: 5px;
+    margin-top: 20px;
+}
+
+.cell {
+    width: 40px;
+    height: 40px;
+    background-color: #eee;
+    border: 1px solid #ccc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.cell.active {
+    background-color: #b0e2ff;
+}
+
+.cell.bomb {
+    background-color: #ff6347;
+    color: white;
+}
+.cell.safe {
+    background-color: #90ee90;
+}
+#score-display {
+    margin-top: 10px;
+    font-weight: bold;
+}
+</style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>Speelveld</h1>
+    <div id="game-board"></div>
+    <div id="score-display">Score: <span id="score">0</span></div>
+</div>
+
+<script>
+    const gameBoard = document.getElementById('game-board');
+    const scoreDisplay = document.getElementById('score');
+    let score = 0;
+    const boardSize = 10;
+    let grid = [];
+    let bombs = [];
+    let revealed = [];
+    let gameOver = false;
+
+    function createBoard() {
+        for (let i = 0; i < boardSize; i++) {
+            grid[i] = [];
+            revealed[i] = [];
+            for (let j = 0; j < boardSize; j++) {
+                grid[i][j] = 0;  // 0 is safe, 1 is bomb
+                revealed[i][j] = false;
+            }
+        }
+    }
+
+    function placeBombs(numberOfBombs = 10) {
+        bombs = []; // Reset bombs
+        while (bombs.length < numberOfBombs) {
+            const x = Math.floor(Math.random() * boardSize);
+            const y = Math.floor(Math.random() * boardSize);
+            if (!bombs.some(bomb => bomb.x === x && bomb.y === y)) {
+                bombs.push({ x, y });
+                grid[x][y] = 1; // Mark as bomb
+            }
+        }
+    }
+
+
+    function createCells() {
+        gameBoard.innerHTML = '';
+        for (let i = 0; i < boardSize; i++) {
+            for (let j = 0; j < boardSize; j++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.x = i;
+                cell.dataset.y = j;
+                cell.addEventListener('click', () => cellClick(i, j));
+                gameBoard.appendChild(cell);
+            }
+        }
+    }
+
+    function cellClick(x, y) {
+        if (gameOver || revealed[x][y]) return;
+
+        if (grid[x][y] === 1) {
+            revealBomb(x, y);
+            gameOver = true;
+            revealAllBombs();
+        } else {
+            revealCell(x, y);
+            checkWin();
+        }
+    }
+
+    function revealCell(x, y) {
+        if (x < 0 || x >= boardSize || y < 0 || y >= boardSize || revealed[x][y]) {
+            return;
+        }
+
+        revealed[x][y] = true;
+        const cell = document.querySelector(`.cell[data-x="${x}"][data-y="${y}"]`);
+        cell.classList.add('safe');
+        let adjacentBombs = countAdjacentBombs(x,y);
+        if(adjacentBombs > 0) {
+            cell.textContent = adjacentBombs;
+        }
+
+        if (adjacentBombs === 0) {
+            // Recursively reveal adjacent cells
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    if (i === 0 && j === 0) continue;
+                    revealCell(x + i, y + j);
+                }
+            }
+        }
+    }
+
+    function countAdjacentBombs(x, y) {
+      let count = 0;
+      for (let i = -1; i <= 1; i++) {
+        for (let j = -1; j <= 1; j++) {
+          if (i === 0 && j === 0) continue;
+          const newX = x + i;
+          const newY = y + j;
+          if (newX >= 0 && newX < boardSize && newY >= 0 && newY < boardSize && grid[newX][newY] === 1) {
+            count++;
+          }
+        }
+      }
+      return count;
+    }
+
+
+    function revealBomb(x, y) {
+        const cell = document.querySelector(`.cell[data-x="${x}"][data-y="${y}"]`);
+        cell.classList.add('bomb');
+    }
+
+    function revealAllBombs() {
+        for (let i = 0; i < boardSize; i++) {
+            for (let j = 0; j < boardSize; j++) {
+                if (grid[i][j] === 1) {
+                    const cell = document.querySelector(`.cell[data-x="${i}"][data-y="${j}"]`);
+                    if (cell) {
+                        cell.classList.add('bomb');
+                    }
+                }
+            }
+        }
+    }
+
+    function checkWin() {
+        let safeCellsRevealed = 0;
+        for (let i = 0; i < boardSize; i++) {
+            for (let j = 0; j < boardSize; j++) {
+                if (grid[i][j] === 0 && revealed[i][j]) {
+                    safeCellsRevealed++;
+                }
+            }
+        }
+        if (safeCellsRevealed === (boardSize * boardSize) - bombs.length) {
+            alert("Gewonnen!");
+            gameOver = true;
+        }
+    }
+
+    function resetGame() {
+        createBoard();
+        placeBombs();
+        createCells();
+        score = 0;
+        scoreDisplay.textContent = score;
+        gameOver = false;
+    }
+
+
+    // Initialize the game
+    resetGame();
+</script>
+
+</body>
+</html>
+```
