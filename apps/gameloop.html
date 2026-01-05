@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Game Loop Example</title>
+<title>Simple Game</title>
 <style>
 body {
     font-family: sans-serif;
@@ -14,25 +14,25 @@ body {
     background-color: #f0f0f0;
 }
 
-#gameContainer {
-    background-color: #fff;
-    border-radius: 8px;
+#game-container {
+    background-color: white;
     padding: 20px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     text-align: center;
 }
 
-#scoreDisplay {
-    font-size: 2em;
+#score {
+    font-size: 1.5em;
     margin-bottom: 10px;
 }
 
-#messageDisplay {
-    color: #333;
-    margin-bottom: 15px;
+#game-canvas {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
 }
 
-#startButton {
+button {
     background-color: #4CAF50;
     color: white;
     padding: 10px 20px;
@@ -42,62 +42,123 @@ body {
     font-size: 1em;
 }
 
-#startButton:hover {
+button:hover {
     background-color: #3e8e41;
 }
 </style>
 </head>
 <body>
 
-<div id="gameContainer">
-    <div id="scoreDisplay">Score: 0</div>
-    <div id="messageDisplay">Welcome! Click Start to begin.</div>
-    <button id="startButton">Start Game</button>
+<div id="game-container">
+    <h1>Simple Game</h1>
+    <div id="score">Score: 0</div>
+    <canvas id="game-canvas" width="400" height="300"></canvas>
+    <button id="start-button">Start Game</button>
 </div>
 
 <script>
-    let score = 0;
-    let gameRunning = false;
-    let gameLoopInterval;
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const scoreDisplay = document.getElementById('score');
+const startButton = document.getElementById('start-button');
 
-    const scoreDisplay = document.getElementById('scoreDisplay');
-    const messageDisplay = document.getElementById('messageDisplay');
-    const startButton = document.getElementById('startButton');
+let score = 0;
+let gameRunning = false;
+let animationFrameId; // To store the animation frame ID
 
-    function updateScore() {
+// Game variables
+let playerX = canvas.width / 2;
+let playerY = canvas.height - 20;
+const playerWidth = 20;
+const playerHeight = 20;
+let enemyX = Math.random() * canvas.width;
+let enemyY = 0;
+const enemyWidth = 20;
+const enemyHeight = 20;
+const enemySpeed = 2;
+
+
+function drawPlayer() {
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
+}
+
+function drawEnemy() {
+    ctx.fillStyle = 'red';
+    ctx.fillRect(enemyX, enemyY, enemyWidth, enemyHeight);
+}
+
+function updateGame() {
+    if (!gameRunning) return;
+
+    // Enemy movement
+    enemyY += enemySpeed;
+    if (enemyY > canvas.height) {
+        enemyY = 0;
+        enemyX = Math.random() * canvas.width;
         score++;
         scoreDisplay.textContent = 'Score: ' + score;
     }
 
-    function gameLoop() {
-        // Game logic goes here.  For this example, we'll just update the score.
-        updateScore();
+
+    // Collision detection (basic)
+    if (playerX < enemyX + enemyWidth &&
+        playerX + playerWidth > enemyX &&
+        playerY < enemyY + enemyHeight &&
+        playerY + playerHeight > enemyY) {
+            gameOver();
+            return;
     }
 
+    // Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    function startGame() {
-        if (!gameRunning) {
-            score = 0;
-            scoreDisplay.textContent = 'Score: 0';
-            messageDisplay.textContent = 'Game started!';
-            gameRunning = true;
-            startButton.textContent = 'Stop Game'; // Change button text
-            gameLoopInterval = setInterval(gameLoop, 1000); // Run gameLoop every 1000ms (1 second)
-        } else {
-            stopGame();
-        }
+    // Draw game elements
+    drawPlayer();
+    drawEnemy();
+
+    // Request the next frame
+    animationFrameId = requestAnimationFrame(updateGame);
+}
+
+
+function gameOver() {
+    gameRunning = false;
+    cancelAnimationFrame(animationFrameId); // Stop the animation
+    alert('Game Over! Your score: ' + score);
+    score = 0;
+    scoreDisplay.textContent = 'Score: ' + score;
+    enemyY = 0;
+    enemyX = Math.random() * canvas.width;
+}
+
+
+// Event listeners
+startButton.addEventListener('click', () => {
+    if (!gameRunning) {
+        gameRunning = true;
+        playerX = canvas.width / 2;
+        playerY = canvas.height - 20;
+        updateGame();
     }
+});
 
-    function stopGame() {
-        clearInterval(gameLoopInterval);
-        gameRunning = false;
-        startButton.textContent = 'Start Game'; // Reset button text
-        messageDisplay.textContent = 'Game stopped. Final score: ' + score;
+
+
+// Keyboard controls (Example: left/right)
+document.addEventListener('keydown', (e) => {
+    if (!gameRunning) return; // Ignore input if game is not running
+
+    if (e.key === 'ArrowLeft' && playerX > 0) {
+        playerX -= 10;
     }
+    if (e.key === 'ArrowRight' && playerX < canvas.width - playerWidth) {
+        playerX += 10;
+    }
+});
 
-    startButton.addEventListener('click', startGame);
+
 </script>
-
 </body>
 </html>
 ```
