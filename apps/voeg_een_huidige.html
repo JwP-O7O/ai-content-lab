@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Huidige Maanfase</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1a1a2e;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #cc99ff;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #24243e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px; /* Adjust as needed */
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 10px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 20px;
+            -webkit-appearance: none;
+            width: 100%;
+            height: 15px;
+            background: #d3d3d3;
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #9933ff;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #9933ff;
+            cursor: pointer;
+        }
+
+        p {
+            font-size: 1.2em;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Huidige Maanfase</h1>
+    <div class="container">
+        <img id="maanAfbeelding" src="" alt="Maanfase">
+        <input type="range" id="maanSlider" min="0" max="7" value="0" step="1">
+        <p id="maanfaseTekst"></p>
+    </div>
+
+    <script>
+        const maanAfbeelding = document.getElementById('maanAfbeelding');
+        const maanSlider = document.getElementById('maanSlider');
+        const maanfaseTekst = document.getElementById('maanfaseTekst');
+
+        const maanFases = [
+            { fase: "Nieuwe Maan", afbeelding: "https://www.flaticon.com/svg/static/icons/svg/1077/1077227.svg" },
+            { fase: "Wassende Maan", afbeelding: "https://www.flaticon.com/svg/static/icons/svg/1077/1077242.svg" },
+            { fase: "Eerste Kwartier", afbeelding: "https://www.flaticon.com/svg/static/icons/svg/1077/1077252.svg" },
+            { fase: "Wassende Gibbeuze Maan", afbeelding: "https://www.flaticon.com/svg/static/icons/svg/1077/1077250.svg" },
+            { fase: "Volle Maan", afbeelding: "https://www.flaticon.com/svg/static/icons/svg/1077/1077239.svg" },
+            { fase: "Aflopende Gibbeuze Maan", afbeelding: "https://www.flaticon.com/svg/static/icons/svg/1077/1077249.svg" },
+            { fase: "Laatste Kwartier", afbeelding: "https://www.flaticon.com/svg/static/icons/svg/1077/1077253.svg" },
+            { fase: "Aflopende Maan", afbeelding: "https://www.flaticon.com/svg/static/icons/svg/1077/1077237.svg" }
+        ];
+
+        function updateMaanfase(waarde) {
+            const index = waarde;
+            maanfaseTekst.textContent = maanFases[index].fase;
+            maanAfbeelding.src = maanFases[index].afbeelding;
+        }
+
+        maanSlider.addEventListener('input', function() {
+            updateMaanfase(parseInt(this.value));
+        });
+
+        updateMaanfase(0); // Initial update
+    </script>
+</body>
+</html>
