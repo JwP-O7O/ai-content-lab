@@ -3,6 +3,6 @@
 | Metric | Waarde |
 |---|---|
 | **Model** | `Gemini 2.0` |
-| **Cycles** | 6 |
+| **Cycles** | 7 |
 | **Internet** | 🌍 CONNECTED |
-| **Laatste Actie** | 🌐 Web App: sterren_met_verschillende.html |
+| **Laatste Actie** | Monitoring... |
