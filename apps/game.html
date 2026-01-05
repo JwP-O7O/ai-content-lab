@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Memory Game</title>
+<title>Game Loop Example</title>
 <style>
 body {
     font-family: sans-serif;
@@ -14,193 +14,139 @@ body {
     margin: 0;
 }
 
-.container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+.game-container {
+    background-color: white;
     padding: 20px;
-    width: 80%;
-    max-width: 600px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
 }
 
-h1 {
-    color: #333;
-    margin-bottom: 20px;
-}
-
-.grid-container {
-    display: grid;
-    grid-template-columns: repeat(4, 100px);
-    grid-gap: 10px;
-    margin-bottom: 20px;
-}
-
-.card {
-    width: 100px;
-    height: 100px;
-    background-color: #ccc;
-    border-radius: 5px;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 2em;
-    transition: transform 0.3s ease;
-}
-
-.card.flipped {
-    background-color: #fff;
-    border: 1px solid #ddd;
-    transform: rotateY(180deg);
-}
-
-.card.matched {
-    background-color: #90ee90; /* Light green */
-    pointer-events: none; /* Disable click on matched cards */
-}
-
-.card:hover {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-#game-over-message {
-    font-size: 1.5em;
-    color: #e74c3c;
+#gameCanvas {
+    border: 1px solid #ccc;
     margin-bottom: 10px;
-    display: none;
 }
 
-#moves-counter {
+#scoreDisplay {
     font-size: 1.2em;
     margin-bottom: 10px;
 }
 
-button {
-    background-color: #3498db;
+#startButton, #stopButton {
+    background-color: #4CAF50;
     color: white;
-    border: none;
     padding: 10px 20px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 10px;
+    border: none;
+    border-radius: 4px;
     cursor: pointer;
-    border-radius: 5px;
-    transition: background-color 0.3s ease;
+    margin: 5px;
 }
 
-button:hover {
-    background-color: #2980b9;
+#startButton:hover, #stopButton:hover {
+    background-color: #3e8e41;
 }
+
+#stopButton {
+    background-color: #f44336;
+}
+
+#stopButton:hover {
+    background-color: #da190b;
+}
+
 </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Memory Game</h1>
-        <div id="moves-counter">Moves: 0</div>
-        <div id="game-over-message">Game Over! You Win!</div>
-        <div class="grid-container"></div>
-        <button id="reset-button">Restart</button>
+
+    <div class="game-container">
+        <h1>Simple Game Loop</h1>
+        <canvas id="gameCanvas" width="400" height="300"></canvas>
+        <div id="scoreDisplay">Score: 0</div>
+        <button id="startButton">Start</button>
+        <button id="stopButton">Stop</button>
     </div>
+
 <script>
-const cardValues = [
-    1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8
-];
-let cards = [];
-let flippedCards = [];
-let gameStarted = false;
-let moves = 0;
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
 
-const gridContainer = document.querySelector('.grid-container');
-const gameOverMessage = document.getElementById('game-over-message');
-const movesCounter = document.getElementById('moves-counter');
-const resetButton = document.getElementById('reset-button');
+    let score = 0;
+    let gameRunning = false;
+    let animationFrameId; // To store the animation frame ID
 
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-}
 
-function createCard(value) {
-    const card = document.createElement('div');
-    card.classList.add('card');
-    card.dataset.value = value;
-    card.addEventListener('click', flipCard);
-    return card;
-}
+    // Game object (e.g., a simple rectangle)
+    const gameObject = {
+        x: 50,
+        y: 50,
+        width: 20,
+        height: 20,
+        color: 'blue',
+        speed: 2,
+    };
 
-function fillBoard() {
-    cards = shuffleArray(cardValues.slice());
-    gridContainer.innerHTML = '';
-    cards.forEach(value => {
-        const card = createCard(value);
-        gridContainer.appendChild(card);
-    });
-
-    flippedCards = [];
-    moves = 0;
-    movesCounter.textContent = `Moves: ${moves}`;
-    gameOverMessage.style.display = 'none';
-
-    // Remove any previously matched classes
-    document.querySelectorAll('.card').forEach(card => {
-        card.classList.remove('flipped', 'matched');
-    });
-
-}
-
-function flipCard() {
-    if (!gameStarted) {
-        gameStarted = true;
+    function drawGameObject() {
+        ctx.fillStyle = gameObject.color;
+        ctx.fillRect(gameObject.x, gameObject.y, gameObject.width, gameObject.height);
     }
 
-    if (flippedCards.length < 2 && !this.classList.contains('flipped') && !this.classList.contains('matched')) {
-        this.classList.add('flipped');
-        flippedCards.push(this);
+    function updateGameObject() {
+        gameObject.x += gameObject.speed;
 
-        if (flippedCards.length === 2) {
-            moves++;
-            movesCounter.textContent = `Moves: ${moves}`;
-            checkForMatch();
+        // Bounce off the right edge
+        if (gameObject.x + gameObject.width > canvas.width || gameObject.x < 0) {
+            gameObject.speed = -gameObject.speed;
+        }
+
+        //Simple collision detection
+        if (gameObject.x > canvas.width) {
+          gameObject.x = 0;
+          score++;
+          scoreDisplay.textContent = 'Score: ' + score;
+        }
+
+    }
+
+
+    function gameLoop() {
+        if (!gameRunning) return;
+
+        // Clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Update and draw game objects
+        updateGameObject();
+        drawGameObject();
+
+        // Request the next animation frame
+        animationFrameId = requestAnimationFrame(gameLoop);
+    }
+
+    function startGame() {
+        if (!gameRunning) {
+            gameRunning = true;
+            score = 0;
+            scoreDisplay.textContent = 'Score: ' + score;
+            gameLoop();
+            startButton.disabled = true;
+            stopButton.disabled = false;
         }
     }
-}
 
 
-function checkForMatch() {
-    const [card1, card2] = flippedCards;
-
-    if (card1.dataset.value === card2.dataset.value) {
-        card1.classList.add('matched');
-        card2.classList.add('matched');
-        flippedCards = [];
-        checkGameOver();
-    } else {
-        setTimeout(() => {
-            card1.classList.remove('flipped');
-            card2.classList.remove('flipped');
-            flippedCards = [];
-        }, 1000);
+    function stopGame() {
+        gameRunning = false;
+        cancelAnimationFrame(animationFrameId); // Stop the animation
+        startButton.disabled = false;
+        stopButton.disabled = true;
     }
-}
 
-function checkGameOver() {
-    const matchedCards = document.querySelectorAll('.card.matched');
-    if (matchedCards.length === cardValues.length) {
-        gameOverMessage.style.display = 'block';
-        gameStarted = false;
-    }
-}
+    startButton.addEventListener('click', startGame);
+    stopButton.addEventListener('click', stopGame);
 
-resetButton.addEventListener('click', fillBoard);
-fillBoard();
 </script>
 </body>
 </html>
