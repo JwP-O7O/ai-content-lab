@@ -2,104 +2,238 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Pixel Game</title>
+<title>Simple Game</title>
 <style>
 body {
     font-family: sans-serif;
     display: flex;
-    flex-direction: column;
-    align-items: center;
     justify-content: center;
-    min-height: 100vh;
+    align-items: center;
+    height: 100vh;
     margin: 0;
     background-color: #f0f0f0;
 }
 
-#gameContainer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+#game-container {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
+    text-align: center;
 }
 
-#pixelCanvas {
+#game-canvas {
     border: 1px solid #ccc;
+    margin-bottom: 10px;
 }
 
-.pixel {
-    width: 20px;
-    height: 20px;
-    display: inline-block;
-    border: 1px solid #eee;
-    box-sizing: border-box;
+#score-display {
+    font-size: 1.2em;
+    margin-bottom: 10px;
 }
 
-.filled {
-    background-color: #3498db; /* Blue */
+#controls {
+    display: flex;
+    justify-content: center;
 }
 
 button {
     background-color: #4CAF50;
-    border: none;
     color: white;
     padding: 10px 20px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 10px;
-    cursor: pointer;
+    border: none;
     border-radius: 4px;
+    cursor: pointer;
+    margin: 0 5px;
+}
+
+button:hover {
+    background-color: #3e8e41;
 }
 </style>
 </head>
 <body>
 
-<div id="gameContainer">
-    <h1>Pixel Game</h1>
-    <canvas id="pixelCanvas" width="400" height="400"></canvas>
-    <button id="fillButton">Fill Canvas</button>
-    <button id="clearButton">Clear Canvas</button>
+<div id="game-container">
+    <h1>Simple Game</h1>
+    <canvas id="game-canvas" width="400" height="300"></canvas>
+    <div id="score-display">Score: <span id="score">0</span></div>
+    <div id="controls">
+        <button id="start-button">Start</button>
+        <button id="reset-button">Reset</button>
+    </div>
 </div>
 
 <script>
-    const canvas = document.getElementById('pixelCanvas');
-    const ctx = canvas.getContext('2d');
-    const fillButton = document.getElementById('fillButton');
-    const clearButton = document.getElementById('clearButton');
-    const pixelSize = 20;
-    const canvasWidth = canvas.width;
-    const canvasHeight = canvas.height;
-    const rows = canvasHeight / pixelSize;
-    const cols = canvasWidth / pixelSize;
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const scoreDisplay = document.getElementById('score');
+const startButton = document.getElementById('start-button');
+const resetButton = document.getElementById('reset-button');
+
+let score = 0;
+let gameRunning = false;
+let startTime;
+let animationFrameId;
+
+// Game state
+let playerX = canvas.width / 2;
+let playerY = canvas.height - 30; // Position the player near the bottom
+const playerWidth = 20;
+const playerHeight = 20;
+const playerSpeed = 5;
+
+let obstacles = [];
+const obstacleWidth = 30;
+const obstacleHeight = 15;
+const obstacleSpeed = 2; // Speed of the falling obstacles
+let obstacleSpawnInterval = 1000; // Time in milliseconds between obstacle spawns
+let lastObstacleSpawn = 0;
+let obstacleCount = 0; //Track number of obstacles that have passed player.
 
 
-    function drawPixel(x, y, color) {
-        ctx.fillStyle = color;
-        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+// Helper function to generate a random number
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+
+function resetGame() {
+    score = 0;
+    scoreDisplay.textContent = score;
+    obstacles = [];
+    playerX = canvas.width / 2;
+    lastObstacleSpawn = 0;
+    obstacleCount = 0;
+    gameRunning = false;
+    cancelAnimationFrame(animationFrameId); // Stop the animation
+    updateUI();
+
+}
+
+function startGame() {
+    if (!gameRunning) {
+        gameRunning = true;
+        startTime = Date.now();
+        animate(); // Start the game loop
+    }
+}
+
+function updateUI() {
+    startButton.textContent = gameRunning ? "Pause" : "Start";
+}
+
+function handleInput(event) {
+    if(!gameRunning) return;
+
+    if (event.key === 'ArrowLeft') {
+        playerX -= playerSpeed;
+    } else if (event.key === 'ArrowRight') {
+        playerX += playerSpeed;
     }
 
-    function clearCanvas() {
-        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    // Keep player within bounds
+    playerX = Math.max(0, Math.min(playerX, canvas.width - playerWidth));
+
+}
+
+document.addEventListener('keydown', handleInput);
+startButton.addEventListener('click', () => {
+    if (gameRunning) {
+        gameRunning = false;
+        cancelAnimationFrame(animationFrameId);
+        updateUI();
+
+    } else {
+        startGame();
+        updateUI();
     }
+});
 
 
-    function fillCanvas() {
-      for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-          drawPixel(x, y, '#3498db');
+resetButton.addEventListener('click', resetGame);
+
+
+function spawnObstacle() {
+    const x = getRandomInt(0, canvas.width - obstacleWidth);
+    obstacles.push({
+        x: x,
+        y: -obstacleHeight,  // Start above the canvas
+        width: obstacleWidth,
+        height: obstacleHeight
+    });
+}
+
+function drawPlayer() {
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
+}
+
+
+function drawObstacles() {
+    ctx.fillStyle = 'red';
+    obstacles.forEach(obstacle => {
+        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+    });
+}
+
+function updateObstacles() {
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+        obstacles[i].y += obstacleSpeed;
+
+        // Collision detection
+        if (
+            playerX < obstacles[i].x + obstacles[i].width &&
+            playerX + playerWidth > obstacles[i].x &&
+            playerY < obstacles[i].y + obstacles[i].height &&
+            playerY + playerHeight > obstacles[i].y
+        ) {
+            resetGame(); // Game over on collision
+            return; // Exit function so obstacles don't update further
         }
-      }
+
+
+        // Remove obstacles that have gone off-screen and update score
+        if (obstacles[i].y > canvas.height) {
+            obstacles.splice(i, 1);
+            score++;
+            scoreDisplay.textContent = score;
+            obstacleCount++;
+        }
+    }
+}
+
+
+function animate() {
+    if (!gameRunning) return;  // Stop the animation if game is not running
+
+    animationFrameId = requestAnimationFrame(animate);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+
+    //Obstacle Spawning
+    const now = Date.now();
+    if (now - lastObstacleSpawn > obstacleSpawnInterval) {
+        spawnObstacle();
+        lastObstacleSpawn = now;
     }
 
+    updateObstacles();
+    drawPlayer();
+    drawObstacles();
 
-    clearButton.addEventListener('click', clearCanvas);
-    fillButton.addEventListener('click', fillCanvas);
+
+    // Optional:  Adjust obstacle spawn rate or speed based on score.
+    if(score > 10 && obstacleSpawnInterval > 500) {
+        obstacleSpawnInterval = 800;
+    }
+    if (score > 20 && obstacleSpeed < 5) {
+        obstacleSpeed = 3;
+    }
+
+}
+
 </script>
-
 </body>
 </html>
 ```
