@@ -1,99 +1,88 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Falling Stars</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #000;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+<title>Falling Stars with Color Variation</title>
+<style>
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #111;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: sans-serif;
+}
 
-        #container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
+#container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
 
-        .star {
-            position: absolute;
-            background-color: white;
-            border-radius: 50%;
-            animation: fall linear infinite;
-        }
+.star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background-color: white; /* Default color */
+    border-radius: 50%;
+    animation: fall linear infinite;
+}
 
-        @keyframes fall {
-            0% {
-                transform: translateY(-10px);
-            }
-            100% {
-                transform: translateY(calc(100vh + 10px));
-            }
-        }
-        
-        @media (max-width: 600px) {
-            .star {
-                width: 1px;
-                height: 1px;
-            }
-        }
+@keyframes fall {
+    0% {
+        transform: translateY(-10px) translateX(0); /* Start slightly above */
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) translateX(calc(var(--star-x-offset, 0px) ));
+        opacity: 0;
+    }
+}
 
-        @media (min-width: 601px) {
-            .star {
-                width: 2px;
-                height: 2px;
-            }
-        }
-
-    </style>
+@media (max-width: 768px) {
+    /* Responsive adjustments for smaller screens */
+    .star {
+        width: 1px;
+        height: 1px;
+    }
+}
+</style>
 </head>
 <body>
     <div id="container"></div>
-
     <script>
         const container = document.getElementById('container');
-        const numberOfStars = 150;
-        const colors = ['#ffffff', '#ffcc00', '#cc99ff', '#66ccff', '#ff6666'];
+        const numStars = 150;
+        const starColors = ['#FFFFFF', '#ADD8E6', '#F08080', '#90EE90', '#FFB6C1', '#E6E6FA']; // Added more colors
 
-        function getRandomInt(min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
+        function getRandomColor() {
+            return starColors[Math.floor(Math.random() * starColors.length)];
         }
 
         function createStar() {
             const star = document.createElement('div');
             star.classList.add('star');
-            const color = colors[getRandomInt(0, colors.length - 1)];
-            star.style.backgroundColor = color;
-            const size = getRandomInt(1, 3);
-            star.style.width = `${size}px`;
-            star.style.height = `${size}px`;
-            const duration = getRandomInt(5, 15);
-            star.style.animationDuration = `${duration}s`;
-            const startX = getRandomInt(0, window.innerWidth);
-            star.style.left = `${startX}px`;
-            const delay = getRandomInt(0, duration);
-            star.style.animationDelay = `-${delay}s`;
+            star.style.left = Math.random() * 100 + 'vw';
+            star.style.top = Math.random() * 5 + 'vh'; // Start slightly above for better effect
+            star.style.backgroundColor = getRandomColor();
+            star.style.animationDuration = Math.random() * 2 + 1 + 's'; // Faster and slower stars
+            star.style.setProperty('--star-x-offset', (Math.random() * 20 -10) + 'vw'); //Random horizontal offset
+
             container.appendChild(star);
+            star.addEventListener('animationiteration', () => { //reset animation on loop
+                star.style.left = Math.random() * 100 + 'vw';
+                star.style.top = Math.random() * 5 + 'vh';
+                star.style.backgroundColor = getRandomColor();
+                star.style.animationDuration = Math.random() * 2 + 1 + 's';
+                star.style.setProperty('--star-x-offset', (Math.random() * 20 -10) + 'vw');
+            });
         }
 
-        for (let i = 0; i < numberOfStars; i++) {
+        for (let i = 0; i < numStars; i++) {
             createStar();
         }
 
-        // Dynamische resize voor responsive design
-        window.addEventListener('resize', () => {
-            const stars = document.querySelectorAll('.star');
-            stars.forEach(star => {
-                const startX = getRandomInt(0, window.innerWidth);
-                star.style.left = `${startX}px`;
-            });
-        });
     </script>
 </body>
 </html>
