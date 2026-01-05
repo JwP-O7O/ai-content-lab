@@ -4,17 +4,7 @@ import os
 class DatabaseManager:
     def __init__(self, db_file="ai_database.db"):
         self.db_file = db_file
-        self.conn = None
-        self.cursor = None
-        self.connect()
         self.create_tables()
-
-    def connect(self):
-        try:
-            self.conn = sqlite3.connect(self.db_file)
-            self.cursor = self.conn.cursor()
-        except sqlite3.Error as e:
-            print(f"Database connectie fout: {e}")
 
     def create_tables(self):
         # Voorbeeld: Tabel om research resultaten op te slaan
@@ -43,37 +33,40 @@ class DatabaseManager:
 
     def execute_query(self, query, params=None):
         try:
-            if self.cursor:
+            with sqlite3.connect(self.db_file) as conn:
+                cursor = conn.cursor()
                 if params:
-                    self.cursor.execute(query, params)
+                    cursor.execute(query, params)
                 else:
-                    self.cursor.execute(query)
-                self.conn.commit()
-                return self.cursor.lastrowid # Return laatste ID voor INSERT queries.
+                    cursor.execute(query)
+                conn.commit()
+                return cursor.lastrowid
         except sqlite3.Error as e:
             print(f"Database query fout: {e}. Query: {query}, Parameters: {params if params else 'None'}")
             return None
 
     def fetch_one(self, query, params=None):
         try:
-            if self.cursor:
+            with sqlite3.connect(self.db_file) as conn:
+                cursor = conn.cursor()
                 if params:
-                    self.cursor.execute(query, params)
+                    cursor.execute(query, params)
                 else:
-                    self.cursor.execute(query)
-                return self.cursor.fetchone()
+                    cursor.execute(query)
+                return cursor.fetchone()
         except sqlite3.Error as e:
             print(f"Database fetch_one fout: {e}. Query: {query}, Parameters: {params if params else 'None'}")
             return None
 
     def fetch_all(self, query, params=None):
         try:
-            if self.cursor:
+            with sqlite3.connect(self.db_file) as conn:
+                cursor = conn.cursor()
                 if params:
-                    self.cursor.execute(query, params)
+                    cursor.execute(query, params)
                 else:
-                    self.cursor.execute(query)
-                return self.cursor.fetchall()
+                    cursor.execute(query)
+                return cursor.fetchall()
         except sqlite3.Error as e:
             print(f"Database fetch_all fout: {e}. Query: {query}, Parameters: {params if params else 'None'}")
             return None
@@ -105,8 +98,3 @@ class DatabaseManager:
             WHERE status = ?
             ORDER BY timestamp DESC
         """, (status,))
-
-
-    def close(self):
-        if self.conn:
-            self.conn.close()
