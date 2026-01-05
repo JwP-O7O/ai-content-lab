@@ -9,8 +9,9 @@ class MemoryLoader:
     _memory = None
     _memory_loading_lock = threading.Lock()
     _memory_loading_complete = threading.Event()
-    _max_retries = 3  # Aantal keer dat we proberen opnieuw te laden
-    _retry_delay = 1  # Wachttijd in seconden voor de volgende poging
+    _max_retries = 3
+    _retry_delay = 1
+    _memory_loaded_successfully = False
 
     def __new__(cls):
         if not cls._instance:
@@ -35,11 +36,10 @@ class MemoryLoader:
                     logging.error(f"Attempt {attempt + 1}/{self._max_retries + 1} failed: {e}", exc_info=True)
                     if attempt == self._max_retries:
                         logging.error(f"Memory loading failed after multiple retries.")
-                        raise # Herwerp de exception na alle retries
+                        raise
                     time.sleep(self._retry_delay)
-            return None # Dit zou niet bereikt moeten worden, maar is voor de volledigheid.
+            return None
         return wrapper
-
 
     @_retry
     def _load_memory_internal(self):
@@ -51,41 +51,40 @@ class MemoryLoader:
             return loaded_memory
         except Exception as e:
             logging.error(f"Error during memory loading: {e}", exc_info=True)
-            raise  # Herwerp de exception zodat het retry mechanisme werkt
-
+            raise
 
     def _load_memory_async(self):
         with self._memory_loading_lock:
-            if self._memory is not None:
+            if self._memory_loaded_successfully:
                 return
-            self._memory = None
-            self._memory_loading_complete.clear()
 
         def load_task():
             try:
                 loaded_memory = self._load_memory_internal()
                 with self._memory_loading_lock:
                     self._memory = loaded_memory
+                    self._memory_loaded_successfully = True
                     self._memory_loading_complete.set()
-            except Exception:
-                # Fout is al gelogd in _load_memory_internal via het retry mechanisme.
-                pass # geen verdere actie nodig.  Het is al mislukt en geretried.
+            except Exception as e:
+                logging.error(f"Unhandled exception in loading thread: {e}", exc_info=True)
+                with self._memory_loading_lock:
+                    self._memory_loading_complete.set()
 
-        threading.Thread(target=load_task, daemon=True).start()
+        thread = threading.Thread(target=load_task, daemon=True)
+        thread.start()
 
-
-    def load_memory(self, timeout=5):  # Voeg timeout parameter toe
+    def load_memory(self, timeout=5):
         self._load_memory_async()
-        if not self._memory_loading_complete.wait(timeout): #Gebruik timeout
-            logging.error(f"Memory loading timed out after {timeout} seconds.")
+        if not self._memory_loading_complete.wait(timeout):
+            logging.warning("Memory loading timed out.")
             with self._memory_loading_lock:
-                self._memory = None  # Reset memory om onverwachte resultaten te voorkomen
-            return None
+                if not self._memory_loaded_successfully:
+                     return None
         with self._memory_loading_lock:
             return self._memory
 
     def get_memory(self):
         with self._memory_loading_lock:
-            if self._memory is None:
+            if self._memory is None and not self._memory_loaded_successfully:
                 self.load_memory()
             return self._memory

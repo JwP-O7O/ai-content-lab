@@ -49,8 +49,6 @@ def get_scanner_line(frame, width=30, color="#ffffff"):
     if 0 <= pos < width: chars[pos] = f"[bold white]●[/]"
     if 0 <= pos-1 < width: chars[pos-1] = f"[bold {color}]•[/]"
     if 0 <= pos+1 < width: chars[pos+1] = f"[bold {color}]•[/]"
-    if 0 <= pos-2 < width: chars[pos-2] = f"[dim {color}]·[/]"
-    if 0 <= pos+2 < width: chars[pos+2] = f"[dim {color}]·[/]"
     
     return "".join(chars)
 
@@ -58,8 +56,11 @@ def parse_log_line(line):
     line = line.strip()
     if not line: return None
     
-    skip = ["Cycle #", "Ruststand", "---", "WAIT", "IDLE", "HERSTART", "Nieuwe functionaliteit", "Geen nieuwe orders"]
-    if any(s in line for s in skip): return None
+    # --- SMART FILTER: WEG MET DE ROMMEL ---
+    # We verwijderen regels die alleen maar lijntjes bevatten
+    # Dit fixt jouw 'System' border probleem
+    bad_chars = ["╭", "╰", "──", "│", "Cycle #", "Ruststand", "WAIT", "IDLE"]
+    if any(x in line for x in bad_chars): return None
 
     cfg = {"c": "dim white", "i": "•", "tag": "SYS"}
     for key, config in AGENT_CONFIG.items():
@@ -67,17 +68,16 @@ def parse_log_line(line):
             cfg = config
             break
             
-    if "ERROR" in line: cfg = {"c": "bold red", "i": "☠️", "tag": "FAIL"}
+    if "ERROR" in line or "FAIL" in line: cfg = {"c": "bold red", "i": "☠️", "tag": "FAIL"}
     if "SUCCESS" in line: cfg = {"c": "bold green", "i": "✔", "tag": "OK"}
     if "ImportError" in line: cfg = {"c": "bold red", "i": "🚑", "tag": "FIX"}
-    if "FAIL" in line: cfg = {"c": "bold red", "i": "☠️", "tag": "FAIL"}
 
     parts = line.split(' - ')
     msg = parts[-1].strip() if len(parts) > 1 else line
     msg = re.sub(r'\[.*?\]', '', msg).strip()
     
     # Widescreen lengte
-    if len(msg) > 85: msg = msg[:82] + "..."
+    if len(msg) > 90: msg = msg[:87] + "..."
 
     return (cfg['i'], cfg['tag'], msg, cfg['c'])
 
@@ -93,7 +93,6 @@ def get_active_agent_info():
 
 def generate_layout(frame):
     layout = Layout()
-    
     layout.split_column(
         Layout(name="top_bar", size=3),
         Layout(name="feed", ratio=1)
@@ -101,7 +100,7 @@ def generate_layout(frame):
 
     main_color = get_smooth_color(frame, speed=0.08)
     
-    # --- 1. TOP BAR ---
+    # --- TOP BAR ---
     scanner = get_scanner_line(frame, width=25, color=main_color)
     active_agent = get_active_agent_info()
     
@@ -111,7 +110,7 @@ def generate_layout(frame):
     header_grid.add_column(justify="right", ratio=1)
     
     header_grid.add_row(
-        f"[bold {main_color}]PHOENIX V11[/]",
+        f"[bold {main_color}]PHOENIX V12[/]",
         scanner,
         f"ACT: [bold white]{active_agent}[/]"
     )
@@ -123,7 +122,7 @@ def generate_layout(frame):
         box=box.HEAVY_EDGE
     ))
 
-    # --- 2. FEED ---
+    # --- FEED ---
     log_table = Table(
         show_header=False,
         box=None,
@@ -135,13 +134,14 @@ def generate_layout(frame):
     log_table.add_column("Tag", width=6, justify="left")
     log_table.add_column("Message", ratio=1)
 
-    raw_logs = get_file_tail("logs/autonomous_agents/agent.log", lines=40)
+    raw_logs = get_file_tail("logs/autonomous_agents/agent.log", lines=50)
     display_logs = []
     
     for line in reversed(raw_logs):
         parsed = parse_log_line(line)
         if parsed:
             display_logs.append(parsed)
+            # Aantal regels afgestemd op scherm
             if len(display_logs) >= 28: break 
 
     for icon, tag, msg, color in display_logs:
@@ -163,7 +163,7 @@ def generate_layout(frame):
 if __name__ == "__main__":
     console.clear()
     frame = 0
-    # FIX: screen=True voorkomt knipperen, refresh op 4 is rustiger
+    # screen=True voorkomt knipperen!
     with Live(generate_layout(0), refresh_per_second=4, screen=True) as live:
         while True:
             live.update(generate_layout(frame))
