@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Pixel Grid Game</title>
+<title>Pixel Game</title>
 <style>
 body {
     font-family: sans-serif;
@@ -15,175 +15,187 @@ body {
     background-color: #f0f0f0;
 }
 
-#game-container {
+#gameContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     border: 2px solid #333;
     background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-#pixel-grid {
+#gridContainer {
     display: grid;
-    /* Adjusted grid for better responsiveness, use percentages */
-    grid-template-columns: repeat(20, 1fr); /* Adjust the number of columns (pixels wide) */
+    /* Adjust grid size dynamically based on grid size */
+    grid-template-columns: repeat(var(--grid-size), 20px);
     grid-gap: 1px;
-    width: 400px; /* or a percentage, e.g., 80% */
-    height: 400px;
-    /* Adjust width/height as needed */
+    margin-bottom: 10px;
 }
 
 .pixel {
-    width: 100%; /* Ensure pixels fill their grid cells */
-    height: 100%; /* Ensure pixels fill their grid cells */
+    width: 20px;
+    height: 20px;
     background-color: #eee;
-    border: 1px solid #ddd;
-    box-sizing: border-box; /* Important for width/height calculation */
+    border: 1px solid #ccc;
+    box-sizing: border-box;
     cursor: pointer;
+}
+
+.pixel.active {
+    background-color: #4CAF50; /* Green */
 }
 
 #controls {
-    margin-top: 20px;
     display: flex;
     gap: 10px;
+    margin-bottom: 10px;
 }
 
 button {
-    padding: 10px 15px;
+    padding: 10px 20px;
     font-size: 1em;
     cursor: pointer;
+    background-color: #008CBA;
+    color: white;
     border: none;
     border-radius: 5px;
-    background-color: #4CAF50;
-    color: white;
-    transition: background-color 0.2s;
+    transition: background-color 0.3s ease;
 }
 
 button:hover {
-    background-color: #3e8e41;
+    background-color: #0077a0;
 }
 
-#score {
-    margin-top: 20px;
+#scoreDisplay {
     font-size: 1.2em;
+    margin-bottom: 10px;
 }
 
+#message {
+    font-size: 1.1em;
+    color: #333;
+    margin-bottom: 10px;
+}
 </style>
 </head>
 <body>
 
-    <h1>Pixel Grid Game</h1>
-
-    <div id="game-container">
-        <div id="pixel-grid">
-            <!-- Pixels will be dynamically generated here -->
-        </div>
-    </div>
-
+<div id="gameContainer">
+    <div id="message">Click to activate pixels!</div>
+    <div id="scoreDisplay">Score: 0</div>
+    <div id="gridContainer"></div>
     <div id="controls">
-        <button id="start-button">Start</button>
-        <button id="reset-button">Reset</button>
+        <button id="startButton">Start</button>
+        <button id="resetButton">Reset</button>
     </div>
-
-    <div id="score">Score: <span id="score-value">0</span></div>
+</div>
 
 
 <script>
-    const pixelGrid = document.getElementById('pixel-grid');
-    const startButton = document.getElementById('start-button');
-    const resetButton = document.getElementById('reset-button');
-    const scoreValue = document.getElementById('score-value');
-    const gridWidth = 20; // Number of columns
-    const gridHeight = 20; // Number of rows
+    const gridSize = 15; // Set the grid size
+    const gridContainer = document.getElementById('gridContainer');
+    const startButton = document.getElementById('startButton');
+    const resetButton = document.getElementById('resetButton');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const message = document.getElementById('message');
     let pixels = [];
-    let gameInterval;
     let score = 0;
-    let isGameRunning = false;
+    let gameInterval;
+    let activePixelIndex = -1;
+    let gameRunning = false;
 
-    // Function to generate the pixel grid
+    // Set CSS variable for grid size
+    document.documentElement.style.setProperty('--grid-size', gridSize);
+
     function createGrid() {
-        for (let row = 0; row < gridHeight; row++) {
-            for (let col = 0; col < gridWidth; col++) {
-                const pixel = document.createElement('div');
-                pixel.classList.add('pixel');
-                pixel.dataset.row = row;
-                pixel.dataset.col = col;
-                pixel.addEventListener('click', pixelClickHandler);
-                pixelGrid.appendChild(pixel);
-                pixels.push(pixel);
-            }
+        for (let i = 0; i < gridSize * gridSize; i++) {
+            const pixel = document.createElement('div');
+            pixel.classList.add('pixel');
+            pixel.addEventListener('click', () => pixelClick(i));
+            gridContainer.appendChild(pixel);
+            pixels.push(pixel);
         }
     }
 
-    function getRandomPixel() {
-        const randomIndex = Math.floor(Math.random() * pixels.length);
-        return pixels[randomIndex];
+
+    function getRandomPixelIndex() {
+        return Math.floor(Math.random() * gridSize * gridSize);
     }
 
-    function pixelClickHandler(event) {
-        if (!isGameRunning) return; // Prevent clicking when the game is not running
 
-        const clickedPixel = event.target;
-        if (clickedPixel.classList.contains('active')) {
-            clickedPixel.classList.remove('active');
-            clickedPixel.style.backgroundColor = '#eee';
+    function activateRandomPixel() {
+        if (activePixelIndex !== -1) {
+            pixels[activePixelIndex].classList.remove('active');
+        }
+        activePixelIndex = getRandomPixelIndex();
+        pixels[activePixelIndex].classList.add('active');
+    }
+
+    function pixelClick(index) {
+        if (!gameRunning) return; // Prevent clicking when the game is not running
+
+        if (index === activePixelIndex) {
             score++;
-            scoreValue.textContent = score;
-            spawnActivePixel(); // Spawn a new active pixel
+            scoreDisplay.textContent = `Score: ${score}`;
+            message.textContent = "Correct!";
+            setTimeout(() => {message.textContent = "Keep clicking!";}, 1000);
+            activateRandomPixel();
         } else {
-            // Game Over - optional implementation
             gameOver();
         }
     }
 
 
-    function spawnActivePixel() {
-        // Clear existing active pixels
-        pixels.forEach(pixel => {
-            pixel.classList.remove('active');
-            pixel.style.backgroundColor = '#eee';
-        });
-
-        // Get a random pixel and activate it
-        const activePixel = getRandomPixel();
-        activePixel.classList.add('active');
-        activePixel.style.backgroundColor = '#ff0000'; // Red color
-    }
-
-
     function startGame() {
-        if (isGameRunning) return;
-        isGameRunning = true;
+        if(gameRunning) return;
+        gameRunning = true;
         score = 0;
-        scoreValue.textContent = score;
-        spawnActivePixel();
+        scoreDisplay.textContent = `Score: ${score}`;
+        message.textContent = "Game started!";
+        activateRandomPixel();
+        gameInterval = setInterval(activateRandomPixel, 2000); // Activate a new pixel every 2 seconds
+        startButton.textContent = "Stop";
 
     }
+
+    function stopGame() {
+        clearInterval(gameInterval);
+        gameRunning = false;
+        startButton.textContent = "Start";
+        activePixelIndex = -1;
+        message.textContent = "Game stopped.";
+        pixels.forEach(pixel => pixel.classList.remove('active'));
+
+    }
+
 
     function gameOver() {
-        clearInterval(gameInterval); // Stop the game loop
-        isGameRunning = false;
-        alert(`Game Over! Your score: ${score}`);
-        // Optionally: reset the game after game over
+        stopGame();
+        message.textContent = `Game Over! Final Score: ${score}`;
     }
+
 
     function resetGame() {
-        clearInterval(gameInterval);
-        isGameRunning = false;
+        stopGame();
         score = 0;
-        scoreValue.textContent = score;
-        pixels.forEach(pixel => {
-            pixel.classList.remove('active');
-            pixel.style.backgroundColor = '#eee'; // Reset pixel color
-        });
+        scoreDisplay.textContent = `Score: ${score}`;
+        pixels.forEach(pixel => pixel.classList.remove('active'));
+        message.textContent = "Game reset.";
     }
 
 
-    // Event listeners
-    startButton.addEventListener('click', startGame);
-    resetButton.addEventListener('click', resetGame);
-
-    // Initialize the grid
     createGrid();
 
+    startButton.addEventListener('click', () => {
+        if (gameRunning) {
+            stopGame();
+        } else {
+            startGame();
+        }
+    });
+    resetButton.addEventListener('click', resetGame);
 </script>
 
 </body>
