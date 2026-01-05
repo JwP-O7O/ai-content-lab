@@ -3,6 +3,6 @@
 | Metric | Waarde |
 |---|---|
 | **Model** | `Gemini 2.0` |
-| **Cycles** | 4 |
+| **Cycles** | 5 |
 | **Status** | 🧠 LEARNING & OPTIMIZING |
-| **Laatste Actie** | 🌐 Web App: voeg_een_maan.html |
+| **Laatste Actie** | 🛠️ Systeem geüpgraded |
