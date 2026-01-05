@@ -2,165 +2,157 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Game</title>
+<title>Pixel Game</title>
 <style>
 body {
     font-family: sans-serif;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     height: 100vh;
     margin: 0;
     background-color: #f0f0f0;
 }
 
 #game-container {
+    border: 2px solid #333;
     background-color: #fff;
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-#game-canvas {
+#pixel-grid {
+    display: grid;
+}
+
+.pixel {
+    width: 20px;
+    height: 20px;
     border: 1px solid #ccc;
-    margin-bottom: 10px;
+    box-sizing: border-box;
 }
 
-#score {
-    font-size: 1.2em;
-    margin-bottom: 10px;
+.pixel.active {
+    background-color: #007bff; /* Blue */
 }
 
 #controls {
+    margin-top: 20px;
     display: flex;
-    justify-content: center;
+    gap: 10px;
 }
 
 button {
-    background-color: #4CAF50;
-    color: white;
     padding: 10px 20px;
+    font-size: 1em;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    margin: 0 5px;
+    background-color: #28a745; /* Green */
+    color: white;
+    transition: background-color 0.2s ease;
 }
 
 button:hover {
-    background-color: #3e8e41;
+    background-color: #218838;
+}
+
+#score {
+    margin-top: 10px;
+    font-size: 1.2em;
 }
 </style>
 </head>
 <body>
 
+<h1>Pixel Game</h1>
+
 <div id="game-container">
-    <h1>Simple Game</h1>
-    <canvas id="game-canvas" width="400" height="300"></canvas>
-    <div id="score">Score: 0</div>
-    <div id="controls">
-        <button id="start-button">Start</button>
-        <button id="reset-button">Reset</button>
-    </div>
+    <div id="pixel-grid"></div>
 </div>
 
+<div id="controls">
+    <button id="start-button">Start</button>
+    <button id="reset-button">Reset</button>
+</div>
+
+<div id="score">Score: <span id="score-value">0</span></div>
+
+
 <script>
-    const canvas = document.getElementById('game-canvas');
-    const ctx = canvas.getContext('2d');
-    const scoreElement = document.getElementById('score');
+    const gridContainer = document.getElementById('pixel-grid');
     const startButton = document.getElementById('start-button');
     const resetButton = document.getElementById('reset-button');
-
+    const scoreValue = document.getElementById('score-value');
+    const gridSize = 20; // Size of the grid (20x20)
+    let pixels = [];
+    let activePixel = null;
+    let gameInterval = null;
     let score = 0;
-    let gameRunning = false;
-    let circleX, circleY, circleRadius;
-    let targetX, targetY, targetRadius;
-    let animationFrameId;
+
+
+    function createGrid() {
+        gridContainer.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+        for (let i = 0; i < gridSize * gridSize; i++) {
+            const pixel = document.createElement('div');
+            pixel.classList.add('pixel');
+            pixel.addEventListener('click', () => pixelClick(pixel));
+            gridContainer.appendChild(pixel);
+            pixels.push(pixel);
+        }
+    }
+
+    function getRandomPixel() {
+        const randomIndex = Math.floor(Math.random() * pixels.length);
+        return pixels[randomIndex];
+    }
+
+    function activateRandomPixel() {
+        if (activePixel) {
+            activePixel.classList.remove('active');
+        }
+        activePixel = getRandomPixel();
+        activePixel.classList.add('active');
+    }
+
+    function pixelClick(pixel) {
+        if (pixel === activePixel) {
+            score++;
+            scoreValue.textContent = score;
+            activateRandomPixel();
+        } else {
+             // Game Over logic (optional)
+            alert("Game Over! Final score: " + score);
+            resetGame(); // or end the game loop
+        }
+    }
+
+
+    function startGame() {
+        score = 0;
+        scoreValue.textContent = score;
+        activateRandomPixel();
+        gameInterval = setInterval(activateRandomPixel, 2000); // Activate a new pixel every 2 seconds
+        startButton.disabled = true; // disable start button during game.
+    }
+
 
     function resetGame() {
+        clearInterval(gameInterval);
+        if (activePixel) {
+            activePixel.classList.remove('active');
+            activePixel = null;
+        }
         score = 0;
-        scoreElement.textContent = 'Score: 0';
-        gameRunning = false;
-        startButton.textContent = "Start";
-        cancelAnimationFrame(animationFrameId);
-        initializeGame(); // Re-initialize game elements on reset
-    }
-
-    function initializeGame() {
-        circleRadius = 15;
-        circleX = canvas.width / 2;
-        circleY = canvas.height / 2;
-
-        targetRadius = 20;
-        targetX = Math.random() * (canvas.width - 2 * targetRadius) + targetRadius;
-        targetY = Math.random() * (canvas.height - 2 * targetRadius) + targetRadius;
+        scoreValue.textContent = score;
+        startButton.disabled = false;
     }
 
 
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    createGrid();
 
-        // Draw the moving circle (player)
-        ctx.beginPath();
-        ctx.arc(circleX, circleY, circleRadius, 0, Math.PI * 2);
-        ctx.fillStyle = 'blue';
-        ctx.fill();
-        ctx.closePath();
-
-        // Draw the target circle
-        ctx.beginPath();
-        ctx.arc(targetX, targetY, targetRadius, 0, Math.PI * 2);
-        ctx.fillStyle = 'red';
-        ctx.fill();
-        ctx.closePath();
-    }
-
-
-    function update() {
-        if (!gameRunning) return;
-
-        // Simple movement - make it follow the mouse (or touch)
-        canvas.addEventListener('mousemove', (e) => {
-          const rect = canvas.getBoundingClientRect();
-          circleX = e.clientX - rect.left;
-          circleY = e.clientY - rect.top;
-        });
-
-      // Simple collision detection
-        const dx = circleX - targetX;
-        const dy = circleY - targetY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance < circleRadius + targetRadius) {
-            score++;
-            scoreElement.textContent = `Score: ${score}`;
-
-            // Reset target position
-            targetX = Math.random() * (canvas.width - 2 * targetRadius) + targetRadius;
-            targetY = Math.random() * (canvas.height - 2 * targetRadius) + targetRadius;
-        }
-
-
-        draw();
-        animationFrameId = requestAnimationFrame(update);
-    }
-
-
-
-    startButton.addEventListener('click', () => {
-        gameRunning = !gameRunning;
-        startButton.textContent = gameRunning ? "Pause" : "Start";
-        if (gameRunning) {
-            update();
-        } else {
-            cancelAnimationFrame(animationFrameId);
-        }
-    });
-
+    startButton.addEventListener('click', startGame);
     resetButton.addEventListener('click', resetGame);
-
-    initializeGame();
-    draw();  // Initial draw
 
 </script>
 </body>
