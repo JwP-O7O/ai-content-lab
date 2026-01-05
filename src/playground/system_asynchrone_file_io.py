@@ -2,7 +2,11 @@ import asyncio
 import os
 import aiofiles
 import time
+import logging
 from typing import List, Tuple, Dict, Callable, Any
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class ContentQualityMonitor:
     def __init__(self, analysis_functions: Dict[str, Callable[[str], Any]] = None):
@@ -13,8 +17,14 @@ class ContentQualityMonitor:
             async with aiofiles.open(file_path, mode='r', encoding='utf-8') as f:
                 content = await f.read()
                 return content
+        except FileNotFoundError:
+            logging.error(f"File not found: {file_path}")
+            return ""
+        except IOError as e:
+            logging.error(f"IOError while reading file {file_path}: {e}")
+            return ""
         except Exception as e:
-            print(f"Error reading file {file_path}: {e}")
+            logging.exception(f"Unexpected error reading file {file_path}: {e}")
             return ""
 
     async def analyze(self, file_path: str) -> Dict[str, Any]:
@@ -24,6 +34,7 @@ class ContentQualityMonitor:
             try:
                 results[name] = func(content)
             except Exception as e:
+                logging.error(f"Error during analysis of {file_path} with function {name}: {e}")
                 results[name] = f"Error during analysis: {e}"
         return results
 
@@ -44,7 +55,7 @@ async def main():
     # Create some dummy files for testing
     if not os.path.exists("test_files"):
         os.makedirs("test_files")
-    
+
     file_paths = []
     for i in range(3):
         file_path = f"test_files/test_file_{i}.txt"
