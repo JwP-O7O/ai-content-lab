@@ -68,13 +68,14 @@ class TermuxMasterOrchestrator:
                     # Markeer als voltooid in DB
                     if task_id:
                         self.listener.queue.complete_task(
-                            task_id, result="Executed successfully"
+                            task_id, result=str(result) # Store string representation of result in DB
                         )
 
                     # 🧠 LEER VAN DEZE SESSIE
                     await self.memory.update_context_after_task(
-                        task_id, title, str(result), "completed", duration
+                        task_id, title, result, "completed", duration
                     )
+                    return result # Return the result of the last processed task
 
                 except Exception as e:
                     duration = time.time() - start_time
@@ -87,9 +88,8 @@ class TermuxMasterOrchestrator:
                     await self.memory.update_context_after_task(
                         task_id, title, str(e), "failed", duration
                     )
-
-    async def start(self):
-        logger.info("🦅 PHOENIX V17 - SQUAD ARCHITECTURE ONLINE")
+                    return None # Return None if task failed
+        return None # No tasks processed
         while True:
             try:
                 await self.run_cycle()

@@ -3,6 +3,10 @@
     {
       "task": "SYSTEM: Maak een calculator script (sanity_calc.py) met error handling voor delen door nul.",
       "pattern": "Het herbruikbare patroon is het gebruik van een script met error handling om een specifieke functionaliteit te implementeren en op te slaan in een bestand."
+    },
+    {
+      "task": "WEB: Maak een interactieve Matrix Digital Rain animatie in een single HTML bestand, volledig responsive, met Neon accenten en Dark Mode.",
+      "pattern": "Het herbruikbare patroon is het cre\u00ebren van een single-file, responsieve, interactieve webanimatie met een specifieke stijl (Neon/Dark Mode)."
     }
   ],
   "failed_patterns": [],
