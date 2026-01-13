@@ -1,5 +1,6 @@
 import os
 import ast
+import subprocess
 from loguru import logger
 from src.autonomous_agents.ai_service import AIService
 from src.autonomous_agents.execution.git_publisher import GitPublisher
@@ -35,6 +36,92 @@ class FeatureArchitect:
                 if partial_name in file:
                     return os.path.join(root, file)
         return None
+    
+    def _format_code(self, code):
+        """
+        Formatteert de code met 'Black' voor consistente stijl.
+        """
+        try:
+            # Run black via stdin (-)
+            process = subprocess.Popen(
+                ['black', '-'],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            formatted_code, stderr = process.communicate(input=code)
+            
+            if process.returncode == 0:
+                logger.info(f"[{self.name}] ✨ Code formatted with Black.")
+                return formatted_code.strip()
+            else:
+                logger.warning(f"[{self.name}] ⚠️ Black formatting failed: {stderr}. Using raw code.")
+                return code
+        except Exception as e:
+            logger.warning(f"[{self.name}] ⚠️ Formatting error: {e}")
+            return code
+
+    async def _generate_and_run_tests(self, code, target_file):
+        """
+        Genereert een unit test, slaat deze op en voert hem uit.
+        """
+        filename = os.path.basename(target_file)
+        module_name = filename.replace(".py", "")
+        # Construct import path (e.g., src.playground.sanity_calc)
+        rel_path = os.path.relpath(target_file, os.getcwd()).replace(os.path.sep, ".").replace(".py", "")
+        
+        test_filename = f"test_{filename}"
+        test_file_path = os.path.join("tests", test_filename)
+        
+        logger.info(f"[{self.name}] 🧪 Generating unit tests for {filename}...")
+        
+        test_prompt = f"""
+        ACT AS: QA Automation Engineer.
+        TASK: Write a robust `pytest` unit test for the following Python code.
+        
+        CONTEXT:
+        - The code is located at: `{target_file}`
+        - The test will be located at: `{test_file_path}`
+        - You MUST import the module using: `from {rel_path} import *`
+        - Use `sys.path.append(os.getcwd())` if necessary to fix imports.
+        
+        CODE TO TEST:
+        {code}
+        
+        OUTPUT:
+        - Return ONLY the Python test code.
+        - Include `import pytest`.
+        """
+        
+        response = await self.ai.generate_text(test_prompt)
+        test_code = response.replace("```python", "").replace("```", "").strip()
+        
+        # Save test
+        os.makedirs("tests", exist_ok=True)
+        with open(test_file_path, 'w') as f:
+            f.write(test_code)
+            
+        logger.info(f"[{self.name}] 💾 Test opgeslagen: {test_file_path}. Running pytest...")
+        
+        # Run pytest
+        try:
+            result = subprocess.run(
+                ["pytest", test_file_path],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode == 0:
+                logger.success(f"[{self.name}] ✅ ALL TESTS PASSED for {filename}!")
+                return True
+            else:
+                logger.error(f"[{self.name}] ❌ TESTS FAILED for {filename}:\n{result.stdout}\n{result.stderr}")
+                return False
+        except Exception as e:
+            logger.error(f"[{self.name}] ⚠️ Failed to run pytest: {e}")
+            return False
 
     async def _validate_and_fix(self, code, attempt=1):
         """
@@ -112,11 +199,14 @@ class FeatureArchitect:
 
         # 4. Validatie & Self-Healing (NIEUW)
         try:
-            final_code = await self._validate_and_fix(raw_code)
+            validated_code = await self._validate_and_fix(raw_code)
         except SyntaxError:
             return {"status": "failed", "msg": "Unfixable Syntax Error"}
+            
+        # 5. Formatting (Mijlpaal 3.1)
+        final_code = self._format_code(validated_code)
 
-        # 5. Opslag (Nieuw bestand of Update)
+        # 6. Opslag (Nieuw bestand of Update)
         if not target_file:
             name_p = f"Kies een Python bestandsnaam (snake_case) voor: {instruction}. ALLEEN de naam."
             fname = await self.ai.generate_text(name_p)
@@ -138,7 +228,10 @@ class FeatureArchitect:
         with open(target_file, "w") as f:
             f.write(final_code)
 
+        # 7. Unit Tests (Mijlpaal 3.2)
+        tests_passed = await self._generate_and_run_tests(final_code, target_file)
+
         logger.success(
-            f"[{self.name}] 💾 Code (Validated) geïmplementeerd in: {target_file}"
+            f"[{self.name}] 💾 Code (Validated, Formatted & Tested) geïmplementeerd in: {target_file}"
         )
-        return {"status": "success", "file": target_file}
+        return {"status": "success", "file": target_file, "tests_passed": tests_passed}
