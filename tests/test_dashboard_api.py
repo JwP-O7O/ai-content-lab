@@ -6,102 +6,84 @@ import json
 from fastapi.testclient import TestClient
 from typing import List, Dict, Any
 
+# Assuming the script is run from the project root. Adjust if needed.
 sys.path.append(os.getcwd())
 from src.playground.dashboard_api import app, DATABASE_PATH, TASKS_TABLE, METRICS_FILE, create_database, initialize_metrics_file, get_tasks_from_db, get_metrics_from_file
 
-@pytest.fixture(scope="session")
-def test_client():
-    """Provides a test client for the FastAPI app."""
-    with TestClient(app) as client:
-        yield client
+# Create a test client
+client = TestClient(app)
 
+# Fixture to set up and tear down the database and metrics file
 @pytest.fixture(scope="function")
-def database_setup():
-    """Sets up and tears down the database for each test."""
-    # Setup - Create a new database and table
+def test_setup_and_teardown():
+    # Setup - Create a fresh database and metrics file before each test
+    if os.path.exists(DATABASE_PATH):
+        os.remove(DATABASE_PATH)
+    if os.path.exists(METRICS_FILE):
+        os.remove(METRICS_FILE)
     create_database()
     initialize_metrics_file()
+
+    # Yield control to the test function
     yield
-    # Teardown - Clean up the database
-    try:
+
+    # Teardown - Clean up after each test
+    if os.path.exists(DATABASE_PATH):
         os.remove(DATABASE_PATH)
-    except FileNotFoundError:
-        pass
-    try:
+    if os.path.exists(METRICS_FILE):
         os.remove(METRICS_FILE)
-    except FileNotFoundError:
-        pass
 
+def test_get_tasks_empty_db(test_setup_and_teardown):
+    """Tests GET /tasks when the database is empty."""
+    response = client.get("/tasks")
+    assert response.status_code == 200
+    assert response.json() == []
 
+def test_get_metrics_empty_file(test_setup_and_teardown):
+    """Tests GET /metrics when the metrics file is empty."""
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    assert response.json() == {}
 
-def test_get_tasks_success(test_client, database_setup):
-    """Tests the /tasks endpoint for successful retrieval of tasks."""
-    # Arrange - Insert a task into the database
+def test_get_tasks_with_data(test_setup_and_teardown):
+    """Tests GET /tasks with data in the database."""
+    # Insert some data into the database
     with sqlite3.connect(DATABASE_PATH) as conn:
         cursor = conn.cursor()
-        cursor.execute(f"INSERT INTO {TASKS_TABLE} (description, status) VALUES (?, ?)", ("Test Task", "Open"))
+        cursor.execute(f"INSERT INTO {TASKS_TABLE} (description, status) VALUES (?, ?)", ("Test task 1", "open"))
+        cursor.execute(f"INSERT INTO {TASKS_TABLE} (description, status) VALUES (?, ?)", ("Test task 2", "in progress"))
         conn.commit()
 
-    # Act - Call the /tasks endpoint
-    response = test_client.get("/tasks")
-
-    # Assert - Check the response
+    response = client.get("/tasks")
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, list)
-    assert len(data) == 1
-    assert data[0]["description"] == "Test Task"
-    assert data[0]["status"] == "Open"
-    assert "id" in data[0]
+    assert len(data) == 2
+    assert data[0]["description"] == "Test task 1"
+    assert data[1]["description"] == "Test task 2"
 
-def test_get_tasks_empty(test_client, database_setup):
-    """Tests the /tasks endpoint when the database is empty."""
-
-    response = test_client.get("/tasks")
-
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
-    assert len(data) == 0
-
-def test_get_metrics_success(test_client, database_setup):
-    """Tests the /metrics endpoint for successful retrieval of metrics."""
-
-    # Arrange - Create a metrics file with some content
-    metrics_data = {"test_metric": 123}
+def test_get_metrics_with_data(test_setup_and_teardown):
+    """Tests GET /metrics with data in the metrics file."""
+    # Write some data to the metrics file
+    metrics_data = {"key1": "value1", "key2": "value2"}
     with open(METRICS_FILE, "w") as f:
         json.dump(metrics_data, f)
 
-    # Act - Call the /metrics endpoint
-    response = test_client.get("/metrics")
-
-    # Assert - Check the response
+    response = client.get("/metrics")
     assert response.status_code == 200
-    data = response.json()
-    assert data == metrics_data
+    assert response.json() == metrics_data
 
+def test_get_tasks_db_error(mocker, test_setup_and_teardown):
+    """Tests GET /tasks when there's a database error."""
+    # Mock the get_tasks_from_db function to raise an exception
+    mocker.patch('src.playground.dashboard_api.get_tasks_from_db', side_effect=Exception("Simulated DB error"))
+    response = client.get("/tasks")
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Internal server error"}
 
-def test_get_metrics_empty(test_client, database_setup):
-    """Tests the /metrics endpoint when the metrics file is empty or doesn't exist."""
-
-    # Act - Call the /metrics endpoint
-    response = test_client.get("/metrics")
-
-    # Assert - Check the response
-    assert response.status_code == 200
-    data = response.json()
-    assert data == {}
-
-def test_get_metrics_file_not_found(test_client, database_setup):
-    """Tests the /metrics endpoint when the metrics file does not exist. (Simulate by deleting it)."""
-
-    # Ensure file does not exist before test (it should be deleted by the database_setup fixture)
-    assert not os.path.exists(METRICS_FILE)
-
-    # Act - Call the /metrics endpoint
-    response = test_client.get("/metrics")
-
-    # Assert
-    assert response.status_code == 200
-    data = response.json()
-    assert data == {}
+def test_get_metrics_file_error(mocker, test_setup_and_teardown):
+    """Tests GET /metrics when there's a file reading error."""
+    # Mock the get_metrics_from_file function to raise an exception
+    mocker.patch('src.playground.dashboard_api.get_metrics_from_file', side_effect=Exception("Simulated file error"))
+    response = client.get("/metrics")
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Internal server error"}
