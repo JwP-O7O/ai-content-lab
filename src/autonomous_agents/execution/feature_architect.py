@@ -159,7 +159,7 @@ class FeatureArchitect:
         if not target_file:
             name_p = f"Filename for: {instruction}. ONLY name (snake_case .py)."
             fname = await self.ai.generate_text(name_p)
-            fname = fname.strip().lower().replace(" ", "_").replace(".py", "") + ".py"
+            fname = fname.strip().lower().replace(" ", "_").replace("`", "").replace("\n", "").replace(".py", "") + ".py"
             target_file = os.path.join("src/playground", fname)
 
         os.makedirs(os.path.dirname(target_file), exist_ok=True)
