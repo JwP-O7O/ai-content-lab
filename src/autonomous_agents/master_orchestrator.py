@@ -75,7 +75,7 @@ class TermuxMasterOrchestrator:
                     await self.memory.update_context_after_task(
                         task_id, title, result, "completed", duration
                     )
-                    return result # Return the result of the last processed task
+                    return result # Return the original result dictionary
 
                 except Exception as e:
                     duration = time.time() - start_time
