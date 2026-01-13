@@ -57,10 +57,12 @@ class TermuxMasterOrchestrator:
                     elif "WEB:" in title.upper():
                         result = await self.frontend_squad.build_website(title)
                         await self.publisher.publish_changes()
+                        logger.debug(f"DEBUG: Frontend Squad Result: {result}")
 
                     elif "SYSTEM:" in title.upper():
                         result = await self.backend_squad.build_feature(title)
                         await self.publisher.publish_changes()
+                        logger.debug(f"DEBUG: Backend Squad Result: {result}")
 
                     # Bereken duur
                     duration = time.time() - start_time

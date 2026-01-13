@@ -77,4 +77,4 @@ class WebArchitect:
             f.write(code)
 
         logger.success(f"[{self.name}] 🌐 App opgeleverd: {filename}")
-        return target_file
+        return {"status": "success", "file": target_file}
