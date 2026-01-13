@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phoenix OS - Matrix Digital Rain</title>
+    <style>
+        /* Dark Mode & Base Styles */
+        body {
+            font-family: monospace;
+            background-color: #121212; /* Dark Mode Background */
+            color: #fff;
+            overflow: hidden; /* Hide scrollbars */
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        /* Canvas Styling */
+        #matrixCanvas {
+            display: block; /* Important for responsiveness */
+            width: 100%;
+            height: 100%;
+            position: fixed; /* Covers the whole screen */
+            top: 0;
+            left: 0;
+            z-index: -1; /* Behind the content */
+        }
+
+        /* Neon Accent */
+        .neon-text {
+            color: #00ff9d; /* Neon Green */
+            text-shadow: 0 0 10px #00ff9d, 0 0 20px #00ff9d, 0 0 30px #00ff9d; /* Neon Glow */
+        }
+
+        /* Responsive Container */
+        .container {
+            width: 100%; /* Full width on smaller screens */
+            max-width: 90%; /*  Limited width on larger screens */
+            margin: 20px auto; /* Center the container with some margin */
+            padding: 20px;
+            text-align: center;
+            position: relative; /*  For z-index stacking */
+            z-index: 1; /* Above the canvas */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Matrix Canvas (Full Screen) -->
+    <canvas id="matrixCanvas"></canvas>
+
+    <!-- Content Container -->
+    <div class="container">
+        <h1 class="neon-text">Phoenix OS - Matrix Digital Rain</h1>
+        <p>A mesmerizing display of digital rain, powered by JavaScript and styled with Neon accents.</p>
+        <p>Experience the future.</p>
+    </div>
+
+
+    <script>
+        // Matrix Animation Logic
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Canvas dimensions
+        let w = window.innerWidth;
+        let h = window.innerHeight;
+        canvas.width = w;
+        canvas.height = h;
+
+        // Character array (simplified for brevity)
+        const alphabet = '0123456789abcdefghijklmnopqrstuvwxyz';
+        const fontSize = 16;
+        const columns = Math.floor(w / fontSize); // Calculate columns dynamically
+
+        // Array to store the vertical positions of each character
+        const drops = [];
+        for (let x = 0; x < columns; x++) {
+            drops[x] = 1; // Start each column at the top
+        }
+
+        // Neon Green color
+        const neonGreen = '#00ff9d';
+
+
+        // Function to draw the Matrix effect
+        function drawMatrix() {
+            // Semi-transparent black rectangle to create the fading effect
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.fillStyle = neonGreen; // Set the color for the rain
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > h && Math.random() > 0.975) {  // Reset the drop if it goes off screen.  Adjust the probability to change density.
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+
+
+
+        // Animation loop
+        function update() {
+            try {
+                w = window.innerWidth;
+                h = window.innerHeight;
+                canvas.width = w;
+                canvas.height = h;
+                drawMatrix();
+                requestAnimationFrame(update); // Recursive call for the animation loop
+            } catch (error) {
+                console.error("Matrix animation error:", error); // Log any errors
+            }
+        }
+
+        // Initialize the animation
+        update();
+
+
+        // Handle window resize for responsiveness
+        window.addEventListener('resize', () => {
+            w = window.innerWidth;
+            h = window.innerHeight;
+            canvas.width = w;
+            canvas.height = h;
+            columns = Math.floor(w / fontSize);  // Recalculate the number of columns
+            drops.length = 0; // Clear existing drops array
+            for (let x = 0; x < columns; x++) {
+                drops[x] = 1; // Reset each column to the top
+            }
+        });
+    </script>
+</body>
+</html>
