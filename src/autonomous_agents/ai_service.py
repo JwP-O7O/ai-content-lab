@@ -77,7 +77,7 @@ class AIService:
             return ""
 
         try:
-            response = self.model.generate_content(prompt)
+            response = await self.model.generate_content_async(prompt)
             if response.text:
                 return response.text.replace("", "").replace("", "").replace("", "").replace("", "").strip()
             return ""

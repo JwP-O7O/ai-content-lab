@@ -2,6 +2,7 @@ import asyncio
 import os
 import sys
 import json
+import time
 from loguru import logger
 
 sys.path.append(os.getcwd())
@@ -13,6 +14,7 @@ try:
     from src.autonomous_agents.execution.web_architect import WebArchitect
     from src.autonomous_agents.execution.research_agent import ResearchAgent
     from src.autonomous_agents.execution.git_publisher import GitPublisher
+    from src.autonomous_agents.learning.memory_system import MemorySystem
 except ImportError:
     sys.exit(1)
 
@@ -27,6 +29,7 @@ class TermuxMasterOrchestrator:
         
         self.listener = LocalListener()
         self.publisher = GitPublisher()
+        self.memory = MemorySystem() # 🧠 The Brain
 
     async def run_cycle(self):
         # 1. Check Commando's
@@ -35,29 +38,49 @@ class TermuxMasterOrchestrator:
         if orders.get("status") == "new_tasks":
             for task in orders['tasks']:
                 title = task['title']
+                task_id = task.get('id')
+                start_time = time.time()
                 
-                # --- LOOP PROTECTIE ---
-                if title == self.last_task_hash:
-                    logger.warning(f"🛑 STOP: Poging tot herhaling van taak '{title}'. Genegeerd.")
-                    continue
-                self.last_task_hash = title
-                # ----------------------
+                logger.info(f"🚀 Starting Task {task_id}: {title}")
 
-                # ROUTING NAAR SQUADS
-                if "RESEARCH:" in title.upper():
-                    # Stuur naar Intelligence Directorate
-                    topic = title.split(":", 1)[1].strip()
-                    await self.intelligence.conduct_research(topic)
+                try:
+                    result = None
+                    # ROUTING NAAR SQUADS
+                    if "RESEARCH:" in title.upper():
+                        topic = title.split(":", 1)[1].strip()
+                        result = await self.intelligence.conduct_research(topic)
 
-                elif "WEB:" in title.upper():
-                    # Stuur naar Frontend Squad
-                    await self.frontend_squad.build_website(title)
-                    await self.publisher.publish_changes()
+                    elif "WEB:" in title.upper():
+                        result = await self.frontend_squad.build_website(title)
+                        await self.publisher.publish_changes()
 
-                elif "SYSTEM:" in title.upper():
-                    # Stuur naar Backend Squad
-                    await self.backend_squad.build_feature(title)
-                    await self.publisher.publish_changes()
+                    elif "SYSTEM:" in title.upper():
+                        result = await self.backend_squad.build_feature(title)
+                        await self.publisher.publish_changes()
+                    
+                    # Bereken duur
+                    duration = time.time() - start_time
+
+                    # Markeer als voltooid in DB
+                    if task_id:
+                        self.listener.queue.complete_task(task_id, result="Executed successfully")
+                        
+                    # 🧠 LEER VAN DEZE SESSIE
+                    await self.memory.update_context_after_task(
+                        task_id, title, str(result), "completed", duration
+                    )
+
+                except Exception as e:
+                    duration = time.time() - start_time
+                    logger.error(f"Task {task_id} Failed: {e}")
+                    
+                    if task_id:
+                        self.listener.queue.fail_task(task_id, error_message=str(e))
+                        
+                    # 🧠 LEER VAN DEZE FOUT
+                    await self.memory.update_context_after_task(
+                        task_id, title, str(e), "failed", duration
+                    )
 
     async def start(self):
         logger.info("🦅 PHOENIX V17 - SQUAD ARCHITECTURE ONLINE")

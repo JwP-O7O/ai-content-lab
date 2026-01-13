@@ -1,18 +1,21 @@
 import os
+import ast
 from loguru import logger
 from src.autonomous_agents.ai_service import AIService
+from src.autonomous_agents.execution.git_publisher import GitPublisher
 
 class FeatureArchitect:
     def __init__(self):
         self.name = "BackendSquad" # Nieuwe Squad Naam
         self.ai = AIService()
+        self.publisher = GitPublisher()
         self.src_dir = "src"
         
         # ACADEMISCH SYSTEEM PROMPT VOOR BACKEND
         self.system_prompt = """
         JIJ BENT DE 'LEAD BACKEND ENGINEER' VAN PHOENIX OS.
         
-        Jouw taak is het schrijven van Python scripts die stabiel, veilig en efficiënt zijn.
+        Jouw taak is het schrijven van Python scripts die stabiel, veilig en efficiënt zijn (PEP 8 compliant).
         
         TECHNISCHE STANDAARDEN:
         1.  **Safety First:** Gebruik ALTIJD try/except blokken om crashes te voorkomen.
@@ -31,6 +34,34 @@ class FeatureArchitect:
                 if partial_name in file:
                     return os.path.join(root, file)
         return None
+
+    async def _validate_and_fix(self, code, attempt=1):
+        """
+        Valideert de syntax van de code via AST.
+        Bij fouten: Vraagt de AI om een correctie (Self-Healing).
+        """
+        try:
+            ast.parse(code)
+            return code # Code is syntactisch correct
+        except SyntaxError as e:
+            if attempt > 3:
+                logger.error(f"[{self.name}] ❌ Code repair failed after 3 attempts. Syntax Error: {e}")
+                raise e # Geef op na 3 pogingen
+            
+            logger.warning(f"[{self.name}] ⚠️ Syntax Error detected: {e}. Attempting repair {attempt}/3...")
+            
+            repair_prompt = f"""
+            CRITICAL SYNTAX ERROR DETECTED:
+            {e}
+            
+            BROKEN CODE:
+            {code}
+            
+            ASSIGNMENT: Fix the syntax error. Return ONLY the corrected, valid Python code.
+            """
+            response = await self.ai.generate_text(repair_prompt)
+            new_code = response.replace("```python", "").replace("```", "").strip()
+            return await self._validate_and_fix(new_code, attempt + 1)
 
     async def build_feature(self, instruction):
         logger.info(f"[{self.name}] ⚙️ Backend architecture starten: {instruction}...")
@@ -59,7 +90,7 @@ class FeatureArchitect:
         OPDRACHT: {instruction}
         
         BESTAANDE CODE (indien van toepassing):
-        {existing_code[:8000]}
+        {existing_code[:30000]}
         
         Output formaat: Geef ALLEEN de volledige Python code terug.
         """
@@ -68,9 +99,15 @@ class FeatureArchitect:
         if not response: return {"status": "failed"}
 
         # 3. Schoonmaak
-        code = response.replace("```python", "").replace("```", "").strip()
+        raw_code = response.replace("```python", "").replace("```", "").strip()
         
-        # 4. Opslag (Nieuw bestand of Update)
+        # 4. Validatie & Self-Healing (NIEUW)
+        try:
+            final_code = await self._validate_and_fix(raw_code)
+        except SyntaxError:
+            return {"status": "failed", "msg": "Unfixable Syntax Error"}
+
+        # 5. Opslag (Nieuw bestand of Update)
         if not target_file:
             name_p = f"Kies een Python bestandsnaam (snake_case) voor: {instruction}. ALLEEN de naam."
             fname = await self.ai.generate_text(name_p)
@@ -84,8 +121,11 @@ class FeatureArchitect:
         if "__init__.py" in target_file:
             return {"status": "failed", "msg": "Protected File"}
 
+        # SAFETY NET: Eerst backuppen
+        await self.publisher.create_backup_commit(f"Pre-modification of {os.path.basename(target_file)}")
+
         with open(target_file, 'w') as f:
-            f.write(code)
+            f.write(final_code)
             
-        logger.success(f"[{self.name}] 💾 Code geïmplementeerd in: {target_file}")
+        logger.success(f"[{self.name}] 💾 Code (Validated) geïmplementeerd in: {target_file}")
         return {"status": "success", "file": target_file}

@@ -1,39 +1,55 @@
 import os
 import json
 from loguru import logger
+from src.autonomous_agents.execution.task_queue import TaskQueue
 
 class LocalListener:
     def __init__(self):
         self.name = "LocalListener"
         self.command_file = "data/local_commands.json"
+        self.queue = TaskQueue()
 
     async def check_for_orders(self):
-        """Kijkt of er berichten zijn uit de Chat Interface"""
-        if not os.path.exists(self.command_file):
-            return {"status": "no_tasks"}
-
-        try:
-            with open(self.command_file, 'r') as f:
-                content = f.read().strip()
+        """
+        1. Checks for new commands in JSON file and pushes them to DB.
+        2. Retrieves the next pending task from the DB.
+        """
+        # --- STAP 1: INGESTIE (JSON -> DB) ---
+        if os.path.exists(self.command_file):
+            try:
+                content = ""
+                with open(self.command_file, 'r') as f:
+                    content = f.read().strip()
                 
-            if not content: return {"status": "no_tasks"}
-
-            data = json.loads(content)
+                if content:
+                    data = json.loads(content)
+                    command_text = data.get('command')
+                    if command_text:
+                        logger.info(f"[{self.name}] 📨 Ingesting command: {command_text}")
+                        self.queue.add_task(
+                            title=command_text,
+                            description="Direct command from Admin Interface",
+                            source="chat"
+                        )
+                
+                # Veilig verwijderen na succesvolle ingestie
+                os.remove(self.command_file)
             
-            # Wis het bestand direct zodat we het niet dubbel uitvoeren
-            open(self.command_file, 'w').close()
+            except Exception as e:
+                logger.error(f"Error reading command file: {e}")
 
-            logger.info(f"[{self.name}] 📨 DIRECT BERICHT ONTVANGEN: {data['command']}")
-            
+        # --- STAP 2: OPHALEN (DB -> Orchestrator) ---
+        task = self.queue.get_next_pending_task()
+        
+        if task:
             return {
                 "status": "new_tasks",
                 "tasks": [{
-                    "title": data['command'], # De chat tekst is de titel
-                    "body": "Direct command from Admin Interface",
-                    "source": "chat"
+                    "id": task['id'],
+                    "title": task['title'],
+                    "body": task['description'],
+                    "source": task['source']
                 }]
             }
-
-        except Exception as e:
-            # logger.error(f"Local Listener Error: {e}")
-            return {"status": "no_tasks"}
+        
+        return {"status": "no_tasks"}

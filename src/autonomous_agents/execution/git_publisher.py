@@ -6,6 +6,19 @@ class GitPublisher:
     def __init__(self):
         self.name = "GitPublisher"
 
+    async def create_backup_commit(self, message: str):
+        """Maakt een lokale backup commit voor veiligheid."""
+        try:
+            status = subprocess.check_output(["git", "status", "--porcelain"]).decode("utf-8").strip()
+            if not status:
+                return # Niets te backuppen
+
+            subprocess.check_call(["git", "add", "."])
+            subprocess.check_call(["git", "commit", "-m", f"🛡️ SAFETY BACKUP: {message}"])
+            logger.info(f"[{self.name}] Safety backup commit created.")
+        except Exception as e:
+            logger.warning(f"[{self.name}] Failed to create backup commit: {e}")
+
     async def publish_changes(self):
         """Pusht wijzigingen en logt het harde bewijs"""
         try:

@@ -1,11 +1,13 @@
 import os
 from loguru import logger
 from src.autonomous_agents.ai_service import AIService
+from src.autonomous_agents.execution.git_publisher import GitPublisher
 
 class WebArchitect:
     def __init__(self):
         self.name = "FrontendSquad" # Nieuwe Squad Naam
         self.ai = AIService()
+        self.publisher = GitPublisher()
         self.apps_dir = "apps"
         
         # ACADEMISCH SYSTEEM PROMPT VOOR FRONTEND
@@ -51,7 +53,7 @@ class WebArchitect:
         OPDRACHT: {instruction}
         
         BESTAANDE CODE (indien leeg, begin nieuw):
-        {existing_code[:5000]}
+        {existing_code[:30000]}
         
         Output formaat: Geef ALLEEN de volledige HTML code terug (begin met <!DOCTYPE html>).
         """
@@ -62,6 +64,10 @@ class WebArchitect:
         code = response.replace("```html", "").replace("```", "").strip()
         
         os.makedirs(self.apps_dir, exist_ok=True)
+
+        # SAFETY NET: Eerst backuppen
+        await self.publisher.create_backup_commit(f"Pre-modification of {os.path.basename(target_file)}")
+
         with open(target_file, 'w') as f:
             f.write(code)
             
