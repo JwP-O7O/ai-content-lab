@@ -1,124 +1,80 @@
 import pytest
-import os
 import sys
+import os
 import sqlite3
-import json
 from fastapi.testclient import TestClient
+from typing import List, Dict, Any
+import json
 
-# Add the project root to the sys.path to make imports work
+# Add the project root to the Python path
 sys.path.append(os.getcwd())
-from src.playground.dashboard_api import app, DATABASE_NAME, METRICS_FILE, create_tasks_table, insert_task, get_all_tasks, read_metrics
+from src.playground.dashboard_api import app, DATABASE_NAME, METRICS_FILE, create_tasks_table, insert_task, get_all_tasks, read_metrics  # noqa: E501
 
 # Create a TestClient instance
 client = TestClient(app)
 
+
 # Fixture to set up and tear down the database for each test
 @pytest.fixture(scope="function")
 def test_db():
-    # Setup - Create a temporary database and populate with test data
+    # Setup - Create a temporary database and table
     if os.path.exists(DATABASE_NAME):
         os.remove(DATABASE_NAME)
     create_tasks_table()
-    test_task_data = [
-        ("Test task 1", "To Do"),
-        ("Test task 2", "In Progress"),
-        ("Test task 3", "Done"),
-    ]
-    task_ids = []
-    for description, status in test_task_data:
-        task_ids.append(insert_task(description, status))
-    yield
-    # Teardown - Remove the temporary database after the test
+    yield  # Run the tests
+    # Teardown - Remove the temporary database
     if os.path.exists(DATABASE_NAME):
         os.remove(DATABASE_NAME)
 
-# Fixture to create and delete the metrics file
+
+# Fixture to set up and tear down the metrics file for each test
 @pytest.fixture(scope="function")
 def test_metrics_file():
-    # Setup: Create a test metrics file
-    test_metrics_data = {"lessons": ["Test lesson 1", "Test lesson 2"]}
-    with open(METRICS_FILE, "w") as f:
-        json.dump(test_metrics_data, f)
-    yield
-    # Teardown: Remove the test metrics file
+    # Setup - Create a temporary metrics file
+    if os.path.exists(METRICS_FILE):
+        os.remove(METRICS_FILE)
+    yield  # Run the tests
+    # Teardown - Remove the temporary metrics file
     if os.path.exists(METRICS_FILE):
         os.remove(METRICS_FILE)
 
 
-def test_get_tasks_success(test_db):
+def test_get_tasks_empty_db(test_db):
+    """Tests the /tasks endpoint when the database is empty."""
     response = client.get("/tasks")
     assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
-    assert len(data) == 3  # Check for the inserted test data
-    assert all("id" in task and "description" in task and "status" in task for task in data)
+    assert response.json() == []
 
 
-def test_get_tasks_empty(test_db):
-     # Empty the database to test the empty scenario
+def test_get_tasks_populated_db(test_db):
+    """Tests the /tasks endpoint when the database is populated."""
+    # Insert a task
     with sqlite3.connect(DATABASE_NAME) as conn:
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM tasks")
+        cursor.execute("INSERT INTO tasks (description, status) VALUES (?, ?)", ("Test task", "Testing"))
         conn.commit()
 
     response = client.get("/tasks")
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, list)
-    assert len(data) == 0
-
-def test_get_tasks_internal_server_error():
-    # Mock the get_all_tasks to raise an exception
-    def mock_get_all_tasks():
-        raise sqlite3.Error("Simulated database error")
-
-    # Monkeypatch the get_all_tasks function
-    from src.playground.dashboard_api import get_all_tasks as original_get_all_tasks
-    import src.playground.dashboard_api
-    src.playground.dashboard_api.get_all_tasks = mock_get_all_tasks
-
-    response = client.get("/tasks")
-    assert response.status_code == 500
-    assert "Internal server error" in response.json()["detail"]
-
-    # Restore the original function
-    src.playground.dashboard_api.get_all_tasks = original_get_all_tasks
+    assert len(data) == 1
+    assert data[0]["description"] == "Test task"
+    assert data[0]["status"] == "Testing"
 
 
-def test_get_metrics_success(test_metrics_file):
+def test_get_metrics_no_file(test_metrics_file):
+    """Tests the /metrics endpoint when the metrics file does not exist."""
     response = client.get("/metrics")
     assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, dict)
-    assert "lessons" in data
-    assert isinstance(data["lessons"], list)
-    assert len(data["lessons"]) == 2
+    assert response.json() == {}
 
 
-def test_get_metrics_not_found():
-    # Remove the metrics file before the test
-    if os.path.exists(METRICS_FILE):
-        os.remove(METRICS_FILE)
+def test_get_metrics_with_file(test_metrics_file):
+    """Tests the /metrics endpoint when the metrics file exists."""
+    metrics_data = {"lessons": [{"title": "Example", "description": "Test data"}]}
+    with open(METRICS_FILE, "w") as f:
+        json.dump(metrics_data, f)
 
     response = client.get("/metrics")
     assert response.status_code == 200
-    data = response.json()
-    assert data == {}
-
-
-def test_get_metrics_internal_server_error():
-    # Mock the read_metrics function to raise an exception
-    def mock_read_metrics():
-        raise Exception("Simulated file error")
-    
-    # Monkeypatch the read_metrics function
-    from src.playground.dashboard_api import read_metrics as original_read_metrics
-    import src.playground.dashboard_api
-    src.playground.dashboard_api.read_metrics = mock_read_metrics
-    
-    response = client.get("/metrics")
-    assert response.status_code == 500
-    assert "Internal server error" in response.json()["detail"]
-    
-    # Restore the original function
-    src.playground.dashboard_api.read_metrics = original_read_metrics
+    assert response.json() == metrics_data

@@ -1,4 +1,3 @@
-# src/playground/dashboard_api.py
 from typing import List, Dict, Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
