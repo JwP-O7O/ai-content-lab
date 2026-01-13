@@ -2,30 +2,33 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.theme import Theme
 from datetime import datetime
-from typing import Tuple, Literal
+from typing import Tuple
 
 # Aangepast kleurenpalet voor "Neon Cyberpunk" look
-custom_theme = Theme({
-    "info": "dim cyan",
-    "warning": "magenta",
-    "error": "bold red",
-    "success": "bold green",
-    "task.web": "bold #00ffff",    # Cyaan
-    "task.code": "bold #00ff00",   # Matrix Groen
-    "task.art": "bold #ff00ff",    # Neon Roze
-    "task.research": "bold #ffff00", # Fel Geel
-    "task.system": "bold #ffaa00", # Oranje
-})
+custom_theme = Theme(
+    {
+        "info": "dim cyan",
+        "warning": "magenta",
+        "error": "bold red",
+        "success": "bold green",
+        "task.web": "bold #00ffff",  # Cyaan
+        "task.code": "bold #00ff00",  # Matrix Groen
+        "task.art": "bold #ff00ff",  # Neon Roze
+        "task.research": "bold #ffff00",  # Fel Geel
+        "task.system": "bold #ffaa00",  # Oranje
+    }
+)
 
 console = Console(theme=custom_theme)
+
 
 class UIEngine:
     def header(self, title: str) -> None:
         """Prints a header with a centered title."""
         try:
-            console.print(f"\n[bold white]╔{'═'*48}╗[/]")
+            console.print(f"\n[bold white]╔{'═' * 48}╗[/]")
             console.print(f"[bold white]║ {title.center(48)} ║[/]")
-            console.print(f"[bold white]╚{'═'*48}╝[/]\n")
+            console.print(f"[bold white]╚{'═' * 48}╝[/]\n")
         except Exception as e:
             console.print(f"[bold red]❌ ERROR in header:[/]\n{e}")
 
@@ -33,7 +36,9 @@ class UIEngine:
         """Logs the cycle number with a timestamp."""
         try:
             timestamp = datetime.now().strftime("%H:%M:%S")
-            console.rule(f"[bold white]🔄 CYCLE #{number} | {timestamp}[/]", style="white")
+            console.rule(
+                f"[bold white]🔄 CYCLE #{number} | {timestamp}[/]", style="white"
+            )
         except Exception as e:
             console.print(f"[bold red]❌ ERROR in log_cycle:[/]\n{e}")
 
@@ -78,7 +83,9 @@ class UIEngine:
     def log_error(self, message: str) -> None:
         """Logs an error message."""
         try:
-            console.print(Panel(f"[bold red]❌ ERROR:[/]\n{message}", border_style="red"))
+            console.print(
+                Panel(f"[bold red]❌ ERROR:[/]\n{message}", border_style="red")
+            )
         except Exception as e:
             console.print(f"[bold red]❌ ERROR in log_error:[/]\n{e}")
 

@@ -41,9 +41,9 @@ class TestRunner(BaseAutonomousAgent):
                     # Bijvoorbeeld het aantal tests, errors, failures etc.
                     # Dit is een vereenvoudigde voorbeeld
                     test_summary = {
-                        "tests": root.get('tests'),
-                        "failures": root.get('failures'),
-                        "errors": root.get('errors')
+                        "tests": root.get("tests"),
+                        "failures": root.get("failures"),
+                        "errors": root.get("errors"),
                         # Voeg hier meer informatie toe
                     }
 
@@ -73,7 +73,9 @@ class TestRunner(BaseAutonomousAgent):
                     "output": result.stdout,
                 }
             else:
-                logger.error(f"[TestRunner] ❌ Tests mislukt (returncode: {result.returncode})")
+                logger.error(
+                    f"[TestRunner] ❌ Tests mislukt (returncode: {result.returncode})"
+                )
                 logger.error(f"[TestRunner] 🪵 Stderr output:\n{result.stderr}")
 
                 # Parse het XML bestand voor meer gedetailleerde resultaten
@@ -81,13 +83,17 @@ class TestRunner(BaseAutonomousAgent):
                     tree = ET.parse(self.junit_xml_path)
                     root = tree.getroot()
                     test_summary = {
-                        "tests": root.get('tests') or "0",  # Default to 0 if not present
-                        "failures": root.get('failures') or "0",
-                        "errors": root.get('errors') or "0",
+                        "tests": root.get("tests")
+                        or "0",  # Default to 0 if not present
+                        "failures": root.get("failures") or "0",
+                        "errors": root.get("errors") or "0",
                     }
 
-                    if int(test_summary["failures"]) > 0 or int(test_summary["errors"]) > 0:
-                        logger.error(f"[TestRunner] 💥 Test failures/errors detected.")
+                    if (
+                        int(test_summary["failures"]) > 0
+                        or int(test_summary["errors"]) > 0
+                    ):
+                        logger.error("[TestRunner] 💥 Test failures/errors detected.")
                         return {
                             "status": "failure",
                             "output": result.stdout,
@@ -96,7 +102,7 @@ class TestRunner(BaseAutonomousAgent):
                         }
                     else:
                         return {
-                            "status": "error", # Handle unexpected errors.
+                            "status": "error",  # Handle unexpected errors.
                             "output": result.stdout,
                             "stderr": result.stderr,
                             "test_summary": test_summary,
@@ -106,16 +112,29 @@ class TestRunner(BaseAutonomousAgent):
                     logger.error(
                         f"[TestRunner] ❌ Kon test resultaten bestand niet vinden: {self.junit_xml_path}"
                     )
-                    return {"status": "error", "error": "JUnit XML file not found", "stderr": result.stderr}
+                    return {
+                        "status": "error",
+                        "error": "JUnit XML file not found",
+                        "stderr": result.stderr,
+                    }
                 except ET.ParseError as e:
                     logger.error(
                         f"[TestRunner] ❌ Fout bij het parsen van JUnit XML: {e}"
                     )
-                    return {"status": "error", "error": f"Error parsing JUnit XML: {e}", "stderr": result.stderr}
+                    return {
+                        "status": "error",
+                        "error": f"Error parsing JUnit XML: {e}",
+                        "stderr": result.stderr,
+                    }
                 except Exception as e:
-                    logger.error(f"[TestRunner] ❌ Onverwachte fout bij het verwerken van testresultaten: {e}")
-                    return {"status": "error", "error": f"Unexpected error: {e}", "stderr": result.stderr}
-
+                    logger.error(
+                        f"[TestRunner] ❌ Onverwachte fout bij het verwerken van testresultaten: {e}"
+                    )
+                    return {
+                        "status": "error",
+                        "error": f"Unexpected error: {e}",
+                        "stderr": result.stderr,
+                    }
 
         except Exception as e:
             logger.error(f"[TestRunner] ❌ Fout bij uitvoeren tests: {e}")

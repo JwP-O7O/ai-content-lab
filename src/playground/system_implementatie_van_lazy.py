@@ -2,9 +2,11 @@ import threading
 import time
 from typing import Callable, Any, Optional
 
+
 class BaseAgent:
     def execute(self, *args: Any, **kwargs: Any) -> Any:
         raise NotImplementedError("Subclasses must implement the execute method")
+
 
 class LazyAgent(BaseAgent):
     _instance = None
@@ -44,10 +46,12 @@ class AdvancedAgent(BaseAgent):
         time.sleep(1)
         return "Advanced Result"
 
+
 def create_advanced_agent() -> BaseAgent:
     return AdvancedAgent()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     lazy_agent = LazyAgent.get_instance(create_advanced_agent)
 
     def worker(agent: LazyAgent, thread_id: int):

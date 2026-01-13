@@ -1,5 +1,6 @@
 from .base_agent import BaseAgent
 
+
 class ContentStrategistAgent(BaseAgent):
     async def execute(self, task_description: str) -> dict:
         """

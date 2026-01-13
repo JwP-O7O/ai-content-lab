@@ -3,7 +3,10 @@ import logging
 import unittest
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 
 class ABTestingAgent:
     def __init__(self, variations):
@@ -13,12 +16,16 @@ class ABTestingAgent:
         Args:
             variations (list): A list of variation names (strings).
         """
-        if not isinstance(variations, list) or not all(isinstance(var, str) for var in variations):
+        if not isinstance(variations, list) or not all(
+            isinstance(var, str) for var in variations
+        ):
             raise ValueError("Variations must be a list of strings.")
 
         self.variations = variations
         self.results = {var: 0 for var in variations}  # Successes per variation
-        self.test_counts = {var: 0 for var in variations}  # Number of tests per variation
+        self.test_counts = {
+            var: 0 for var in variations
+        }  # Number of tests per variation
         self.total_tests = 0  # Total number of tests
 
         logging.info(f"ABTestingAgent initialized with variations: {variations}")
@@ -39,7 +46,9 @@ class ABTestingAgent:
             return {}
 
         chosen_variation = random.choice(self.variations)
-        self.test_counts[chosen_variation] += 1  # Increment test count for the chosen variation
+        self.test_counts[chosen_variation] += (
+            1  # Increment test count for the chosen variation
+        )
         self.total_tests += 1
         logging.info(f"Executed test. Chosen variation: {chosen_variation}")
         return {"variation": chosen_variation}
@@ -53,20 +62,25 @@ class ABTestingAgent:
             success (bool): True if the test was successful, False otherwise.
         """
         if not isinstance(variation, str):
-            logging.error(f"Invalid variation type. Expected string, got: {type(variation)}")
+            logging.error(
+                f"Invalid variation type. Expected string, got: {type(variation)}"
+            )
             return
         if variation not in self.variations:
-            logging.warning(f"Variation '{variation}' not found in available variations. Ignoring result.")
+            logging.warning(
+                f"Variation '{variation}' not found in available variations. Ignoring result."
+            )
             return
         try:
             if success:
                 self.results[variation] += 1
             conversion_rates = self.get_conversion_rates()
-            logging.info(f"Recorded result for variation '{variation}': success={success}, tests={self.test_counts[variation]}, successes={self.results[variation]}, conversion_rates={conversion_rates}")
+            logging.info(
+                f"Recorded result for variation '{variation}': success={success}, tests={self.test_counts[variation]}, successes={self.results[variation]}, conversion_rates={conversion_rates}"
+            )
 
         except Exception as e:
             logging.error(f"Error recording result for variation '{variation}': {e}")
-
 
     def get_results(self):
         """
@@ -80,13 +94,14 @@ class ABTestingAgent:
         conversion_rates = self.get_conversion_rates()
         for variation in self.variations:
             results[variation] = {
-                'successes': self.results[variation],
-                'tests': self.test_counts[variation],
-                'conversion_rate': conversion_rates.get(variation, 0) # Use .get() to handle potential issues.
+                "successes": self.results[variation],
+                "tests": self.test_counts[variation],
+                "conversion_rate": conversion_rates.get(
+                    variation, 0
+                ),  # Use .get() to handle potential issues.
             }
         logging.info(f"Returning results: {results}")
         return results
-
 
     def get_conversion_rates(self):
         """
@@ -98,13 +113,18 @@ class ABTestingAgent:
         conversion_rates = {}
         for variation in self.variations:
             if self.test_counts[variation] > 0:
-                conversion_rate = (self.results[variation] / self.test_counts[variation]) * 100
-                conversion_rates[variation] = round(conversion_rate, 2)  # Round to 2 decimal places
+                conversion_rate = (
+                    self.results[variation] / self.test_counts[variation]
+                ) * 100
+                conversion_rates[variation] = round(
+                    conversion_rate, 2
+                )  # Round to 2 decimal places
             else:
-                conversion_rates[variation] = 0.0  # Or handle as you see fit (e.g., None, NaN)
+                conversion_rates[variation] = (
+                    0.0  # Or handle as you see fit (e.g., None, NaN)
+                )
         # logging.info(f"Conversion rates: {conversion_rates}")
         return conversion_rates
-
 
     def get_test_count(self):
         """
@@ -125,6 +145,7 @@ class ABTestingAgent:
         """
         logging.info(f"Returning test counts per variation: {self.test_counts}")
         return self.test_counts
+
 
 class TestABTestingAgent(unittest.TestCase):
     def setUp(self):
@@ -150,24 +171,25 @@ class TestABTestingAgent(unittest.TestCase):
         self.assertEqual(self.agent.results["B"], 0)
         self.assertEqual(self.agent.test_counts["B"], 1)
 
-
     def test_get_results(self):
         self.agent.record_result("A", True)
-        expected_results = {'A': {'successes': 1, 'tests': 1, 'conversion_rate': 100.0}, 'B': {'successes': 0, 'tests': 0, 'conversion_rate': 0.0}}
+        expected_results = {
+            "A": {"successes": 1, "tests": 1, "conversion_rate": 100.0},
+            "B": {"successes": 0, "tests": 0, "conversion_rate": 0.0},
+        }
         self.assertEqual(self.agent.get_results(), expected_results)
 
     def test_get_conversion_rates(self):
         self.assertEqual(self.agent.get_conversion_rates(), {"A": 0.0, "B": 0.0})
         self.agent.execute()
         self.agent.record_result("A", True)
-        self.assertEqual(self.agent.get_conversion_rates(), {'A': 100.0, 'B': 0.0})
+        self.assertEqual(self.agent.get_conversion_rates(), {"A": 100.0, "B": 0.0})
 
         self.agent.execute()
         self.agent.record_result("A", True)
         self.agent.execute()
         self.agent.record_result("A", False)
-        self.assertEqual(self.agent.get_conversion_rates(), {'A': 66.67, 'B': 0.0})
-
+        self.assertEqual(self.agent.get_conversion_rates(), {"A": 66.67, "B": 0.0})
 
     def test_get_test_count(self):
         self.agent.execute()
@@ -178,5 +200,6 @@ class TestABTestingAgent(unittest.TestCase):
         counts = self.agent.get_test_counts_per_variation()
         self.assertIn(counts["A"] + counts["B"], [1])
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

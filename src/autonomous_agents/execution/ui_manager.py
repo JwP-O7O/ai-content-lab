@@ -1,13 +1,17 @@
 import logging
 
 # Configureer logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 
 class UI_Manager:
     """
     Deze agent is verantwoordelijk voor het beheren en optimaliseren van de gebruikersinterface (UI) van het AI-systeem op de telefoon.
     Hij zorgt voor een intuïtieve en efficiënte gebruikerservaring.
     """
+
     def __init__(self, ui_framework="default"):
         """
         Initialiseert de UI Manager.
@@ -30,12 +34,15 @@ class UI_Manager:
         try:
             # Simpele implementatie - in realiteit zou dit framework-specifieke code zijn
             element_id = f"{element_type}_{len(self.ui_elements)}"
-            self.ui_elements[element_id] = {"type": element_type, "attributes": attributes}
+            self.ui_elements[element_id] = {
+                "type": element_type,
+                "attributes": attributes,
+            }
             logging.info(f"UI Element aangemaakt: {element_type} met ID: {element_id}")
-            return element_id # Return the element ID for later use
+            return element_id  # Return the element ID for later use
         except Exception as e:
             logging.error(f"Fout bij het aanmaken van UI element: {e}")
-            return None # Indicate failure
+            return None  # Indicate failure
 
     def update_ui_element(self, element_id, new_attributes):
         """
@@ -66,10 +73,12 @@ class UI_Manager:
                 del self.ui_elements[element_id]
                 logging.info(f"UI element {element_id} verwijderd.")
             else:
-                logging.warning(f"UI element {element_id} niet gevonden voor verwijdering.")
+                logging.warning(
+                    f"UI element {element_id} niet gevonden voor verwijdering."
+                )
         except Exception as e:
             logging.error(f"Fout bij het verwijderen van UI element {element_id}: {e}")
-    
+
     def display_ui(self):
         """
         Toont de huidige UI. (Simulatie)
@@ -96,13 +105,15 @@ class UI_Manager:
             if input_type == "button_click":
                 button_id = data.get("button_id")
                 if button_id:
-                    self.process_button_click(button_id) # Call a separate method to handle button clicks
+                    self.process_button_click(
+                        button_id
+                    )  # Call a separate method to handle button clicks
                 else:
                     logging.warning("Button click event received without button ID.")
             elif input_type == "text_input":
                 text_value = data.get("text")
                 if text_value:
-                   self.process_text_input(text_value)
+                    self.process_text_input(text_value)
                 else:
                     logging.warning("Text input event received without text value.")
             # Add more input types as needed (e.g., gestures, voice commands)
@@ -119,11 +130,13 @@ class UI_Manager:
         try:
             if button_id in self.ui_elements:
                 element = self.ui_elements[button_id]
-                logging.info(f"Knop '{element.get('attributes', {}).get('text', 'Onbekend')}' (ID: {button_id}) geklikt.")
+                logging.info(
+                    f"Knop '{element.get('attributes', {}).get('text', 'Onbekend')}' (ID: {button_id}) geklikt."
+                )
                 # Voer acties uit die horen bij de knop
-                if element.get('attributes', {}).get('text') == "Start":
+                if element.get("attributes", {}).get("text") == "Start":
                     logging.info("Start knop actie uitgevoerd.")
-                elif element.get('attributes', {}).get('text') == "Stop":
+                elif element.get("attributes", {}).get("text") == "Stop":
                     logging.info("Stop knop actie uitgevoerd.")
                 else:
                     logging.info("Algemene knop actie uitgevoerd.")
@@ -170,13 +183,18 @@ class UI_Manager:
         except Exception as e:
             logging.error(f"Fout bij het genereren van UI verbeteringen: {e}")
 
+
 # Voorbeeld gebruik:
 if __name__ == "__main__":
     ui_manager = UI_Manager(ui_framework="default")
-    button_start_id = ui_manager.create_ui_element("button", {"text": "Start", "position": "top"})
-    ui_manager.create_ui_element("label", {"text": "Welkom!", "position": "center", "color": "blue"})
+    button_start_id = ui_manager.create_ui_element(
+        "button", {"text": "Start", "position": "top"}
+    )
+    ui_manager.create_ui_element(
+        "label", {"text": "Welkom!", "position": "center", "color": "blue"}
+    )
     ui_manager.display_ui()
-    if button_start_id: # Check if the button was successfully created
+    if button_start_id:  # Check if the button was successfully created
         ui_manager.update_ui_element(button_start_id, {"text": "Stop"})
     ui_manager.display_ui()
     ui_manager.handle_user_input("button_click", {"button_id": button_start_id})

@@ -1,5 +1,6 @@
 from src.agents.base_agent import BaseAgent
 
+
 class OnboardingAgent(BaseAgent):
     async def execute(self):
         """
@@ -13,7 +14,7 @@ class OnboardingAgent(BaseAgent):
             "Account aanmaken",
             "Welkomstmail versturen",
             "Gebruikershandleiding delen",
-            "Introductie video tonen"
+            "Introductie video tonen",
         ]
 
         for step in onboarding_steps:

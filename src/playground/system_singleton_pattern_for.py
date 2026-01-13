@@ -20,6 +20,7 @@ class LLMClient:
         # Simulate text generation
         return f"Generated text based on: {prompt}"
 
+
 # Example usage
 llm_client = LLMClient.get_instance()
 response = llm_client.generate_text("Hello, world!")

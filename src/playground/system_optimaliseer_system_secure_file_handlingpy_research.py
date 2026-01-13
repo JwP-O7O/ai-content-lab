@@ -4,9 +4,14 @@ import asyncio
 import logging
 from typing import AsyncGenerator, List, Optional, Any
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
-async def safe_read_file(filepath: str, chunk_size: int = 8192) -> AsyncGenerator[str, None]:
+
+async def safe_read_file(
+    filepath: str, chunk_size: int = 8192
+) -> AsyncGenerator[str, None]:
     """
     Reads a file safely, chunk by chunk, to prevent excessive memory usage.
 
@@ -28,7 +33,7 @@ async def safe_read_file(filepath: str, chunk_size: int = 8192) -> AsyncGenerato
         except ImportError:
             raise ImportError("aiofiles must be installed: pip install aiofiles")
 
-        async with aiofiles.open(filepath, mode='r', encoding='utf-8') as f:
+        async with aiofiles.open(filepath, mode="r", encoding="utf-8") as f:
             while True:
                 chunk = await f.read(chunk_size)
                 if not chunk:
@@ -44,6 +49,7 @@ async def safe_read_file(filepath: str, chunk_size: int = 8192) -> AsyncGenerato
         logging.error(f"Unexpected error during read: {e}")
         raise
 
+
 async def process_file_content(filepath: str) -> Optional[List[Any]]:
     """
     Processes the content of a file, chunk by chunk.  Example uses json loading.
@@ -58,7 +64,9 @@ async def process_file_content(filepath: str) -> Optional[List[Any]]:
                         json_data = json.loads(line)
                         data.append(json_data)
                     except json.JSONDecodeError as e:
-                        logging.warning(f"Invalid JSON in chunk. Skipping line: {line[:50]}... Error: {e}")
+                        logging.warning(
+                            f"Invalid JSON in chunk. Skipping line: {line[:50]}... Error: {e}"
+                        )
         return data
     except (FileNotFoundError, IOError) as e:
         logging.error(f"Error reading or processing file: {e}")
@@ -67,12 +75,15 @@ async def process_file_content(filepath: str) -> Optional[List[Any]]:
         logging.error(f"Unexpected error: {e}")
         return None
 
+
 async def main():
     filepath = "lessons_learned.json"
     # Create a dummy file for testing if it doesn't exist
     if not os.path.exists(filepath):
         with open(filepath, "w") as f:
-            f.write('{"lesson": "example"}\n{"lesson": "another"}\n') # Simulate multiple JSON objects per line
+            f.write(
+                '{"lesson": "example"}\n{"lesson": "another"}\n'
+            )  # Simulate multiple JSON objects per line
 
     try:
         lessons = await process_file_content(filepath)
@@ -83,11 +94,12 @@ async def main():
     except Exception as e:
         print(f"An error occurred: {e}")
 
+
 if __name__ == "__main__":
     try:
         import aiofiles  #  Import aiofiles here to avoid import issues.
     except ImportError:
         print("aiofiles is not installed. Please install it with: pip install aiofiles")
-        exit(1) # Exit gracefully if aiofiles is not available
+        exit(1)  # Exit gracefully if aiofiles is not available
 
     asyncio.run(main())

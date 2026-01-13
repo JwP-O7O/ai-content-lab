@@ -1,6 +1,6 @@
 import asyncio
 import aiohttp
-import contextlib
+
 
 class LLMClient:
     def __init__(self, api_key, api_url, timeout=10):
@@ -10,7 +10,9 @@ class LLMClient:
         self._session = None
 
     async def __aenter__(self):
-        self._session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self.timeout))
+        self._session = aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=self.timeout)
+        )
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -20,17 +22,19 @@ class LLMClient:
 
     async def generate(self, prompt):
         if not self._session:
-            raise RuntimeError("Client is not initialized.  Use 'async with LLMClient(...)'")
+            raise RuntimeError(
+                "Client is not initialized.  Use 'async with LLMClient(...)'"
+            )
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
-        data = {
-            "prompt": prompt
-        }
+        data = {"prompt": prompt}
         try:
-            async with self._session.post(self.api_url, headers=headers, json=data) as response:
+            async with self._session.post(
+                self.api_url, headers=headers, json=data
+            ) as response:
                 response.raise_for_status()
                 json_response = await response.json()
                 return json_response.get("generated_text", "")
@@ -50,6 +54,7 @@ async def main():
     async with LLMClient(api_key, api_url) as client:
         response = await client.generate(prompt)
         print(response)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

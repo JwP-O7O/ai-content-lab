@@ -1,12 +1,9 @@
 import asyncio
-from datetime import datetime, timezone
 from loguru import logger
 
 # Import all agents (will succeed now because of stubs)
 from src.agents.market_scanner_agent import MarketScannerAgent
 from src.agents.content_creation_agent import ContentCreationAgent
-from src.agents.content_strategist_agent import ContentStrategistAgent
-from src.agents.publishing_agent import PublishingAgent
 # ... imports voor andere phases ...
 
 ANALYSIS_AGENT_AVAILABLE = False
@@ -14,16 +11,18 @@ AnalysisAgent = None
 
 try:
     from src.agents.analysis_agent import AnalysisAgent
+
     ANALYSIS_AGENT_AVAILABLE = True
 except ImportError:
     logger.warning("AnalysisAgent not available, skipping initialization.")
     pass
 
+
 class AgentOrchestrator:
     def __init__(self):
         logger.info("Initializing Agent Orchestrator...")
         self.agents = {}  # Store initialized agents
-        self.agent_initialization_tasks = [] # Store async tasks
+        self.agent_initialization_tasks = []  # Store async tasks
 
         # Initialize minimal set for testing
         self.agent_initialization_tasks.append(self._initialize_market_scanner())
@@ -32,9 +31,9 @@ class AgentOrchestrator:
         if ANALYSIS_AGENT_AVAILABLE:
             self.agent_initialization_tasks.append(self._initialize_analysis_agent())
 
-
-        logger.info("Orchestrator initialization started (agents initializing in background)")
-
+        logger.info(
+            "Orchestrator initialization started (agents initializing in background)"
+        )
 
     async def _initialize_market_scanner(self):
         logger.info("Initializing MarketScannerAgent...")
@@ -44,7 +43,7 @@ class AgentOrchestrator:
         except Exception as e:
             logger.error(f"Failed to initialize MarketScannerAgent: {e}")
             self.agents["market_scanner"] = None
-        return True # Return True to indicate successful initialization
+        return True  # Return True to indicate successful initialization
 
     async def _initialize_content_creator(self):
         logger.info("Initializing ContentCreationAgent...")
@@ -54,7 +53,7 @@ class AgentOrchestrator:
         except Exception as e:
             logger.error(f"Failed to initialize ContentCreationAgent: {e}")
             self.agents["content_creator"] = None
-        return True # Return True to indicate successful initialization
+        return True  # Return True to indicate successful initialization
 
     async def _initialize_analysis_agent(self):
         logger.info("Initializing AnalysisAgent...")
@@ -64,8 +63,7 @@ class AgentOrchestrator:
         except Exception as e:
             logger.error(f"Failed to initialize AnalysisAgent: {e}")
             self.agents["analysis_agent"] = None
-        return True # Return True to indicate successful initialization
-
+        return True  # Return True to indicate successful initialization
 
     async def run_full_pipeline(self) -> dict:
         logger.info("Starting full pipeline...")
@@ -75,13 +73,25 @@ class AgentOrchestrator:
             logger.info("All agents initialized. Continuing with pipeline.")
         except Exception as e:
             logger.error(f"Error during agent initialization: {e}")
-            return {"status": "error", "message": f"Agent initialization failed: {e}", "agents": {}}
-
+            return {
+                "status": "error",
+                "message": f"Agent initialization failed: {e}",
+                "agents": {},
+            }
 
         # Check if all required agents initialized correctly
-        if self.agents.get("market_scanner") is None or self.agents.get("content_creator") is None:
-            logger.error("One or more required agents failed to initialize. Pipeline cannot continue.")
-            return {"status": "error", "message": "One or more required agents failed to initialize.", "agents": {}}
+        if (
+            self.agents.get("market_scanner") is None
+            or self.agents.get("content_creator") is None
+        ):
+            logger.error(
+                "One or more required agents failed to initialize. Pipeline cannot continue."
+            )
+            return {
+                "status": "error",
+                "message": "One or more required agents failed to initialize.",
+                "agents": {},
+            }
 
         # Pipeline logic, using self.agents dictionary to access initialized agents.
         pipeline_result = {}

@@ -4,6 +4,7 @@ import time
 from loguru import logger
 import urllib.parse
 
+
 class VisionaryAgent:
     def __init__(self):
         self.name = "VisionaryAgent"
@@ -22,11 +23,13 @@ class VisionaryAgent:
             response.raise_for_status()
 
             timestamp = int(time.time())
-            clean_hint = "".join([c for c in filename_hint if c.isalnum() or c=='_'])[:15]
+            clean_hint = "".join([c for c in filename_hint if c.isalnum() or c == "_"])[
+                :15
+            ]
             filename = f"{clean_hint}_{timestamp}.jpg"
             filepath = os.path.join(self.output_dir, filename)
 
-            with open(filepath, 'wb') as f:
+            with open(filepath, "wb") as f:
                 f.write(response.content)
 
             logger.success(f"🖼️ Afbeelding opgeslagen: {filepath}")
@@ -36,7 +39,9 @@ class VisionaryAgent:
             logger.error(f"[{self.name}] Netwerkfout bij downloaden: {e}")
             return {"status": "error"}
         except requests.exceptions.HTTPError as e:
-            logger.error(f"[{self.name}] HTTP Fout: Status code: {response.status_code} - {e}. Response text: {response.text}")
+            logger.error(
+                f"[{self.name}] HTTP Fout: Status code: {response.status_code} - {e}. Response text: {response.text}"
+            )
             return {"status": "error"}
         except (IOError, OSError) as e:
             logger.error(f"[{self.name}] Fout bij het opslaan van de afbeelding: {e}")

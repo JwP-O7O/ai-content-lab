@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import shutil
 from loguru import logger
 from src.autonomous_agents.ai_service import AIService
 
@@ -19,9 +20,26 @@ class MemorySystem:
             with open(self.memory_file, 'w') as f:
                 f.write("# PROJECT PHOENIX MEMORY & CONTEXT\n\n## 🏗️ Architecture Status\n\n## 🧠 Lessons Learned\n")
         
-        if not os.path.exists(self.lessons_file):
-            with open(self.lessons_file, 'w') as f:
-                json.dump({"successful_patterns": [], "failed_patterns": [], "metrics": {}}, f)
+        # Check if lessons file exists and is valid JSON
+        if os.path.exists(self.lessons_file):
+            try:
+                with open(self.lessons_file, 'r') as f:
+                    # Probeer te parsen. Als het faalt, triggert dit de except.
+                    content = f.read()
+                    if content.strip():
+                        json.loads(content)
+                    else:
+                        self._create_empty_lessons_file()
+            except json.JSONDecodeError:
+                logger.warning(f"⚠️ Corrupt JSON found in {self.lessons_file}. Backing up and resetting.")
+                shutil.move(self.lessons_file, self.lessons_file + ".bak")
+                self._create_empty_lessons_file()
+        else:
+            self._create_empty_lessons_file()
+
+    def _create_empty_lessons_file(self):
+        with open(self.lessons_file, 'w') as f:
+            json.dump({"successful_patterns": [], "failed_patterns": [], "metrics": {}}, f)
 
     async def update_context_after_task(self, task_id, title, result, status, duration):
         """
@@ -40,8 +58,14 @@ class MemorySystem:
 
     def _update_metrics(self, status, duration):
         try:
-            with open(self.lessons_file, 'r') as f: data = json.load(f)
-            
+            data = {}
+            with open(self.lessons_file, 'r') as f: 
+                try:
+                    data = json.load(f)
+                except json.JSONDecodeError:
+                    self._create_empty_lessons_file()
+                    data = {"successful_patterns": [], "failed_patterns": [], "metrics": {}}
+
             if "metrics" not in data: data["metrics"] = {"total_tasks": 0, "success_rate": 0, "avg_duration": 0}
             
             m = data["metrics"]

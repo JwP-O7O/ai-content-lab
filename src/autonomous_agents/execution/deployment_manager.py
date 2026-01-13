@@ -1,7 +1,3 @@
-import subprocess
-import os
-import shutil
-
 class DeploymentManager:
     """
     Handles the deployment process, including building, testing, and deploying the application.
@@ -31,7 +27,7 @@ class DeploymentManager:
         #     print(f"Build failed: {e}")
         #     return False
         print("Build step requires implementation specific to the project.")
-        return True # Assume build succeeds for now
+        return True  # Assume build succeeds for now
 
     def run_tests(self):
         """
@@ -51,9 +47,11 @@ class DeploymentManager:
         #     return False
 
         print("Test step requires implementation specific to the project.")
-        self.test_results = {"success": True, "output": "No tests implemented."} # Assume tests pass for now
+        self.test_results = {
+            "success": True,
+            "output": "No tests implemented.",
+        }  # Assume tests pass for now
         return True
-
 
     def deploy_to_staging(self):
         """
@@ -70,7 +68,7 @@ class DeploymentManager:
         #     return False
 
         print("Deployment to staging requires implementation specific to the project.")
-        return True # Assume deployment to staging succeeds for now
+        return True  # Assume deployment to staging succeeds for now
 
     def deploy_to_production(self):
         """
@@ -86,8 +84,10 @@ class DeploymentManager:
         #     print(f"Deployment to production failed: {e}")
         #     return False
 
-        print("Deployment to production requires implementation specific to the project.")
-        return True # Assume deployment to production succeeds for now
+        print(
+            "Deployment to production requires implementation specific to the project."
+        )
+        return True  # Assume deployment to production succeeds for now
 
     def run_deployment_pipeline(self, target_environment="staging"):
         """
@@ -128,5 +128,7 @@ class DeploymentManager:
         Rolls back to the previous deployment. This is a placeholder and needs implementation based on the deployment strategy.
         """
         print(f"Rolling back deployment to {environment}...")
-        print("Rollback functionality requires implementation based on the deployment strategy.")
+        print(
+            "Rollback functionality requires implementation based on the deployment strategy."
+        )
         return True  # Assume rollback succeeds for now.

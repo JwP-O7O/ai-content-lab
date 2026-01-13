@@ -1,6 +1,7 @@
 from src.agents.base_agent import BaseAgent
 import random
 
+
 class AbTestingAgent(BaseAgent):
     async def execute(self):
         """

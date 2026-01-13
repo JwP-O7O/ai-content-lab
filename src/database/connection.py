@@ -2,6 +2,7 @@ from contextlib import contextmanager
 import sqlite3  #  Vervang dit met je eigen database-bibliotheek
 import os
 
+
 @contextmanager
 def get_db():
     """
@@ -17,16 +18,20 @@ def get_db():
 
         # Verbind met de database
         conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row  # Optioneel: retourneer resultaten als dictionaries
+        conn.row_factory = (
+            sqlite3.Row
+        )  # Optioneel: retourneer resultaten als dictionaries
 
         cursor = conn.cursor()
         yield cursor
         conn.commit()  # Sla wijzigingen op
     except sqlite3.Error as e:  # Specifieke exception voor SQLite
-        print(f"Database operatie mislukt: {e}")  # Logging in plaats van printen in productie
+        print(
+            f"Database operatie mislukt: {e}"
+        )  # Logging in plaats van printen in productie
         if conn:
             conn.rollback()  # Rol transactie terug bij fout
         raise  # Her-raise de uitzondering zodat de applicatie weet dat er een probleem is
     finally:
         if conn:
-            conn.close() # Sluit de verbinding
+            conn.close()  # Sluit de verbinding

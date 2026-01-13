@@ -4,13 +4,14 @@ from loguru import logger
 from src.autonomous_agents.ai_service import AIService
 from src.autonomous_agents.execution.git_publisher import GitPublisher
 
+
 class FeatureArchitect:
     def __init__(self):
-        self.name = "BackendSquad" # Nieuwe Squad Naam
+        self.name = "BackendSquad"  # Nieuwe Squad Naam
         self.ai = AIService()
         self.publisher = GitPublisher()
         self.src_dir = "src"
-        
+
         # ACADEMISCH SYSTEEM PROMPT VOOR BACKEND
         self.system_prompt = """
         JIJ BENT DE 'LEAD BACKEND ENGINEER' VAN PHOENIX OS.
@@ -42,14 +43,18 @@ class FeatureArchitect:
         """
         try:
             ast.parse(code)
-            return code # Code is syntactisch correct
+            return code  # Code is syntactisch correct
         except SyntaxError as e:
             if attempt > 3:
-                logger.error(f"[{self.name}] ❌ Code repair failed after 3 attempts. Syntax Error: {e}")
-                raise e # Geef op na 3 pogingen
-            
-            logger.warning(f"[{self.name}] ⚠️ Syntax Error detected: {e}. Attempting repair {attempt}/3...")
-            
+                logger.error(
+                    f"[{self.name}] ❌ Code repair failed after 3 attempts. Syntax Error: {e}"
+                )
+                raise e  # Geef op na 3 pogingen
+
+            logger.warning(
+                f"[{self.name}] ⚠️ Syntax Error detected: {e}. Attempting repair {attempt}/3..."
+            )
+
             repair_prompt = f"""
             CRITICAL SYNTAX ERROR DETECTED:
             {e}
@@ -65,10 +70,12 @@ class FeatureArchitect:
 
     async def build_feature(self, instruction):
         logger.info(f"[{self.name}] ⚙️ Backend architecture starten: {instruction}...")
-        
+
         # Veiligheid
         if "__init__" in instruction:
-            logger.warning(f"[{self.name}] 🚫 Toegang geweigerd tot systeem-kern (__init__).")
+            logger.warning(
+                f"[{self.name}] 🚫 Toegang geweigerd tot systeem-kern (__init__)."
+            )
             return {"status": "skipped"}
 
         # 1. Context zoeken
@@ -80,7 +87,8 @@ class FeatureArchitect:
                 found = self._find_file(word.strip())
                 if found:
                     target_file = found
-                    with open(target_file, 'r') as f: existing_code = f.read()
+                    with open(target_file, "r") as f:
+                        existing_code = f.read()
                     break
 
         # 2. De Bouw Prompt
@@ -94,13 +102,14 @@ class FeatureArchitect:
         
         Output formaat: Geef ALLEEN de volledige Python code terug.
         """
-        
+
         response = await self.ai.generate_text(build_prompt)
-        if not response: return {"status": "failed"}
+        if not response:
+            return {"status": "failed"}
 
         # 3. Schoonmaak
         raw_code = response.replace("```python", "").replace("```", "").strip()
-        
+
         # 4. Validatie & Self-Healing (NIEUW)
         try:
             final_code = await self._validate_and_fix(raw_code)
@@ -117,15 +126,19 @@ class FeatureArchitect:
 
         # Map aanmaken indien nodig
         os.makedirs(os.path.dirname(target_file), exist_ok=True)
-        
+
         if "__init__.py" in target_file:
             return {"status": "failed", "msg": "Protected File"}
 
         # SAFETY NET: Eerst backuppen
-        await self.publisher.create_backup_commit(f"Pre-modification of {os.path.basename(target_file)}")
+        await self.publisher.create_backup_commit(
+            f"Pre-modification of {os.path.basename(target_file)}"
+        )
 
-        with open(target_file, 'w') as f:
+        with open(target_file, "w") as f:
             f.write(final_code)
-            
-        logger.success(f"[{self.name}] 💾 Code (Validated) geïmplementeerd in: {target_file}")
+
+        logger.success(
+            f"[{self.name}] 💾 Code (Validated) geïmplementeerd in: {target_file}"
+        )
         return {"status": "success", "file": target_file}

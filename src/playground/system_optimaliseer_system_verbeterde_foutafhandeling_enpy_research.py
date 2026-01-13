@@ -3,6 +3,7 @@ import threading
 import time
 import functools
 
+
 class MemoryLoader:
     _instance = None
     _lock = threading.Lock()
@@ -21,10 +22,12 @@ class MemoryLoader:
         return cls._instance
 
     def __init__(self):
-        if hasattr(self, '_initialized'):
+        if hasattr(self, "_initialized"):
             return
         self._initialized = True
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        logging.basicConfig(
+            level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+        )
 
     def _retry(self, func):
         @functools.wraps(func)
@@ -33,12 +36,16 @@ class MemoryLoader:
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
-                    logging.error(f"Attempt {attempt + 1}/{self._max_retries + 1} failed: {e}", exc_info=True)
+                    logging.error(
+                        f"Attempt {attempt + 1}/{self._max_retries + 1} failed: {e}",
+                        exc_info=True,
+                    )
                     if attempt == self._max_retries:
-                        logging.error(f"Memory loading failed after multiple retries.")
+                        logging.error("Memory loading failed after multiple retries.")
                         raise
                     time.sleep(self._retry_delay)
             return None
+
         return wrapper
 
     @_retry
@@ -66,7 +73,9 @@ class MemoryLoader:
                     self._memory_loaded_successfully = True
                     self._memory_loading_complete.set()
             except Exception as e:
-                logging.error(f"Unhandled exception in loading thread: {e}", exc_info=True)
+                logging.error(
+                    f"Unhandled exception in loading thread: {e}", exc_info=True
+                )
                 with self._memory_loading_lock:
                     self._memory_loading_complete.set()
 
@@ -79,7 +88,7 @@ class MemoryLoader:
             logging.warning("Memory loading timed out.")
             with self._memory_loading_lock:
                 if not self._memory_loaded_successfully:
-                     return None
+                    return None
         with self._memory_loading_lock:
             return self._memory
 

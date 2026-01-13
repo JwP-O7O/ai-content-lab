@@ -1,7 +1,6 @@
 import asyncio
 import os
 import sys
-import json
 import time
 from loguru import logger
 
@@ -18,29 +17,34 @@ try:
 except ImportError:
     sys.exit(1)
 
+
 class TermuxMasterOrchestrator:
     def __init__(self):
-        self.last_task_hash = "" # Loop Preventie
-        
+        self.last_task_hash = ""  # Loop Preventie
+
         # DE NIEUWE TEAMS
-        self.intelligence = ResearchAgent()   # Team 1: Research
-        self.backend_squad = FeatureArchitect() # Team 2: Backend (wordt later geüpgraded)
-        self.frontend_squad = WebArchitect()    # Team 3: Frontend (wordt later geüpgraded)
-        
+        self.intelligence = ResearchAgent()  # Team 1: Research
+        self.backend_squad = (
+            FeatureArchitect()
+        )  # Team 2: Backend (wordt later geüpgraded)
+        self.frontend_squad = (
+            WebArchitect()
+        )  # Team 3: Frontend (wordt later geüpgraded)
+
         self.listener = LocalListener()
         self.publisher = GitPublisher()
-        self.memory = MemorySystem() # 🧠 The Brain
+        self.memory = MemorySystem()  # 🧠 The Brain
 
     async def run_cycle(self):
         # 1. Check Commando's
         orders = await self.listener.check_for_orders()
-        
+
         if orders.get("status") == "new_tasks":
-            for task in orders['tasks']:
-                title = task['title']
-                task_id = task.get('id')
+            for task in orders["tasks"]:
+                title = task["title"]
+                task_id = task.get("id")
                 start_time = time.time()
-                
+
                 logger.info(f"🚀 Starting Task {task_id}: {title}")
 
                 try:
@@ -57,14 +61,16 @@ class TermuxMasterOrchestrator:
                     elif "SYSTEM:" in title.upper():
                         result = await self.backend_squad.build_feature(title)
                         await self.publisher.publish_changes()
-                    
+
                     # Bereken duur
                     duration = time.time() - start_time
 
                     # Markeer als voltooid in DB
                     if task_id:
-                        self.listener.queue.complete_task(task_id, result="Executed successfully")
-                        
+                        self.listener.queue.complete_task(
+                            task_id, result="Executed successfully"
+                        )
+
                     # 🧠 LEER VAN DEZE SESSIE
                     await self.memory.update_context_after_task(
                         task_id, title, str(result), "completed", duration
@@ -73,10 +79,10 @@ class TermuxMasterOrchestrator:
                 except Exception as e:
                     duration = time.time() - start_time
                     logger.error(f"Task {task_id} Failed: {e}")
-                    
+
                     if task_id:
                         self.listener.queue.fail_task(task_id, error_message=str(e))
-                        
+
                     # 🧠 LEER VAN DEZE FOUT
                     await self.memory.update_context_after_task(
                         task_id, title, str(e), "failed", duration
@@ -91,6 +97,7 @@ class TermuxMasterOrchestrator:
             except Exception as e:
                 logger.error(f"Critical System Error: {e}")
                 await asyncio.sleep(5)
+
 
 if __name__ == "__main__":
     asyncio.run(TermuxMasterOrchestrator().start())

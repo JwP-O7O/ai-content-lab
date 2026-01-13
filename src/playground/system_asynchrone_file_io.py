@@ -3,10 +3,13 @@ import os
 import aiofiles
 import time
 import logging
-from typing import List, Tuple, Dict, Callable, Any
+from typing import List, Dict, Callable, Any
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 
 class ContentQualityMonitor:
     def __init__(self, analysis_functions: Dict[str, Callable[[str], Any]] = None):
@@ -14,7 +17,7 @@ class ContentQualityMonitor:
 
     async def _read_file_async(self, file_path: str) -> str:
         try:
-            async with aiofiles.open(file_path, mode='r', encoding='utf-8') as f:
+            async with aiofiles.open(file_path, mode="r", encoding="utf-8") as f:
                 content = await f.read()
                 return content
         except FileNotFoundError:
@@ -34,7 +37,9 @@ class ContentQualityMonitor:
             try:
                 results[name] = func(content)
             except Exception as e:
-                logging.error(f"Error during analysis of {file_path} with function {name}: {e}")
+                logging.error(
+                    f"Error during analysis of {file_path} with function {name}: {e}"
+                )
                 results[name] = f"Error during analysis: {e}"
         return results
 
@@ -47,8 +52,9 @@ class ContentQualityMonitor:
 def basic_word_count(text: str) -> int:
     return len(text.split())
 
+
 def simple_vowel_count(text: str) -> int:
-    return sum(1 for char in text.lower() if char in 'aeiou')
+    return sum(1 for char in text.lower() if char in "aeiou")
 
 
 async def main():
@@ -60,7 +66,9 @@ async def main():
     for i in range(3):
         file_path = f"test_files/test_file_{i}.txt"
         with open(file_path, "w", encoding="utf-8") as f:
-            f.write(f"This is test file {i}.  It contains some words and some vowels. aeiou. The quick brown fox jumps over the lazy dog.")
+            f.write(
+                f"This is test file {i}.  It contains some words and some vowels. aeiou. The quick brown fox jumps over the lazy dog."
+            )
         file_paths.append(file_path)
 
     analysis_functions = {

@@ -2,6 +2,7 @@ from src.database.connection import get_db
 from loguru import logger
 import json
 
+
 class TaskQueue:
     def __init__(self):
         pass
@@ -34,15 +35,15 @@ class TaskQueue:
             SET status = 'processing', updated_at = CURRENT_TIMESTAMP 
             WHERE id = ?
         """
-        
+
         try:
             with get_db() as cursor:
                 cursor.execute(select_query)
                 row = cursor.fetchone()
-                
+
                 if row:
                     task = dict(row)
-                    cursor.execute(update_query, (task['id'],))
+                    cursor.execute(update_query, (task["id"],))
                     return task
                 return None
         except Exception as e:
@@ -61,7 +62,7 @@ class TaskQueue:
                 # Zorg dat result een string is (bijv. JSON string)
                 if not isinstance(result, str):
                     result = json.dumps(result)
-                    
+
                 cursor.execute(query, (result, task_id))
                 logger.info(f"Task {task_id} marked as completed.")
         except Exception as e:

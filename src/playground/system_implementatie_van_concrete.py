@@ -6,6 +6,7 @@ import logging
 from tenacity import retry, stop_after_attempt, wait_exponential
 import uuid
 
+
 class LLMClient:
     _instance = None
 
@@ -16,7 +17,9 @@ class LLMClient:
         self.logger = logging.getLogger(__name__ + ".LLMClient")
         self.logger.setLevel(logging.INFO)
         handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] - %(message)s')
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] - %(message)s"
+        )
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
 
@@ -25,37 +28,54 @@ class LLMClient:
             cls._instance = super(LLMClient, cls).__new__(cls)
         return cls._instance
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
+    @retry(
+        stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10)
+    )
     async def generate_text(self, prompt: str, request_id: str) -> str:
         """Simuleer een LLM-aanroep."""
-        self.logger.info(f"Simulating LLM call with prompt: {prompt}", extra={'request_id': request_id})
+        self.logger.info(
+            f"Simulating LLM call with prompt: {prompt}",
+            extra={"request_id": request_id},
+        )
         await asyncio.sleep(random.uniform(0.1, 1.0))  # Simuleer netwerklatentie
         if random.random() < 0.1:  # 10% kans op een fout
-            self.logger.error("Simulated LLM error", extra={'request_id': request_id})
+            self.logger.error("Simulated LLM error", extra={"request_id": request_id})
             raise Exception("Simulated LLM error")
         response = f"Simulated LLM response for: {prompt}"
-        self.logger.info(f"Simulated LLM response: {response}", extra={'request_id': request_id})
+        self.logger.info(
+            f"Simulated LLM response: {response}", extra={"request_id": request_id}
+        )
         return response
 
+
 class ConversionAgent:
-    def __init__(self, llm_client: LLMClient, ab_test_config: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self, llm_client: LLMClient, ab_test_config: Optional[Dict[str, Any]] = None
+    ):
         self.llm_client = llm_client
         self.logger = logging.getLogger(__name__ + ".ConversionAgent")
         self.logger.setLevel(logging.INFO)
         handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] - %(message)s')
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] - %(message)s"
+        )
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
         self.ab_test_config = ab_test_config
         self.variant = self._determine_variant()
 
-
     def _determine_variant(self) -> Optional[str]:
         if self.ab_test_config:
-            if 'variants' in self.ab_test_config and isinstance(self.ab_test_config['variants'], list) and len(self.ab_test_config['variants']) > 0:
-                return random.choice(self.ab_test_config['variants'])
+            if (
+                "variants" in self.ab_test_config
+                and isinstance(self.ab_test_config["variants"], list)
+                and len(self.ab_test_config["variants"]) > 0
+            ):
+                return random.choice(self.ab_test_config["variants"])
             else:
-                self.logger.warning("Invalid AB test configuration: 'variants' not correctly defined.  Running base variant.")
+                self.logger.warning(
+                    "Invalid AB test configuration: 'variants' not correctly defined.  Running base variant."
+                )
                 return None
         return None
 
@@ -67,7 +87,9 @@ class ConversionAgent:
             response = await self.llm_client.generate_text(prompt, request_id)
             return response
         except Exception as e:
-            self.logger.error(f"Error during conversion: {e}", extra={'request_id': request_id})
+            self.logger.error(
+                f"Error during conversion: {e}", extra={"request_id": request_id}
+            )
             return "Error during conversion"
 
     async def execute(self, input_data: str) -> Dict[str, Any]:
@@ -77,7 +99,10 @@ class ConversionAgent:
         request_id = str(uuid.uuid4())
         try:
             start_time = datetime.now()
-            self.logger.info(f"Starting conversion with input: {input_data}, variant: {self.variant if self.variant else 'base'}", extra={'request_id': request_id})
+            self.logger.info(
+                f"Starting conversion with input: {input_data}, variant: {self.variant if self.variant else 'base'}",
+                extra={"request_id": request_id},
+            )
             converted_data = await self._execute_conversion(input_data, request_id)
             end_time = datetime.now()
             duration = end_time - start_time
@@ -85,12 +110,17 @@ class ConversionAgent:
                 "converted_data": converted_data,
                 "execution_time": duration.total_seconds(),
                 "variant": self.variant,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
-            self.logger.info(f"Conversion complete, result: {result}", extra={'request_id': request_id})
+            self.logger.info(
+                f"Conversion complete, result: {result}",
+                extra={"request_id": request_id},
+            )
             return result
         except Exception as e:
-            self.logger.error(f"Failed to execute conversion: {e}", extra={'request_id': request_id})
+            self.logger.error(
+                f"Failed to execute conversion: {e}", extra={"request_id": request_id}
+            )
             return {"error": str(e), "timestamp": datetime.now().isoformat()}
 
 
@@ -100,9 +130,7 @@ async def main():
     llm_client = LLMClient(api_key)
 
     # AB test config example
-    ab_test_config = {
-        "variants": ["variant_a", "variant_b"]
-    }
+    ab_test_config = {"variants": ["variant_a", "variant_b"]}
     agent = ConversionAgent(llm_client, ab_test_config)
 
     input_data = "This is a test string."

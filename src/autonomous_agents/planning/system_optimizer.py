@@ -9,6 +9,7 @@ from src.autonomous_agents.execution.research_agent import ResearchAgent
 
 load_dotenv()
 
+
 class SystemOptimizer:
     def __init__(self):
         self.name = "SystemOptimizer"
@@ -16,7 +17,9 @@ class SystemOptimizer:
         self.brain = GlobalBrain()
         self.researcher = ResearchAgent()
         self.github_token = os.getenv("GITHUB_TOKEN")
-        self.repo_name = os.getenv("GITHUB_REPO_NAME", "JwP-O7O/ai-content-lab")  # Fallback voor flexibiliteit
+        self.repo_name = os.getenv(
+            "GITHUB_REPO_NAME", "JwP-O7O/ai-content-lab"
+        )  # Fallback voor flexibiliteit
         self.source_dir = "src"
         self.max_code_snippet_length = 3000  # Configureerbaar
 
@@ -33,7 +36,9 @@ class SystemOptimizer:
         """Optimaliseert willekeurige Python bestanden met behulp van AI en GitHub Issues."""
         target_file = self._get_random_source_file()
         if not target_file:
-            logger.warning(f"[{self.name}] ⚠️ Geen Python bestanden gevonden in {self.source_dir}.")
+            logger.warning(
+                f"[{self.name}] ⚠️ Geen Python bestanden gevonden in {self.source_dir}."
+            )
             return
 
         filename = os.path.basename(target_file)
@@ -43,11 +48,11 @@ class SystemOptimizer:
         search_q = f"Python best practices optimization for {filename} library"
         logger.info(f"[{self.name}] 🌍 Best practices opzoeken voor {filename}...")
         research_results = await self.researcher.conduct_research(search_q)
-        research_summary = research_results.get('summary', 'Geen specifieke data')
+        research_summary = research_results.get("summary", "Geen specifieke data")
 
         # 2. OPTIMALISEREN
         try:
-            with open(target_file, 'r') as f:
+            with open(target_file, "r") as f:
                 code = f.read()
         except FileNotFoundError:
             logger.error(f"[{self.name}] ❗ Bestand niet gevonden: {target_file}")
@@ -63,7 +68,7 @@ class SystemOptimizer:
         {research_summary}
 
         HUIDIGE CODE:
-        {code[:self.max_code_snippet_length]}
+        {code[: self.max_code_snippet_length]}
 
         OPDRACHT:
         Vind 1 concrete verbetering op basis van de research. Geef een duidelijke uitleg en suggestie voor de code aanpassing.
@@ -72,7 +77,9 @@ class SystemOptimizer:
         advice = await self.ai.generate_text(prompt)
 
         if not advice:
-            logger.warning(f"[{self.name}] ⚠️ Geen advies ontvangen van de AI voor {filename}.")
+            logger.warning(
+                f"[{self.name}] ⚠️ Geen advies ontvangen van de AI voor {filename}."
+            )
             return
 
         # 3. GITHUB ISSUE AANMAKEN
@@ -87,4 +94,6 @@ class SystemOptimizer:
             repo.create_issue(title=issue_title, body=body)
             logger.success(f"[{self.name}] 🛠️ Ticket aangemaakt: {issue_title}")
         except Exception as e:
-            logger.error(f"[{self.name}] ❗ Fout bij het aanmaken van GitHub issue: {e}")
+            logger.error(
+                f"[{self.name}] ❗ Fout bij het aanmaken van GitHub issue: {e}"
+            )

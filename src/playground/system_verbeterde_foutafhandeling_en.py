@@ -2,6 +2,7 @@ import logging
 import threading
 import time
 
+
 class MemoryLoader:
     _instance = None
     _lock = threading.Lock()
@@ -17,11 +18,12 @@ class MemoryLoader:
         return cls._instance
 
     def __init__(self):
-        if hasattr(self, '_initialized'):
+        if hasattr(self, "_initialized"):
             return
         self._initialized = True
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
+        logging.basicConfig(
+            level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+        )
 
     def _load_memory_internal(self):
         try:
@@ -33,7 +35,6 @@ class MemoryLoader:
         except Exception as e:
             logging.error(f"Error during memory loading: {e}", exc_info=True)
             return None
-
 
     def _load_memory_async(self):
         with self._memory_loading_lock:
@@ -47,9 +48,8 @@ class MemoryLoader:
             with self._memory_loading_lock:
                 self._memory = loaded_memory
                 self._memory_loading_complete.set()
-        
-        threading.Thread(target=load_task, daemon=True).start()
 
+        threading.Thread(target=load_task, daemon=True).start()
 
     def load_memory(self):
         self._load_memory_async()

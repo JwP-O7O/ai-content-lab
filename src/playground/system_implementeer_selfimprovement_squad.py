@@ -1,8 +1,8 @@
 import time
 import os
 import subprocess
-import re
 from typing import Dict, Any, List
+
 
 class Agent:
     def __init__(self, name: str, description: str, orchestrator):
@@ -13,9 +13,14 @@ class Agent:
     def execute(self, *args, **kwargs):
         raise NotImplementedError
 
+
 class ResearchAgent(Agent):
     def __init__(self, orchestrator):
-        super().__init__("ResearchAgent", "Conducts research and suggests best practices.", orchestrator)
+        super().__init__(
+            "ResearchAgent",
+            "Conducts research and suggests best practices.",
+            orchestrator,
+        )
 
     def execute(self, query: str) -> str:
         # Simplified research - replace with actual research functionality
@@ -32,7 +37,9 @@ class ResearchAgent(Agent):
 
 class SecuritySentinel(Agent):
     def __init__(self, orchestrator):
-        super().__init__("SecuritySentinel", "Scans code for security vulnerabilities.", orchestrator)
+        super().__init__(
+            "SecuritySentinel", "Scans code for security vulnerabilities.", orchestrator
+        )
 
     def scan_code(self, code_path: str) -> List[Dict[str, Any]]:
         try:
@@ -46,6 +53,7 @@ class SecuritySentinel(Agent):
             if report:
                 try:
                     import json
+
                     report_json = json.loads(report)
                     return report_json.get("results", [])
                 except json.JSONDecodeError:
@@ -54,20 +62,22 @@ class SecuritySentinel(Agent):
             else:
                 return []
 
-
         except subprocess.CalledProcessError as e:
             print(f"Bandit scan failed: {e}")
             print(f"Stderr: {e.stderr}")
             return []
-
 
     def execute(self, code_path: str, commit_message: str = "") -> bool:
         vulnerabilities = self.scan_code(code_path)
         if vulnerabilities:
             print("Security vulnerabilities found:")
             for issue in vulnerabilities:
-                print(f"  - {issue['issue_text']} (Line: {issue['line_number']}, Code: {issue['code']})")
-            if "commit" in commit_message.lower():  # Check to block potentially unsafe commits
+                print(
+                    f"  - {issue['issue_text']} (Line: {issue['line_number']}, Code: {issue['code']})"
+                )
+            if (
+                "commit" in commit_message.lower()
+            ):  # Check to block potentially unsafe commits
                 print("Commit blocked due to security vulnerabilities.")
                 return False
             else:
@@ -80,21 +90,30 @@ class SecuritySentinel(Agent):
 
 class PerformanceProfiler(Agent):
     def __init__(self, orchestrator):
-        super().__init__("PerformanceProfiler", "Measures agent performance and identifies bottlenecks.", orchestrator)
+        super().__init__(
+            "PerformanceProfiler",
+            "Measures agent performance and identifies bottlenecks.",
+            orchestrator,
+        )
         self.threshold = 5  # seconds
 
     def execute(self, agent_name: str, start_time: float, end_time: float) -> None:
         duration = end_time - start_time
         print(f"Agent '{agent_name}' execution time: {duration:.2f} seconds")
         if duration > self.threshold:
-            print(f"Performance issue: Agent '{agent_name}' took {duration:.2f} seconds.")
-            self.orchestrator.create_optimization_issue(f"Agent '{agent_name}' is slow.  Consider optimizations.")
+            print(
+                f"Performance issue: Agent '{agent_name}' took {duration:.2f} seconds."
+            )
+            self.orchestrator.create_optimization_issue(
+                f"Agent '{agent_name}' is slow.  Consider optimizations."
+            )
 
 
 class DocumentationDroid(Agent):
     def __init__(self, orchestrator):
-        super().__init__("DocumentationDroid", "Updates docstrings and README files.", orchestrator)
-
+        super().__init__(
+            "DocumentationDroid", "Updates docstrings and README files.", orchestrator
+        )
 
     def update_docstrings(self, file_path: str):
         try:
@@ -139,7 +158,9 @@ class DocumentationDroid(Agent):
 
 class QualityAssuranceAgent(Agent):
     def __init__(self, orchestrator):
-        super().__init__("QualityAssuranceAgent", "Checks for code quality.", orchestrator)
+        super().__init__(
+            "QualityAssuranceAgent", "Checks for code quality.", orchestrator
+        )
 
     def execute(self, code_path: str):
         # Placeholder for code quality checks
@@ -149,6 +170,7 @@ class QualityAssuranceAgent(Agent):
 
         # Example - just print a success message
         print("Code quality check passed (simulated).")
+
 
 class TermuxMasterOrchestrator:
     def __init__(self):
@@ -161,7 +183,6 @@ class TermuxMasterOrchestrator:
         self.register_agent(PerformanceProfiler(self))
         self.register_agent(DocumentationDroid(self))
         self.register_agent(QualityAssuranceAgent(self))
-
 
     def register_agent(self, agent: Agent):
         self.agents[agent.name] = agent
@@ -185,15 +206,14 @@ class TermuxMasterOrchestrator:
         end_time = time.time()
 
         if agent.name == "PerformanceProfiler":
-           return result # Performance profiler does its actions within execute.
+            return result  # Performance profiler does its actions within execute.
 
-        if agent.name != "PerformanceProfiler": # Measure time for other agents
+        if agent.name != "PerformanceProfiler":  # Measure time for other agents
             performance_agent = self.get_agent("PerformanceProfiler")
             if performance_agent:
                 performance_agent.execute(agent_name, start_time, end_time)
 
         return result
-
 
     def run(self):
         # Simulating a basic workflow
@@ -201,23 +221,34 @@ class TermuxMasterOrchestrator:
 
         # --- Example Cycle 1: Code Modification & Quality Check ---
         print("\n--- Cycle 1: Code Modification & Quality Check ---")
-        changed_files = ["example.py"] # Simulate modified files
-        doc_agent_result = self.run_agent_cycle("DocumentationDroid", codebase_path=".", changed_files=changed_files)
-        qa_agent_result = self.run_agent_cycle("QualityAssuranceAgent", code_path="example.py") # Use the changed file
-        security_agent_result = self.run_agent_cycle("SecuritySentinel", code_path="example.py", commit_message="Fix example.py")
+        changed_files = ["example.py"]  # Simulate modified files
+        doc_agent_result = self.run_agent_cycle(
+            "DocumentationDroid", codebase_path=".", changed_files=changed_files
+        )
+        qa_agent_result = self.run_agent_cycle(
+            "QualityAssuranceAgent", code_path="example.py"
+        )  # Use the changed file
+        security_agent_result = self.run_agent_cycle(
+            "SecuritySentinel", code_path="example.py", commit_message="Fix example.py"
+        )
 
         # --- Example Cycle 2: Simulated Commit & Security Check ---
         print("\n--- Cycle 2: Simulated Commit & Security Check ---")
-        security_check_passed = self.run_agent_cycle("SecuritySentinel", code_path="example.py", commit_message="feat: Add new feature")
+        security_check_passed = self.run_agent_cycle(
+            "SecuritySentinel",
+            code_path="example.py",
+            commit_message="feat: Add new feature",
+        )
         if not security_check_passed:
             print("Commit blocked due to security issues.")
         else:
             print("Commit successful (simulated).")
         # --- Example Cycle 3: Research
         print("\n--- Cycle 3: Research Agent ---")
-        research_result = self.run_agent_cycle("ResearchAgent", query="security best practices")
+        research_result = self.run_agent_cycle(
+            "ResearchAgent", query="security best practices"
+        )
         print(f"Research Result: {research_result}")
-
 
         print("\nOrchestrator finished.")
 

@@ -30,16 +30,16 @@ class CodeHealthMonitor(BaseAutonomousAgent):
                             "message": issue.get("message", "Unknown error"),
                             "code": issue.get("code", "Unknown"),
                             "filename": issue.get("filename", "Unknown"),
-                            "location": issue.get("location", {}),  # added to show line/column
+                            "location": issue.get(
+                                "location", {}
+                            ),  # added to show line/column
                             "severity": "error"
                             if "E" in issue.get("code", "")
                             else "warning",  # Determine severity
                         }
                     )
 
-                error_count = sum(
-                    1 for issue in issues if issue["severity"] == "error"
-                )
+                error_count = sum(1 for issue in issues if issue["severity"] == "error")
                 warning_count = len(
                     [issue for issue in issues if issue["severity"] == "warning"]
                 )
@@ -47,9 +47,7 @@ class CodeHealthMonitor(BaseAutonomousAgent):
                 health_score = max(0, 100 - (error_count * 5) - (warning_count * 2))
 
                 results["health_score"] = health_score
-                results["issues"] = (
-                    error_count + warning_count
-                )  # totaal aantal issues
+                results["issues"] = error_count + warning_count  # totaal aantal issues
                 results["detailed_issues"] = issues  # Sla gedetailleerde info op
 
             except json.JSONDecodeError:
@@ -80,7 +78,9 @@ class CodeHealthMonitor(BaseAutonomousAgent):
                         "issue_code": issue["code"],
                         "filename": issue["filename"],
                         "line": issue["location"].get("row"),  # Add line for context
-                        "column": issue["location"].get("column"),  # Add column for context
+                        "column": issue["location"].get(
+                            "column"
+                        ),  # Add column for context
                         "message": issue["message"],
                     }
                 )
@@ -107,6 +107,8 @@ class CodeHealthMonitor(BaseAutonomousAgent):
                             f"Failed to fix issue {action['issue_code']} in {action['filename']} (Error: {fix_output.stderr})"
                         )
                 except FileNotFoundError:
-                    logger.error("Ruff niet gevonden. Installeer ruff met: pip install ruff")
+                    logger.error(
+                        "Ruff niet gevonden. Installeer ruff met: pip install ruff"
+                    )
 
         return results

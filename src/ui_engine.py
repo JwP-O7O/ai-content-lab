@@ -1,29 +1,35 @@
 from rich.console import Console
 from rich.panel import Panel
-from rich.text import Text
 from rich.theme import Theme
 from datetime import datetime
 
 # Aangepast kleurenpalet voor "Neon Cyberpunk" look
-custom_theme = Theme({
-    "info": "dim cyan",
-    "warning": "magenta",
-    "error": "bold red",
-    "success": "bold green",
-    "task.web": "bold #00ffff",    # Cyaan
-    "task.code": "bold #00ff00",   # Matrix Groen
-    "task.art": "bold #ff00ff",    # Neon Roze
-    "task.research": "bold #ffff00", # Fel Geel
-    "task.system": "bold #ffaa00", # Oranje
-})
+custom_theme = Theme(
+    {
+        "info": "dim cyan",
+        "warning": "magenta",
+        "error": "bold red",
+        "success": "bold green",
+        "task.web": "bold #00ffff",  # Cyaan
+        "task.code": "bold #00ff00",  # Matrix Groen
+        "task.art": "bold #ff00ff",  # Neon Roze
+        "task.research": "bold #ffff00",  # Fel Geel
+        "task.system": "bold #ffaa00",  # Oranje
+    }
+)
 
 console = Console(theme=custom_theme)
 
+
 class UIEngine:
     def header(self, title):
-        console.print(f"\n[bold white]╔══════════════════════════════════════════════════╗[/]")
+        console.print(
+            "\n[bold white]╔══════════════════════════════════════════════════╗[/]"
+        )
         console.print(f"[bold white]║ {title.center(48)} ║[/]")
-        console.print(f"[bold white]╚══════════════════════════════════════════════════╝[/]\n")
+        console.print(
+            "[bold white]╚══════════════════════════════════════════════════╝[/]\n"
+        )
 
     def log_cycle(self, number):
         timestamp = datetime.now().strftime("%H:%M:%S")
@@ -32,7 +38,7 @@ class UIEngine:
     def log_task(self, type, title, status):
         """Maakt een mooi gekleurd blok voor een taak"""
         type = type.upper()
-        
+
         # Bepaal kleur en icoon op basis van type
         if "WEB" in type:
             style = "task.web"
@@ -65,7 +71,7 @@ class UIEngine:
             content,
             title=f"[bold {border_style}]{type}[/]",
             border_style=border_style,
-            expand=False
+            expand=False,
         )
         console.print(panel)
 

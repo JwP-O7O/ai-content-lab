@@ -1,10 +1,11 @@
 import threading
 import asyncio
 import logging
-import functools
-import os
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 
 class ThreadSafeLazy:
     def __init__(self, constructor):
@@ -18,6 +19,7 @@ class ThreadSafeLazy:
                 if self._instance is None:
                     self._instance = self._constructor()
         return self._instance
+
 
 class AsyncContextManager:
     def __init__(self, generator_function, *args, **kwargs):
@@ -36,12 +38,13 @@ class AsyncContextManager:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         try:
-            if hasattr(self._instance, 'close'):
+            if hasattr(self._instance, "close"):
                 await self._instance.close()
-            elif hasattr(self._instance, 'dispose'):
+            elif hasattr(self._instance, "dispose"):
                 await self._instance.dispose()
         except Exception as e:
             logging.error(f"Error in __aexit__: {e}")
+
 
 async def async_generator(data, delay=0.1):
     try:
@@ -52,9 +55,10 @@ async def async_generator(data, delay=0.1):
         logging.error(f"Error in async_generator: {e}")
         raise
 
+
 def safe_file_read(filepath):
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             content = f.read()
         return content
     except FileNotFoundError:
@@ -67,9 +71,10 @@ def safe_file_read(filepath):
         logging.error(f"Unexpected error reading file {filepath}: {e}")
         return None
 
+
 class LLMService:
     def __init__(self):
-        self.model = "GPT-3" # Simulate model loading
+        self.model = "GPT-3"  # Simulate model loading
         logging.info("LLM Service initialized")
 
     async def generate_response(self, prompt):
@@ -84,6 +89,7 @@ class LLMService:
 
     async def close(self):
         logging.info("LLM Service closed")
+
 
 class Config:
     _instance = None
@@ -113,6 +119,7 @@ class Config:
                 if not cls._instance:
                     cls._instance = Config()
         return cls._instance
+
 
 async def main():
     config = Config.get_instance()

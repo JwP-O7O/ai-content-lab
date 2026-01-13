@@ -1,9 +1,7 @@
-import time
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any
 from loguru import logger
-from src.database.connection import get_db
-from src.database.models import AgentLog
+
 
 class BaseAgent(ABC):
     def __init__(self, name: str):
@@ -22,13 +20,13 @@ class BaseAgent(ABC):
             return result
         except Exception as e:
             logger.error(f"{self.name} failed: {e}")
-            raise # Re-raise for now
+            raise  # Re-raise for now
 
     def log_info(self, message: str):
         logger.info(f"[{self.name}] {message}")
-    
+
     def log_error(self, message: str):
         logger.error(f"[{self.name}] {message}")
-        
+
     def _log_activity(self, **kwargs):
-        pass # Stub
+        pass  # Stub

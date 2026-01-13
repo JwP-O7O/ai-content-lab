@@ -3,6 +3,7 @@ import aiohttp
 import time
 from typing import Optional
 
+
 class LLMClient:
     def __init__(self, api_key: str, api_url: str):
         self.api_key = api_key
@@ -20,7 +21,9 @@ class LLMClient:
 
     async def generate(self, prompt: str) -> str:
         try:
-            async with self.session.post(f"{self.api_url}/generate", json={"prompt": prompt}) as response:
+            async with self.session.post(
+                f"{self.api_url}/generate", json={"prompt": prompt}
+            ) as response:
                 response.raise_for_status()
                 data = await response.json()
                 return data.get("result", "")
@@ -31,10 +34,10 @@ class LLMClient:
             print(f"LLMClient Unexpected Error: {e}")
             raise
 
-
     async def close(self):
         if self._session:
             await self._session.close()
+
 
 class TaskManager:
     def __init__(self, llm_client: LLMClient):
@@ -51,16 +54,20 @@ class TaskManager:
             print(f"Task {task_id} failed: {e}")
             return task_id, f"Error: {str(e)}"
 
+
 async def main():
     api_key = "YOUR_API_KEY"  # Replace with your actual API key
-    api_url = "https://example.com/api" # Replace with your actual API URL
+    api_url = "https://example.com/api"  # Replace with your actual API URL
     llm_client = LLMClient(api_key, api_url)
     task_manager = TaskManager(llm_client)
 
     tasks = [
         task_manager.execute(1, "Write a short poem about the ocean."),
         task_manager.execute(2, "Translate 'Hello, world!' to French."),
-        task_manager.execute(3, "Summarize the following text: The quick brown fox jumps over the lazy dog.")
+        task_manager.execute(
+            3,
+            "Summarize the following text: The quick brown fox jumps over the lazy dog.",
+        ),
     ]
 
     results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -68,7 +75,7 @@ async def main():
         if isinstance(result, Exception):
             print(f"Task {task_id} failed with error: {result}")
         else:
-            print(f"Task {task_id} result: {result[1]}") # print the result string
+            print(f"Task {task_id} result: {result[1]}")  # print the result string
 
     await llm_client.close()
 

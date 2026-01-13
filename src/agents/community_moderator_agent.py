@@ -1,6 +1,7 @@
 from src.agents.base_agent import BaseAgent
 import asyncio
 
+
 class CommunityModeratorAgent(BaseAgent):
     async def execute(self):
         # Simuleer het continu afhandelen van berichten.
@@ -18,8 +19,12 @@ class CommunityModeratorAgent(BaseAgent):
         keywords = ["scheldwoord", "haatspraak", "spam"]  # Voeg relevante keywords toe
         for keyword in keywords:
             if keyword in message.lower():  # Case-insensitive check
-                print(f"  WAARSCHUWING: Bericht bevat keyword '{keyword}'.  Markeren voor review.")
+                print(
+                    f"  WAARSCHUWING: Bericht bevat keyword '{keyword}'.  Markeren voor review."
+                )
                 # Hier kan complexere actie komen (bijv. markeren in een database, etc.)
-                break # Stop met controleren zodra een keyword is gevonden.
+                break  # Stop met controleren zodra een keyword is gevonden.
 
-        print("Community Moderator voert moderatie-actie uit.")  # Vervang door echte logica (kan nu conditioneel zijn)
+        print(
+            "Community Moderator voert moderatie-actie uit."
+        )  # Vervang door echte logica (kan nu conditioneel zijn)

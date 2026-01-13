@@ -1,20 +1,23 @@
 import subprocess
 import shutil
 import sys
-import os
+
 
 def run_ruff(directory="."):
     """Runs ruff and handles potential errors more robustly."""
     try:
         if not shutil.which("ruff"):
-            return {"success": False, "error": "ruff not found. Please ensure ruff is installed and in your PATH."}
+            return {
+                "success": False,
+                "error": "ruff not found. Please ensure ruff is installed and in your PATH.",
+            }
 
         result = subprocess.run(
             ["ruff", "check", directory],
             capture_output=True,
             text=True,
             check=False,  # Don't raise exception on non-zero exit code, we'll handle it
-            timeout=60  # Added timeout for robustness
+            timeout=60,  # Added timeout for robustness
         )
 
         if result.returncode != 0:
@@ -37,14 +40,13 @@ def run_ruff(directory="."):
         return {"success": False, "error": f"An unexpected error occurred: {e}"}
 
 
-
 if __name__ == "__main__":
     # Example usage
     result = run_ruff(".")
     if result["success"]:
         print("ruff check successful.")
         if "stdout" in result:
-             print(result["stdout"])
+            print(result["stdout"])
     else:
         print(f"ruff check failed: {result['error']}")
-        sys.exit(1) # Indicate failure to the calling environment.
+        sys.exit(1)  # Indicate failure to the calling environment.
