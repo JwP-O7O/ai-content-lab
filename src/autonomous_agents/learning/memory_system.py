@@ -65,31 +65,37 @@ class MemorySystem:
 
     def _update_metrics(self, status, duration):
         try:
-                        data = {}
-                        with open(self.lessons_file, "r") as f:
-                            try:
-                                content = f.read()
-                                if content.strip():
-                                    data = json.loads(content)
-                                else:
-                                    data = {"successful_patterns": [], "failed_patterns": [], "metrics": {}}
-                            except json.JSONDecodeError:
-                                self._create_empty_lessons_file()
-                                data = {"successful_patterns": [], "failed_patterns": [], "metrics": {}}
-                        
-                        # Garandeer dat de metrics structuur bestaat en correct is
-                        data.setdefault("metrics", {"total_tasks": 0, "success_count": 0, "avg_duration": 0})
-                        m = data["metrics"]
-                        
-                        m["total_tasks"] += 1
-                        if status == "completed":
-                            m["success_count"] = m.get("success_count", 0) + 1
-                        
-                        # Update moving average duration
-                        m["avg_duration"] = (m.get("avg_duration", 0) * (m["total_tasks"] - 1) + duration) / m["total_tasks"]
-                        
-                        with open(self.lessons_file, "w") as f:
-                            json.dump(data, f, indent=2)
+            data = {"successful_patterns": [], "failed_patterns": [], "metrics": {}} # Default data structure
+            with open(self.lessons_file, "r") as f:
+                try:
+                    content = f.read()
+                    if content.strip():
+                        data = json.loads(content)
+                except json.JSONDecodeError:
+                    logger.warning(f"⚠️ Corrupt JSON found in {self.lessons_file} during metrics update. Resetting.")
+                    self._create_empty_lessons_file()
+            
+            # Garandeer dat de metrics structuur bestaat en correct is
+            data.setdefault("metrics", {})
+            m = data["metrics"]
+            
+            m.setdefault("total_tasks", 0)
+            m.setdefault("success_count", 0)
+            m.setdefault("avg_duration", 0.0) # Ensure float for average
+            
+            m["total_tasks"] += 1
+            if status == "completed":
+                m["success_count"] += 1
+            
+            # Update moving average duration
+            # Voorkom delen door nul als total_tasks net 1 is
+            if m["total_tasks"] > 1:
+                m["avg_duration"] = (m["avg_duration"] * (m["total_tasks"] - 1) + duration) / m["total_tasks"]
+            else:
+                m["avg_duration"] = duration # Eerste taak
+            
+            with open(self.lessons_file, "w") as f:
+                json.dump(data, f, indent=2)
         except Exception as e:
             logger.error(f"Failed to update metrics: {e}")
 

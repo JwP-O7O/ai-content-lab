@@ -39,9 +39,8 @@ async def run_web_integration_test():
     orchestrator = TermuxMasterOrchestrator()
     
     logger.info("🤖 Running Orchestrator Cycle for Web Task...")
-    # The run_cycle now returns the squad's result for the processed task
     squad_result = await orchestrator.run_cycle() 
-
+    logger.debug(f"DEBUG: squad_result from orchestrator: {squad_result}") # DEBUG LOG
     # 4. Verificatie
     logger.info("🔍 Verifying Web Integration Test Results...")
     
