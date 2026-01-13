@@ -35,12 +35,16 @@
     {
       "task": "SYSTEM: Maak een Python script 'string_reverser.py' met een functie 'reverse_string(text)' en error handling voor niet-strings.",
       "pattern": "Het herbruikbare patroon is het cre\u00ebren van een Python script met een specifieke functie en error handling, zoals de 'string_reverser.py' taak illustreert."
+    },
+    {
+      "task": "SYSTEM: Maak een Python script 'string_reverser.py' met een functie 'reverse_string(text)' en error handling voor niet-strings.",
+      "pattern": "Het herbruikbare patroon is het cre\u00ebren van een functie met error handling om een specifieke taak uit te voeren binnen een Python script, met een focus op correcte functionaliteit en getest resultaat."
     }
   ],
   "failed_patterns": [],
   "metrics": {
-    "total_tasks": 5,
-    "success_count": 5,
-    "avg_duration": 8.873476600646972
+    "total_tasks": 6,
+    "success_count": 6,
+    "avg_duration": 11.555622378985086
   }
 }
