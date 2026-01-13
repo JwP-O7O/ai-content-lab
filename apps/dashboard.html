@@ -68,6 +68,36 @@
                 padding-right: 10px;
             }
         }
+
+        /* Table styles */
+        .table {
+            color: #eee;
+        }
+
+        .table thead th {
+            border-bottom: 2px solid #00ff9d;
+            color: #00ff9d;
+        }
+
+        .table tbody tr:nth-of-type(even) {
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+
+        .card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            margin-bottom: 15px;
+        }
+
+        .card-header {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: #00ff9d;
+        }
+
+        .card-body {
+            padding: 15px;
+        }
     </style>
 </head>
 <body>
@@ -87,29 +117,30 @@
                 </div>
             </div>
 
-            <!-- Metrics & Memory Column -->
+            <!-- Metrics Column -->
             <div class="col-md-6">
                 <div class="glass neon-border">
-                    <h2 class="neon-text">Performance</h2>
+                    <h2 class="neon-text">Metrics</h2>
                     <div class="row">
                         <!-- Success Rate Card -->
                         <div class="col-md-12">
-                            <div class="glass neon-border">
-                                <h3 class="neon-text">Success Rate</h3>
-                                <div id="successRate" class="text-center">Loading...</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <!-- Memory Log Card -->
-                        <div class="col-md-12">
-                            <div class="glass neon-border">
-                                <h3 class="neon-text">Memory Log</h3>
-                                <div id="memoryLog">
-                                    <p class="text-muted">Loading memory logs...</p>
+                            <div class="card neon-border">
+                                <div class="card-header neon-text">Success Rate</div>
+                                <div class="card-body">
+                                    <div id="successRate" class="text-center">Loading...</div>
                                 </div>
                             </div>
                         </div>
+                        <!-- Memory Usage Card -->
+                        <div class="col-md-12">
+                            <div class="card neon-border">
+                                <div class="card-header neon-text">Memory Usage</div>
+                                <div class="card-body">
+                                    <div id="memoryUsage" class="text-center">Loading...</div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -118,69 +149,101 @@
 
 
     <script>
-        // Function to fetch data from the API
-        async function fetchData() {
+        // Function to fetch tasks data from the API
+        async function fetchTasks() {
             try {
-                const response = await fetch('http://localhost:8000'); // Replace with your actual endpoint
+                const response = await fetch('http://localhost:8000/tasks');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                const data = await response.json();
-                updateDashboard(data);
+                const tasks = await response.json();
+                return tasks;
             } catch (error) {
-                console.error("Fetch error:", error);
-                // Optionally display an error message on the dashboard.
-                document.getElementById('taskList').innerHTML = `<p class="text-danger">Error loading data: ${error.message}</p>`;
-                document.getElementById('successRate').innerHTML = '<span class="text-danger">Error</span>';
-                document.getElementById('memoryLog').innerHTML = '<p class="text-danger">Error loading memory logs</p>';
+                console.error("Error fetching tasks:", error);
+                return null;
+            }
+        }
+
+        // Function to fetch metrics data from the API
+        async function fetchMetrics() {
+            try {
+                const response = await fetch('http://localhost:8000/metrics');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const metrics = await response.json();
+                return metrics;
+            } catch (error) {
+                console.error("Error fetching metrics:", error);
+                return null;
             }
         }
 
         // Function to update the dashboard with fetched data
-        function updateDashboard(data) {
-            // Task List
-            const taskListElement = document.getElementById('taskList');
-            taskListElement.innerHTML = ''; // Clear previous content
+        async function updateDashboard() {
+            try {
+                // Fetch and process tasks
+                const tasks = await fetchTasks();
+                const taskListElement = document.getElementById('taskList');
+                taskListElement.innerHTML = ''; // Clear previous content
 
-            if (data.tasks && data.tasks.length > 0) {
-                data.tasks.forEach(task => {
-                    const taskItem = document.createElement('div');
-                    taskItem.classList.add('task-item');
-                    taskItem.textContent = task.description; // Assuming each task has a 'description' field.
-                    taskListElement.appendChild(taskItem);
-                });
-            } else {
-                taskListElement.innerHTML = '<p class="text-muted">No tasks available.</p>';
-            }
+                if (tasks && tasks.length > 0) {
+                    const table = document.createElement('table');
+                    table.classList.add('table');
+                    table.classList.add('table-dark'); // Dark table
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th scope="col">ID</th>
+                                <th scope="col">Description</th>
+                                <th scope="col">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    `;
+                    const tbody = table.querySelector('tbody');
+                    tasks.forEach(task => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${task.id}</td>
+                            <td>${task.description}</td>
+                            <td>${task.status}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    taskListElement.appendChild(table);
+                } else {
+                    taskListElement.innerHTML = '<p class="text-muted">No tasks available.</p>';
+                }
 
 
+                // Fetch and process metrics
+                const metrics = await fetchMetrics();
 
-            // Success Rate
-            const successRateElement = document.getElementById('successRate');
-            successRateElement.textContent = data.successRate !== undefined ? `${data.successRate}%` : "N/A";
+                // Success Rate
+                const successRateElement = document.getElementById('successRate');
+                successRateElement.textContent = metrics?.successRate !== undefined ? `${metrics.successRate}%` : "N/A";
 
-            // Memory Log
-            const memoryLogElement = document.getElementById('memoryLog');
-            memoryLogElement.innerHTML = ''; // Clear previous content
+                // Memory Usage
+                const memoryUsageElement = document.getElementById('memoryUsage');
+                memoryUsageElement.textContent = metrics?.memoryUsage !== undefined ? `${metrics.memoryUsage} MB` : "N/A";
 
-            if (data.memoryLog && data.memoryLog.length > 0) {
-                data.memoryLog.forEach(logEntry => {
-                    const logEntryElement = document.createElement('div');
-                    logEntryElement.classList.add('memory-log-entry');
-                    logEntryElement.textContent = logEntry; // Assuming each log entry is a string
-                    memoryLogElement.appendChild(logEntryElement);
-                });
-            } else {
-                memoryLogElement.innerHTML = '<p class="text-muted">No memory logs available.</p>';
+            } catch (error) {
+                console.error("Error updating dashboard:", error);
+                // Handle errors gracefully, e.g., display a global error message.
+                document.getElementById('taskList').innerHTML = '<p class="text-danger">Error loading tasks</p>';
+                document.getElementById('successRate').textContent = 'Error';
+                document.getElementById('memoryUsage').textContent = 'Error';
             }
         }
 
 
         // Initial data fetch
-        fetchData();
+        updateDashboard();
 
         // Auto-refresh every 5 seconds (5000 milliseconds)
-        setInterval(fetchData, 5000);
+        setInterval(updateDashboard, 5000);
     </script>
 
 </body>
