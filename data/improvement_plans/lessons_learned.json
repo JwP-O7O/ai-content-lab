@@ -1,1 +1,10 @@
-{"successful_patterns": [], "failed_patterns": [], "metrics": {}}
+{
+  "successful_patterns": [
+    {
+      "task": "SYSTEM: Maak een calculator script (sanity_calc.py) met error handling voor delen door nul.",
+      "pattern": "Het herbruikbare patroon is het gebruik van een script met error handling om een specifieke functionaliteit te implementeren en op te slaan in een bestand."
+    }
+  ],
+  "failed_patterns": [],
+  "metrics": {}
+}
