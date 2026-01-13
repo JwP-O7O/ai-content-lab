@@ -75,7 +75,7 @@ class TermuxMasterOrchestrator:
                     await self.memory.update_context_after_task(
                         task_id, title, result, "completed", duration
                     )
-                    return result # Return the original result dictionary
+                    return result # Return the complete result dictionary from the squad
 
                 except Exception as e:
                     duration = time.time() - start_time
@@ -88,7 +88,7 @@ class TermuxMasterOrchestrator:
                     await self.memory.update_context_after_task(
                         task_id, title, str(e), "failed", duration
                     )
-                    return None # Return None if task failed
+                    return {"status": "failed", "error": str(e)} # Return a failed status dictionary
         return None # No tasks processed
         while True:
             try:
