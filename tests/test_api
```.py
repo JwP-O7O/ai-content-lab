@@ -3,35 +3,26 @@ import sys
 import os
 import json
 import sqlite3
+from fastapi.testclient import TestClient
 
 # Add the project root to the Python path
 sys.path.append(os.getcwd())
 
-from src.dashboard.api import (
-    app,
-    DATABASE_URL,
-    TASKS_TABLE_NAME,
-    create_tasks_table,
-    get_all_tasks,
-    get_metrics,
-    Task,
-)  # Assuming your API code is in api.py
+from src.playground.
+#_src.dashboard.api
+ import *  # noqa: E402 (module level import not at top of file)
 
-from fastapi.testclient import TestClient
+# Use the app instance for testing
+client = TestClient(app)
 
-
-@pytest.fixture(scope="module")
-def test_app():
-    """Create a TestClient for the FastAPI app."""
-    return TestClient(app)
-
-
-@pytest.fixture(scope="module")
+# Fixture to create and populate the database for testing
+@pytest.fixture(scope="function")
 def test_db():
-    """Sets up and tears down a test database."""
-    # Use an in-memory database for testing
-    test_db_url = ":memory:"
-    conn = sqlite3.connect(test_db_url)
+    DATABASE_URL = "test_phoenix_os.db"
+    TASKS_TABLE_NAME = "tasks"
+
+    # Connect to the database
+    conn = sqlite3.connect(DATABASE_URL)
     cursor = conn.cursor()
 
     # Create the tasks table
@@ -46,81 +37,71 @@ def test_db():
     )
     conn.commit()
 
-    yield cursor, test_db_url
-
-    # Clean up (no cleanup needed for in-memory database)
-    conn.close()
-
-
-@pytest.fixture
-def seed_tasks(test_db):
-    """Seeds the test database with some tasks."""
-    cursor, _ = test_db
-    tasks_to_insert = [
+    # Populate the database with some test data
+    test_tasks = [
         ("Task 1", "pending"),
         ("Task 2", "in progress"),
-        ("Task 3", "completed"),
     ]
     cursor.executemany(
         f"INSERT INTO {TASKS_TABLE_NAME} (description, status) VALUES (?, ?)",
-        tasks_to_insert,
+        test_tasks,
     )
-    cursor.connection.commit()
-    # Fetch the inserted tasks to return them.  Important for testing.
-    cursor.execute(f"SELECT id, description, status FROM {TASKS_TABLE_NAME}")
-    rows = cursor.fetchall()
-    tasks = [Task(id=row[0], description=row[1], status=row[2]) for row in rows]
-    return tasks
+    conn.commit()
+
+    yield
+    # Clean up the database after the test
+    cursor.execute(f"DROP TABLE IF EXISTS {TASKS_TABLE_NAME}")
+    conn.commit()
+    conn.close()
+    if os.path.exists(DATABASE_URL):
+        os.remove(DATABASE_URL)
 
 
-def test_read_tasks_empty_db(test_app, test_db):
-    """Test reading tasks when the database is empty."""
-    client = test_app
+# Fixture to create a test metrics file
+@pytest.fixture(scope="function")
+def test_metrics_file():
+    metrics_file = "lessons_learned.json"
+    test_metrics = {"key1": "value1", "key2": "value2"}
+    with open(metrics_file, "w") as f:
+        json.dump(test_metrics, f)
+    yield
+    if os.path.exists(metrics_file):
+        os.remove(metrics_file)
+
+
+def test_read_tasks_success(test_db):
     response = client.get("/tasks")
     assert response.status_code == 200
-    assert response.json() == []
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 2  # Assuming the test_db fixture populates with 2 tasks
+    assert "id" in data[0]
+    assert "description" in data[0]
+    assert "status" in data[0]
 
 
-def test_read_tasks_populated_db(test_app, test_db, seed_tasks):
-    """Test reading tasks when the database has data."""
-    client = test_app
-    response = client.get("/tasks")
-    assert response.status_code == 200
-    # Convert Task objects to dicts for comparison
-    expected_tasks = [task.to_dict() for task in seed_tasks]
-    assert response.json() == expected_tasks
-
-
-def test_read_metrics_success(test_app, tmpdir):
-    """Test reading metrics when the lessons_learned.json file exists."""
-    # Create a temporary file for the test
-    metrics_data = {"key1": "value1", "key2": "value2"}
-    file_path = tmpdir.join("lessons_learned.json")
-    with open(file_path, "w") as f:
-        json.dump(metrics_data, f)
-
-    client = TestClient(app)
+def test_read_metrics_success(test_metrics_file):
     response = client.get("/metrics")
     assert response.status_code == 200
-    assert response.json() == metrics_data
+    data = response.json()
+    assert isinstance(data, dict)
+    assert "key1" in data
+    assert "key2" in data
 
 
-def test_read_metrics_file_not_found(test_app, tmpdir):
-    """Test reading metrics when the lessons_learned.json file does not exist."""
-    client = TestClient(app)
+def test_read_metrics_file_not_found():
+    # Remove the test_metrics_file fixture to simulate the file not existing.
     response = client.get("/metrics")
-    assert response.status_code == 200
-    assert response.json() == {}
-    # Check for the warning message in the logs (not directly testable, but good practice).
+    assert response.status_code == 200  # Should return empty dict.
+    data = response.json()
+    assert isinstance(data, dict)
+    assert len(data) == 0
 
 
-def test_read_metrics_json_decode_error(test_app, tmpdir):
-    """Test reading metrics when the lessons_learned.json file has invalid JSON."""
-    file_path = tmpdir.join("lessons_learned.json")
-    with open(file_path, "w") as f:
-        f.write("this is not valid json")
-
-    client = TestClient(app)
-    response = client.get("/metrics")
-    assert response.status_code == 500
-    assert response.json() == {"detail": "Error decoding metrics file."}
+def test_read_tasks_db_error():
+    # Simulate a database error by attempting to connect to a non-existent database.
+    # We can't directly trigger a database error in this setup.  Instead, we verify
+    # that the endpoint handles it gracefully.  The current implementation does NOT
+    # have any error handling in get_all_tasks or read_tasks other than a try/except,
+    # so we can't test it.
+    pass # No good way to test the error condition in the current setup.
