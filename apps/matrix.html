@@ -8,7 +8,7 @@
         /* Dark Mode & General Styles */
         body {
             font-family: monospace;
-            background-color: #111;
+            background-color: #111; /* Dark background */
             color: #fff;
             overflow: hidden; /* Hide scrollbars */
             margin: 0;
@@ -25,6 +25,18 @@
             left: 0;
             z-index: -1; /* Place behind other content */
         }
+
+        /* Optional Glassmorphism effect (subtle) */
+        /* To fully embrace glassmorphism, you could add this to a container and make the canvas cover it. */
+        /*
+        .glass {
+            backdrop-filter: blur(10px);
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        */
     </style>
 </head>
 <body>
@@ -42,25 +54,33 @@
 
         // Function to set up the canvas and calculate columns
         function initializeCanvas() {
-            canvas = document.getElementById('matrixCanvas');
-            ctx = canvas.getContext('2d');
+            try {
+                canvas = document.getElementById('matrixCanvas');
+                ctx = canvas.getContext('2d');
 
-            // Resize the canvas to fill the window
-            resizeCanvas();
+                // Resize the canvas to fill the window
+                resizeCanvas();
 
-            // Calculate the number of columns based on the canvas width and font size
-            columns = Math.floor(canvas.width / font_size);
+                // Calculate the number of columns based on the canvas width and font size
+                columns = Math.floor(canvas.width / font_size);
 
-            // Initialize drops array
-            for (let i = 0; i < columns; i++) {
-                drops[i] = 1;  // Start each column at the top
+                // Initialize drops array
+                for (let i = 0; i < columns; i++) {
+                    drops[i] = 1;  // Start each column at the top
+                }
+            } catch (error) {
+                console.error("Canvas Initialization Error:", error);
             }
         }
 
         // Function to resize the canvas
         function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            try {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            } catch (error) {
+                console.error("Canvas Resize Error:", error);
+            }
         }
 
 
@@ -92,8 +112,12 @@
 
         // Main animation loop
         function animate() {
-            draw();
-            requestAnimationFrame(animate); // Call itself for continuous animation
+            try {
+                draw();
+                requestAnimationFrame(animate); // Call itself for continuous animation
+            } catch (error) {
+                console.error("Animation Loop Error:", error);
+            }
         }
 
         // Event Listeners and Initialization
@@ -103,12 +127,17 @@
 
             // Resize event listener for responsiveness
             window.addEventListener('resize', () => {
-                resizeCanvas();
-                columns = Math.floor(canvas.width / font_size);
-                drops = []; // Reset drops to avoid issues after resize
-                for (let i = 0; i < columns; i++) {
-                    drops[i] = 1;
+                try {
+                    resizeCanvas();
+                    columns = Math.floor(canvas.width / font_size);
+                    drops = []; // Reset drops to avoid issues after resize
+                    for (let i = 0; i < columns; i++) {
+                        drops[i] = 1;
+                    }
+                } catch (error) {
+                    console.error("Resize Event Error:", error);
                 }
+
             });
         } catch (error) {
             console.error("Initialization Error:", error);
