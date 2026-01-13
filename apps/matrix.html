@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phoenix OS - Matrix Digital Rain</title>
+    <style>
+        /* Dark Mode & General Styles */
+        body {
+            font-family: monospace;
+            background-color: #111;
+            color: #fff;
+            overflow: hidden; /* Hide scrollbars */
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Canvas Styles (Full Screen) */
+        #matrixCanvas {
+            position: fixed; /* Cover the whole screen */
+            top: 0;
+            left: 0;
+            z-index: -1; /* Place behind other content */
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="matrixCanvas"></canvas>
+
+    <script>
+        // Configuration
+        const neonColor = '#00ff9d'; // Neon accent color
+        const font_size = 16;       // Font size in pixels
+        let columns;                 // Calculated number of columns
+        let drops = [];              // Array to hold drop positions
+        let canvas;                  // Canvas element
+        let ctx;                    // Canvas context
+
+        // Function to set up the canvas and calculate columns
+        function initializeCanvas() {
+            canvas = document.getElementById('matrixCanvas');
+            ctx = canvas.getContext('2d');
+
+            // Resize the canvas to fill the window
+            resizeCanvas();
+
+            // Calculate the number of columns based on the canvas width and font size
+            columns = Math.floor(canvas.width / font_size);
+
+            // Initialize drops array
+            for (let i = 0; i < columns; i++) {
+                drops[i] = 1;  // Start each column at the top
+            }
+        }
+
+        // Function to resize the canvas
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+
+        // Function to draw the matrix effect
+        function draw() {
+            try {
+                // Semi-transparent black rectangle to create trails
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = neonColor;
+                ctx.font = font_size + 'px monospace';
+
+                for (let i = 0; i < columns; i++) {
+                    // Random characters from the matrix
+                    const text = String.fromCharCode(Math.floor(Math.random() * 94) + 33);
+                    ctx.fillText(text, i * font_size, drops[i] * font_size);
+
+                    // Drop the character down
+                    if (drops[i] * font_size > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0; // Reset to top
+                    }
+                    drops[i]++;
+                }
+            } catch (error) {
+                console.error("Matrix Draw Error:", error);
+            }
+        }
+
+        // Main animation loop
+        function animate() {
+            draw();
+            requestAnimationFrame(animate); // Call itself for continuous animation
+        }
+
+        // Event Listeners and Initialization
+        try {
+            initializeCanvas();
+            animate();
+
+            // Resize event listener for responsiveness
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                columns = Math.floor(canvas.width / font_size);
+                drops = []; // Reset drops to avoid issues after resize
+                for (let i = 0; i < columns; i++) {
+                    drops[i] = 1;
+                }
+            });
+        } catch (error) {
+            console.error("Initialization Error:", error);
+        }
+    </script>
+</body>
+</html>
