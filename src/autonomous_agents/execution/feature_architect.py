@@ -1,5 +1,6 @@
 import os
 import ast
+import re
 import subprocess
 from loguru import logger
 from src.autonomous_agents.ai_service import AIService
@@ -94,7 +95,7 @@ class FeatureArchitect:
         logger.warning(f"[{self.name}] 🩹 Starting Functional Self-Healing (Attempt {attempt})...")
         
         fix_prompt = f"""
-        ACT AS: Senior Python Developer & QA Expert. 
+        ACT AS: Senior Python Developer & QA Expert.
         
         SITUATION:
         I wrote some code and a unit test, but the tests FAILED.
@@ -157,10 +158,12 @@ class FeatureArchitect:
         
         # Determine filename early if new
         if not target_file:
-            name_p = f"Filename for: {instruction}. ONLY name (snake_case .py)."
-            fname = await self.ai.generate_text(name_p)
-            fname = fname.strip().lower().replace(" ", "_").replace("`", "").replace("\n", "").replace(".py", "") + ".py"
-            target_file = os.path.join("src/playground", fname)
+            name_p = f"Filename for: {instruction}. ONLY the base name (no extension, no path). Snake_case."
+            fname_raw = await self.ai.generate_text(name_p)
+            # STRICT CLEANING: Keep only letters, numbers, underscores
+            fname_clean = re.sub(r'[^a-zA-Z0-9_]', '', fname_raw.strip().lower())
+            if not fname_clean: fname_clean = "generated_feature" # Fallback
+            target_file = os.path.join("src/playground", fname_clean + ".py")
 
         os.makedirs(os.path.dirname(target_file), exist_ok=True)
         
@@ -172,13 +175,12 @@ class FeatureArchitect:
         while attempt <= max_attempts:
             # A. Syntax Check
             if not await self._validate_syntax(current_code):
-                # Simple syntax fix prompt (simplified for brevity here)
                 pass 
             
             # B. Format
             current_code = self._format_code(current_code)
             
-            # C. Save Code (Temporary for testing)
+            # C. Save Code
             await self.publisher.create_backup_commit(f"Pre-test attempt {attempt} of {os.path.basename(target_file)}")
             with open(target_file, "w") as f: f.write(current_code)
             

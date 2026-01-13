@@ -47,12 +47,16 @@
     {
       "task": "WEB: Maak een Dashboard UI (`apps/dashboard.html`) die fetch gebruikt om data van `http://localhost:8000` te halen. Toon Takenlijst, Success Rate (Metric) en Memory Log. Auto-refresh elke 5s. Stijl: Cyberpunk Neon.",
       "pattern": "Het herbruikbare patroon is het gebruik van een front-end webpagina die data via een API ophaalt en deze dynamisch weergeeft met automatische refresh."
+    },
+    {
+      "task": "SYSTEM: Maak een FastAPI backend (`src/playground/dashboard_api.py`) met CORS enabled. Endpoints: GET /tasks (alle taken uit DB), GET /metrics (uit lessons_learned.json). Gebruik `sqlite3` voor DB en `json` voor metrics.",
+      "pattern": "Het herbruikbare patroon hier is het cre\u00ebren van een REST API backend met FastAPI, CORS-ondersteuning, database interactie (sqlite3) en bestandsladen (json) voor het ontsluiten van data."
     }
   ],
   "failed_patterns": [],
   "metrics": {
-    "total_tasks": 8,
-    "success_count": 8,
-    "avg_duration": 17.346082866191864
+    "total_tasks": 9,
+    "success_count": 9,
+    "avg_duration": 24.086252000596787
   }
 }
