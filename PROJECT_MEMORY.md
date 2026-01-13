@@ -25,3 +25,5 @@
 - **[2026-01-13 11:55] SYSTEM: Maak een Python script 'string_reverser.py' met een functie 'reverse_string(text)' en error handling voor niet-strings.:** Succesvol afgerond. 
 
 - **[2026-01-13 16:54] SYSTEM: Maak een Python script 'string_reverser.py' met een functie 'reverse_string(text)' en error handling voor niet-strings.:** Succesvol afgerond. 
+
+- **[2026-01-13 21:01] SYSTEM: Maak een FastAPI backend (`src/dashboard/api.py`) met CORS enabled. Endpoints: GET /tasks (alle taken uit DB), GET /metrics (uit lessons_learned.json). Gebruik `sqlite3` voor DB en `json` voor metrics.:** Succesvol afgerond. 
