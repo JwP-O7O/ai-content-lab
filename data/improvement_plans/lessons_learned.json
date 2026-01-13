@@ -7,6 +7,10 @@
     {
       "task": "WEB: Maak een interactieve Matrix Digital Rain animatie in een single HTML bestand, volledig responsive, met Neon accenten en Dark Mode.",
       "pattern": "Het herbruikbare patroon is het cre\u00ebren van een single-file, responsieve, interactieve webanimatie met een specifieke stijl (Neon/Dark Mode)."
+    },
+    {
+      "task": "WEB: Maak een interactieve Matrix Digital Rain animatie in een single HTML bestand, volledig responsive, met Neon accenten en Dark Mode.",
+      "pattern": "Het herbruikbare patroon is het cre\u00ebren van een volledig functionele, zelfstandige interactieve animatie (specifiek Matrix Digital Rain) in \u00e9\u00e9n HTML-bestand, inclusief responsiviteit, visuele flair (Neon accenten) en functionaliteit (Dark Mode)."
     }
   ],
   "failed_patterns": [],

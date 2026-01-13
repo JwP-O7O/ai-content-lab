@@ -65,40 +65,31 @@ class MemorySystem:
 
     def _update_metrics(self, status, duration):
         try:
-            data = {}
-            with open(self.lessons_file, "r") as f:
-                try:
-                    data = json.load(f)
-                except json.JSONDecodeError:
-                    self._create_empty_lessons_file()
-                    data = {
-                        "successful_patterns": [],
-                        "failed_patterns": [],
-                        "metrics": {},
-                    }
-
-            if "metrics" not in data:
-                data["metrics"] = {
-                    "total_tasks": 0,
-                    "success_rate": 0,
-                    "avg_duration": 0,
-                }
-
-            m = data["metrics"]
-            m["total_tasks"] += 1
-            if status == "completed":
-                # Moving average voor success (simpel)
-                prev_success = m.get("success_count", 0)
-                m["success_count"] = prev_success + 1
-
-            # Update moving average duration
-            m["avg_duration"] = (
-                m["avg_duration"] * (m["total_tasks"] - 1) + duration
-            ) / m["total_tasks"]
-
-            with open(self.lessons_file, "w") as f:
-                json.dump(data, f, indent=2)
-
+                        data = {}
+                        with open(self.lessons_file, "r") as f:
+                            try:
+                                content = f.read()
+                                if content.strip():
+                                    data = json.loads(content)
+                                else:
+                                    data = {"successful_patterns": [], "failed_patterns": [], "metrics": {}}
+                            except json.JSONDecodeError:
+                                self._create_empty_lessons_file()
+                                data = {"successful_patterns": [], "failed_patterns": [], "metrics": {}}
+                        
+                        # Garandeer dat de metrics structuur bestaat en correct is
+                        data.setdefault("metrics", {"total_tasks": 0, "success_count": 0, "avg_duration": 0})
+                        m = data["metrics"]
+                        
+                        m["total_tasks"] += 1
+                        if status == "completed":
+                            m["success_count"] = m.get("success_count", 0) + 1
+                        
+                        # Update moving average duration
+                        m["avg_duration"] = (m.get("avg_duration", 0) * (m["total_tasks"] - 1) + duration) / m["total_tasks"]
+                        
+                        with open(self.lessons_file, "w") as f:
+                            json.dump(data, f, indent=2)
         except Exception as e:
             logger.error(f"Failed to update metrics: {e}")
 
