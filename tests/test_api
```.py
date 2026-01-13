@@ -1,34 +1,35 @@
 import pytest
 import sys
 import os
-import json
 import sqlite3
+import json
 from fastapi.testclient import TestClient
 
 # Add the project root to the Python path
 sys.path.append(os.getcwd())
-
 from src.playground.
 #_src.dashboard.api
- import *  # noqa: E402 (module level import not at top of file)
+ import *
 
-# Use the app instance for testing
+# Initialize the FastAPI app for testing
 client = TestClient(app)
 
-# Fixture to create and populate the database for testing
-@pytest.fixture(scope="function")
-def test_db():
-    DATABASE_URL = "test_phoenix_os.db"
-    TASKS_TABLE_NAME = "tasks"
+# Constants for testing
+DATABASE_URL_TEST = "test_phoenix_os.db"
+TASKS_TABLE_NAME_TEST = "test_tasks"
+METRICS_FILE_TEST = "test_lessons_learned.json"
 
-    # Connect to the database
-    conn = sqlite3.connect(DATABASE_URL)
+# Fixtures
+
+@pytest.fixture(scope="session")
+def database_setup():
+    """Sets up the test database and table."""
+    conn = sqlite3.connect(DATABASE_URL_TEST)
     cursor = conn.cursor()
-
-    # Create the tasks table
+    cursor.execute(f"DROP TABLE IF EXISTS {TASKS_TABLE_NAME_TEST}")  # Clean up from previous runs
     cursor.execute(
         f"""
-        CREATE TABLE IF NOT EXISTS {TASKS_TABLE_NAME} (
+        CREATE TABLE IF NOT EXISTS {TASKS_TABLE_NAME_TEST} (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             description TEXT NOT NULL,
             status TEXT DEFAULT 'pending'
@@ -36,72 +37,99 @@ def test_db():
     """
     )
     conn.commit()
+    conn.close()
 
-    # Populate the database with some test data
-    test_tasks = [
-        ("Task 1", "pending"),
-        ("Task 2", "in progress"),
-    ]
-    cursor.executemany(
-        f"INSERT INTO {TASKS_TABLE_NAME} (description, status) VALUES (?, ?)",
-        test_tasks,
-    )
-    conn.commit()
+    yield  # Let the tests run
 
-    yield
-    # Clean up the database after the test
-    cursor.execute(f"DROP TABLE IF EXISTS {TASKS_TABLE_NAME}")
+    # Teardown: Clean up after tests
+    conn = sqlite3.connect(DATABASE_URL_TEST)
+    cursor = conn.cursor()
+    cursor.execute(f"DROP TABLE IF EXISTS {TASKS_TABLE_NAME_TEST}")
     conn.commit()
     conn.close()
-    if os.path.exists(DATABASE_URL):
-        os.remove(DATABASE_URL)
+    if os.path.exists(METRICS_FILE_TEST):
+        os.remove(METRICS_FILE_TEST)
 
 
-# Fixture to create a test metrics file
-@pytest.fixture(scope="function")
-def test_metrics_file():
-    metrics_file = "lessons_learned.json"
-    test_metrics = {"key1": "value1", "key2": "value2"}
-    with open(metrics_file, "w") as f:
-        json.dump(test_metrics, f)
+
+@pytest.fixture
+def populate_tasks(database_setup):
+    """Populates the test database with sample tasks."""
+    with sqlite3.connect(DATABASE_URL_TEST) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            f"INSERT INTO {TASKS_TABLE_NAME_TEST} (description, status) VALUES (?, ?)",
+            ("Task 1", "pending"),
+        )
+        cursor.execute(
+            f"INSERT INTO {TASKS_TABLE_NAME_TEST} (description, status) VALUES (?, ?)",
+            ("Task 2", "in progress"),
+        )
+        conn.commit()
+        
+@pytest.fixture
+def create_metrics_file():
+    """Creates a sample metrics file."""
+    metrics_data = {"key1": "value1", "key2": 123}
+    with open(METRICS_FILE_TEST, "w") as f:
+        json.dump(metrics_data, f)
     yield
-    if os.path.exists(metrics_file):
-        os.remove(metrics_file)
+    if os.path.exists(METRICS_FILE_TEST):
+        os.remove(METRICS_FILE_TEST)
 
 
-def test_read_tasks_success(test_db):
+# Tests
+
+def test_read_tasks_empty_db(database_setup):
+    """Tests the /tasks endpoint when the database is empty."""
+    response = client.get("/tasks")
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_read_tasks_populated_db(database_setup, populate_tasks):
+    """Tests the /tasks endpoint when the database has data."""
+    # Override the DATABASE_URL to use the test database
+    global DATABASE_URL
+    DATABASE_URL = DATABASE_URL_TEST
     response = client.get("/tasks")
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, list)
-    assert len(data) == 2  # Assuming the test_db fixture populates with 2 tasks
-    assert "id" in data[0]
-    assert "description" in data[0]
-    assert "status" in data[0]
+    assert len(data) == 2
+    assert {"id": 1, "description": "Task 1", "status": "pending"} in data
+    assert {"id": 2, "description": "Task 2", "status": "in progress"} in data
+    # Reset DATABASE_URL after test
+    DATABASE_URL = "phoenix_os.db"
 
 
-def test_read_metrics_success(test_metrics_file):
+
+def test_read_metrics_file_exists(database_setup, create_metrics_file):
+    """Tests the /metrics endpoint when the metrics file exists."""
     response = client.get("/metrics")
     assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, dict)
-    assert "key1" in data
-    assert "key2" in data
+    assert response.json() == {"key1": "value1", "key2": 123}
 
 
-def test_read_metrics_file_not_found():
-    # Remove the test_metrics_file fixture to simulate the file not existing.
+def test_read_metrics_file_not_found(database_setup):
+    """Tests the /metrics endpoint when the metrics file does not exist."""
     response = client.get("/metrics")
-    assert response.status_code == 200  # Should return empty dict.
-    data = response.json()
-    assert isinstance(data, dict)
-    assert len(data) == 0
+    assert response.status_code == 200
+    assert response.json() == {}
 
+def test_get_all_tasks_db_error(database_setup, mocker):
+    """Tests the get_all_tasks function when a database error occurs."""
 
-def test_read_tasks_db_error():
-    # Simulate a database error by attempting to connect to a non-existent database.
-    # We can't directly trigger a database error in this setup.  Instead, we verify
-    # that the endpoint handles it gracefully.  The current implementation does NOT
-    # have any error handling in get_all_tasks or read_tasks other than a try/except,
-    # so we can't test it.
-    pass # No good way to test the error condition in the current setup.
+    mocker.patch('sqlite3.connect', side_effect=sqlite3.Error("Test DB Error"))
+    with pytest.raises(HTTPException) as excinfo:
+        get_all_tasks()
+    assert excinfo.value.status_code == 500
+    assert "Database error" in str(excinfo.value.detail)
+
+def test_get_metrics_file_error(database_setup, mocker):
+    """Tests the get_metrics function when a file error occurs."""
+    mocker.patch('builtins.open', side_effect=FileNotFoundError)
+
+    with pytest.raises(HTTPException) as excinfo:
+        get_metrics()
+    assert excinfo.value.status_code == 500
+    assert "Error reading metrics file" in str(excinfo.value.detail)
