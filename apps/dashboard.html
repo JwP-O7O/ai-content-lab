@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phoenix OS Dashboard</title>
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #111; /* Dark background */
+            color: #eee; /* Light text */
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+
+        .container {
+            padding-top: 20px;
+        }
+
+        /* Neon Text Effect */
+        .neon-text {
+            color: #eee;
+            text-shadow: 0 0 10px #00ff9d, 0 0 20px #00ff9d, 0 0 30px #00ff9d;
+        }
+
+        /* Glassmorphism Effect */
+        .glass {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Cyberpunk Neon Accents */
+        .neon-border {
+            border: 2px solid #00ff9d;
+        }
+
+        .task-item {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .task-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Specific element styles */
+        #successRate {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .memory-log-entry {
+            font-size: 0.8em;
+            margin-bottom: 2px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1 class="neon-text text-center">Phoenix OS Dashboard</h1>
+
+        <div class="row">
+            <!-- Tasks Column -->
+            <div class="col-md-6">
+                <div class="glass neon-border">
+                    <h2 class="neon-text">Takenlijst</h2>
+                    <div id="taskList">
+                        <!-- Tasks will be inserted here -->
+                        <p class="text-muted">Loading tasks...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metrics & Memory Column -->
+            <div class="col-md-6">
+                <div class="glass neon-border">
+                    <h2 class="neon-text">Performance</h2>
+                    <div class="row">
+                        <!-- Success Rate Card -->
+                        <div class="col-md-12">
+                            <div class="glass neon-border">
+                                <h3 class="neon-text">Success Rate</h3>
+                                <div id="successRate" class="text-center">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <!-- Memory Log Card -->
+                        <div class="col-md-12">
+                            <div class="glass neon-border">
+                                <h3 class="neon-text">Memory Log</h3>
+                                <div id="memoryLog">
+                                    <p class="text-muted">Loading memory logs...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // Function to fetch data from the API
+        async function fetchData() {
+            try {
+                const response = await fetch('http://localhost:8000'); // Replace with your actual endpoint
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                updateDashboard(data);
+            } catch (error) {
+                console.error("Fetch error:", error);
+                // Optionally display an error message on the dashboard.
+                document.getElementById('taskList').innerHTML = `<p class="text-danger">Error loading data: ${error.message}</p>`;
+                document.getElementById('successRate').innerHTML = '<span class="text-danger">Error</span>';
+                document.getElementById('memoryLog').innerHTML = '<p class="text-danger">Error loading memory logs</p>';
+            }
+        }
+
+        // Function to update the dashboard with fetched data
+        function updateDashboard(data) {
+            // Task List
+            const taskListElement = document.getElementById('taskList');
+            taskListElement.innerHTML = ''; // Clear previous content
+
+            if (data.tasks && data.tasks.length > 0) {
+                data.tasks.forEach(task => {
+                    const taskItem = document.createElement('div');
+                    taskItem.classList.add('task-item');
+                    taskItem.textContent = task.description; // Assuming each task has a 'description' field.
+                    taskListElement.appendChild(taskItem);
+                });
+            } else {
+                taskListElement.innerHTML = '<p class="text-muted">No tasks available.</p>';
+            }
+
+
+
+            // Success Rate
+            const successRateElement = document.getElementById('successRate');
+            successRateElement.textContent = data.successRate !== undefined ? `${data.successRate}%` : "N/A";
+
+            // Memory Log
+            const memoryLogElement = document.getElementById('memoryLog');
+            memoryLogElement.innerHTML = ''; // Clear previous content
+
+            if (data.memoryLog && data.memoryLog.length > 0) {
+                data.memoryLog.forEach(logEntry => {
+                    const logEntryElement = document.createElement('div');
+                    logEntryElement.classList.add('memory-log-entry');
+                    logEntryElement.textContent = logEntry; // Assuming each log entry is a string
+                    memoryLogElement.appendChild(logEntryElement);
+                });
+            } else {
+                memoryLogElement.innerHTML = '<p class="text-muted">No memory logs available.</p>';
+            }
+        }
+
+
+        // Initial data fetch
+        fetchData();
+
+        // Auto-refresh every 5 seconds (5000 milliseconds)
+        setInterval(fetchData, 5000);
+    </script>
+
+</body>
+</html>
