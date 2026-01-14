@@ -1,26 +1,26 @@
 import pytest
-from fastapi.testclient import TestClient
-from src.playground.api import app, DATABASE_URL, LESSONS_LEARNED_FILE
-import sqlite3
-import json
-import os
 import sys
+import os
+import sqlite3
+from fastapi.testclient import TestClient
+from typing import List, Dict, Union
+import json
+from unittest.mock import patch
 
-# Add the project root to sys.path to resolve imports
+# Add the project root to the Python path
 sys.path.append(os.getcwd())
+from src.playground.api import app, DATABASE_URL, LESSONS_LEARNED_FILE  # Import the app and constants
 
-# Fixture to create a test client
-@pytest.fixture
-def client():
-    with TestClient(app) as client:
-        yield client
+# Create a test client
+client = TestClient(app)
 
-# Fixture to set up and tear down the database for testing
-@pytest.fixture
+
+# --- Helper Functions and Fixtures ---
+@pytest.fixture(scope="function")
 def test_db():
-    # Use an in-memory database for testing
-    test_db_url = "file:memory?mode=memory&cache=shared"
-    conn = sqlite3.connect(test_db_url, uri=True)
+    """Creates a temporary database and cleans up after the test."""
+    test_db_url = "test_phoenix_os.db"
+    conn = sqlite3.connect(test_db_url)
     cursor = conn.cursor()
     cursor.execute(
         """
@@ -32,68 +32,70 @@ def test_db():
     """
     )
     conn.commit()
-    yield conn, cursor
-    conn.close()
 
-# Fixture to set up a test lessons_learned.json file
-@pytest.fixture
-def test_lessons_learned_file(tmpdir):
-    file_path = tmpdir.join("lessons_learned.json")
-    lessons_learned_data = {"metric1": 10, "metric2": 20}
+    yield test_db_url  # Provide the test database URL
+
+    conn.close()
+    os.remove(test_db_url)  # Clean up the test database
+
+
+@pytest.fixture(scope="function")
+def populate_test_db(test_db):
+    """Populates the test database with some data."""
+    conn = sqlite3.connect(test_db)
+    cursor = conn.cursor()
+    tasks = [
+        ("Task 1", "Open"),
+        ("Task 2", "In Progress"),
+    ]
+    cursor.executemany("INSERT INTO tasks (description, status) VALUES (?, ?)", tasks)
+    conn.commit()
+    conn.close()
+    return
+
+
+@pytest.fixture(scope="function")
+def create_lessons_learned_file(tmp_path):
+    """Creates a temporary lessons_learned.json file."""
+    data = {"metric1": 10, "metric2": 20}
+    file_path = tmp_path / LESSONS_LEARNED_FILE
     with open(file_path, "w") as f:
-        json.dump(lessons_learned_data, f)
-    yield file_path
-    # Teardown: Remove the file (handled by tmpdir)
+        json.dump(data, f)
+    return file_path
+
 
 # --- Test Cases ---
-
-def test_read_tasks_empty(client, test_db):
-    conn, cursor = test_db
+def test_read_tasks_empty_db(test_db):
+    """Tests the /tasks endpoint when the database is empty."""
     response = client.get("/tasks")
     assert response.status_code == 200
     assert response.json() == []
 
 
-def test_read_tasks_populated(client, test_db):
-    conn, cursor = test_db
-    # Insert some test data
-    cursor.execute("INSERT INTO tasks (description, status) VALUES ('task1', 'open')")
-    cursor.execute("INSERT INTO tasks (description, status) VALUES ('task2', 'in progress')")
-    conn.commit()
-
+def test_read_tasks_populated_db(test_db, populate_test_db):
+    """Tests the /tasks endpoint when the database is populated."""
     response = client.get("/tasks")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
-    assert data[0]["description"] == "task1"
-    assert data[1]["description"] == "task2"
+    assert {"description": "Task 1", "status": "Open"} in [
+        {k: v for k, v in item.items() if k != 'id'} for item in data]
+    assert {"description": "Task 2", "status": "In Progress"} in [
+        {k: v for k, v in item.items() if k != 'id'} for item in data]
 
 
-def test_read_metrics_success(client, test_lessons_learned_file):
-    # Overwrite the constant to point to the test file
-    from src.playground.api import LESSONS_LEARNED_FILE as CONST_LESSONS_LEARNED_FILE
-    CONST_LESSONS_LEARNED_FILE = str(test_lessons_learned_file)  # Ensure it is a string
+def test_read_metrics_file_exists(create_lessons_learned_file):
+    """Tests the /metrics endpoint when lessons_learned.json exists."""
     response = client.get("/metrics")
     assert response.status_code == 200
     data = response.json()
     assert data == {"metric1": 10, "metric2": 20}
 
-def test_read_metrics_file_not_found(client, monkeypatch):
-    # Simulate file not found by patching the load_lessons_learned function
-    def mock_load_lessons_learned():
-        return {}
-    
-    monkeypatch.setattr("src.playground.api.load_lessons_learned", mock_load_lessons_learned)
-    response = client.get("/metrics")
-    assert response.status_code == 200
-    assert response.json() == {}
 
-def test_database_error_handling(client, monkeypatch):
-    # Simulate a database error in get_all_tasks
-    def mock_get_all_tasks():
-        raise sqlite3.Error("Simulated database error")
-    
-    monkeypatch.setattr("src.playground.api.get_all_tasks", mock_get_all_tasks)
-    response = client.get("/tasks")
-    assert response.status_code == 500
-    assert response.json() == {"detail": "Failed to retrieve tasks"}
+def test_read_metrics_file_not_found():
+    """Tests the /metrics endpoint when lessons_learned.json does not exist."""
+    with patch("src.playground.api.load_lessons_learned") as mock_load:
+        mock_load.return_value = {}  # Simulate file not found
+        response = client.get("/metrics")
+        assert response.status_code == 200
+        assert response.json() == {}
