@@ -33,3 +33,5 @@
 - **[2026-01-13 21:37] SYSTEM: Maak een FastAPI backend (`src/playground/dashboard_api.py`) met CORS enabled. Endpoints: GET /tasks (alle taken uit DB), GET /metrics (uit lessons_learned.json). Gebruik `sqlite3` voor DB en `json` voor metrics.:** Succesvol afgerond. 
 
 - **[2026-01-13 22:20] SYSTEM: Maak een FastAPI backend (`src/playground/dashboard_api.py`) met CORS enabled. Endpoints: GET /tasks (alle taken uit DB), GET /metrics (uit lessons_learned.json). Gebruik `sqlite3` voor DB en `json` voor metrics.:** Succesvol afgerond. 
+
+- **[2026-01-13 22:21] WEB: Maak een Dashboard UI (`apps/dashboard.html`) die fetch gebruikt om data van `http://localhost:8000/tasks` en `http://localhost:8000/metrics` te halen. Toon Takenlijst in een tabel en Metrics in cards. Auto-refresh elke 5s. Stijl: Cyberpunk Neon.:** Succesvol afgerond. 

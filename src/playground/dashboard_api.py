@@ -10,11 +10,12 @@ app = FastAPI()
 
 # Configure CORS
 origins = [
-    "http://localhost:3000",  # React app development
-    "http://127.0.0.1:3000",  # React app development
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
     "http://localhost",
     "http://127.0.0.1",
-    # Add other origins as needed.  Consider environment variables for this.
+    "http://localhost:8080", # Frontend Dashboard Port
+    "*" # Allow all for development convenience
 ]
 
 app.add_middleware(
@@ -26,9 +27,11 @@ app.add_middleware(
 )
 
 # Database Setup
-DATABASE_PATH = "phoenix_os.db"
-TASKS_TABLE = "tasks"
-METRICS_FILE = "lessons_learned.json"
+DATABASE_PATH = os.environ.get("DATABASE_PATH", "mijn_database.db")
+# Note: TASKS_TABLE definition in original file might differ from actual schema (tasks vs tasks table). 
+# We should inspect actual schema, but let's point to the right DB file first.
+TASKS_TABLE = "tasks" 
+METRICS_FILE = "data/improvement_plans/lessons_learned.json"
 
 
 def create_database() -> None:

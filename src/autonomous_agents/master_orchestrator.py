@@ -14,6 +14,7 @@ try:
     from src.autonomous_agents.execution.research_agent import ResearchAgent
     from src.autonomous_agents.execution.git_publisher import GitPublisher
     from src.autonomous_agents.learning.memory_system import MemorySystem
+    from src.autonomous_agents.learning.evolutionary_optimizer import EvolutionaryOptimizer
 except ImportError:
     sys.exit(1)
 
@@ -34,6 +35,7 @@ class TermuxMasterOrchestrator:
         self.listener = LocalListener()
         self.publisher = GitPublisher()
         self.memory = MemorySystem()  # 🧠 The Brain
+        self.optimizer = EvolutionaryOptimizer() # 🧬 The Evolution
 
     async def run_cycle(self):
         # 1. Check Commando's
@@ -41,6 +43,7 @@ class TermuxMasterOrchestrator:
 
         if orders.get("status") == "new_tasks":
             for task in orders["tasks"]:
+                # ... (bestaande logica voor taakuitvoering) ...
                 title = task["title"]
                 task_id = task.get("id")
                 start_time = time.time()
@@ -91,6 +94,12 @@ class TermuxMasterOrchestrator:
                         task_id, title, str(e), "failed", duration
                     )
                     return {"status": "failed", "error": str(e)} # Return a failed status dictionary
+        
+        else:
+            # 🧬 IDLE MODE: EVOLUTIONARY OPTIMIZATION
+            # Als er geen orders zijn, kijk of we onszelf kunnen verbeteren
+            await self.optimizer.suggest_improvement()
+            
         return None # No tasks processed
         while True:
             try:
