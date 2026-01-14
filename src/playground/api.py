@@ -82,7 +82,8 @@ def load_lessons_learned() -> Dict:
 def read_tasks():
     """Retrieves all tasks."""
     try:
-        return get_all_tasks()
+        tasks = get_all_tasks()
+        return tasks
     except Exception as e:
         logger.error(f"Failed to retrieve tasks: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve tasks")
