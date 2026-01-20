@@ -27,6 +27,31 @@ def get_file_size(filepath: str) -> Optional[int]:
         return None
 
 
+def _run_command_internal(
+    command: List[str], cwd: Optional[str], env: Optional[Dict]
+) -> Tuple[int, str, str]:
+    """
+    Internal helper function to execute the subprocess command.  Separated for clarity.
+    """
+    try:
+        process = subprocess.Popen(
+            command,
+            cwd=cwd,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        stdout, stderr = process.communicate()
+        return_code = process.returncode
+        return return_code, stdout, stderr
+    except FileNotFoundError:
+        return 1, "", "Command not found"  # Return a specific error message
+    except Exception as e:
+        logger.error(f"Error executing command: {e}")
+        return 1, "", str(e)  # Include the exception in stderr
+
+
 def execute_command(
     command: List[str], cwd: Optional[str] = None, env: Optional[Dict] = None
 ) -> Tuple[int, str, str]:
@@ -41,24 +66,16 @@ def execute_command(
     Returns:
         A tuple containing the return code, stdout, and stderr.
     """
-    try:
-        process = subprocess.Popen(
-            command,
-            cwd=cwd,
-            env=env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,  # Important for decoding output as text
-        )
-        stdout, stderr = process.communicate()
-        return_code = process.returncode
-        return return_code, stdout, stderr
-    except FileNotFoundError:
+    return_code, stdout, stderr = _run_command_internal(command, cwd, env)
+
+    if return_code != 0 and "Command not found" in stderr:
         logger.error(f"Command not found: {command[0]}")
-        return 1, "", ""
-    except Exception as e:
-        logger.error(f"Error executing command: {e}")
-        return 1, "", ""
+    elif return_code != 0:
+        logger.error(
+            f"Command failed with return code {return_code} and stderr: {stderr}"
+        )
+
+    return return_code, stdout, stderr
 
 
 def create_directory(path: str) -> bool:
