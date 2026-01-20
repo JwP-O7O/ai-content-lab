@@ -219,13 +219,3 @@ class SystemRefactor:
                 logger.info("No backup file to delete.")
         except (IOError, OSError) as e:
             logger.error(f"Error deleting backup file: {e}")
-
-
-if __name__ == "__main__":
-    refactorer = SystemRefactor()
-    success = refactorer.refactor()
-
-    if success:
-        refactorer.cleanup()
-    else:
-        logger.error("Refactoring failed. Please check the logs.")
