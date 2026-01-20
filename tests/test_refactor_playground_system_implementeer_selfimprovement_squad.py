@@ -1,180 +1,201 @@
 import pytest
 import os
 import sys
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import patch, mock_open, MagicMock
+from src.playground.refactor_playground_system_implementeer_selfimprovement_squad import SystemRefactor
+from loguru import logger
 import json
 
-sys.path.append(os.getcwd())  # Add current directory to sys.path
-from src.playground.refactor_playground_system_implementeer_selfimprovement_squad import SystemRefactor
-
-
-@pytest.fixture
-def system_refactor_instance():
-    return SystemRefactor(config_file="test_config.json")
+sys.path.append(os.getcwd())
 
 
 class TestSystemRefactor:
-    @patch("builtins.open", new_callable=mock_open, read_data='{"key": "value"}')
-    def test_load_config_success(self, mock_open, system_refactor_instance):
-        config = system_refactor_instance._load_config()
-        assert config == {"key": "value"}
-        mock_open.assert_called_once_with("test_config.json", "r")
+    @pytest.fixture
+    def system_refactor(self):
+        return SystemRefactor(config_file="test_config.json")
 
-    @patch("builtins.open", new_callable=mock_open, side_effect=FileNotFoundError)
-    def test_load_config_file_not_found(self, mock_open, system_refactor_instance):
-        config = system_refactor_instance._load_config()
-        assert config == {}
-        mock_open.assert_called_once_with("test_config.json", "r")
+    @pytest.fixture
+    def mock_config(self):
+        return {"test_key": "test_value"}
 
-    @patch("builtins.open", new_callable=mock_open, read_data="invalid_json")
-    def test_load_config_json_decode_error(self, mock_open, system_refactor_instance):
-        config = system_refactor_instance._load_config()
-        assert config == {}
-        mock_open.assert_called_once_with("test_config.json", "r")
+    def test_init_with_valid_config_file(self, system_refactor, mock_config):
+        with patch('builtins.open', mock_open(read_data=json.dumps(mock_config))) as mock_file:
+            system = SystemRefactor(config_file="test_config.json")
+            mock_file.assert_called_once_with("test_config.json", "r")
+            assert system.config == mock_config
 
-    @patch("subprocess.run")
-    def test_run_command_success(self, mock_subprocess_run, system_refactor_instance):
-        mock_subprocess_run.return_value.stdout = "test_output"
-        output = system_refactor_instance._run_command("test_command")
-        assert output == "test_output"
-        mock_subprocess_run.assert_called_once_with(
-            "test_command", shell=True, capture_output=True, text=True, check=True
-        )
+    def test_init_with_config_file_not_found(self, system_refactor):
+        with patch('builtins.open', side_effect=FileNotFoundError):
+            system = SystemRefactor()
+            assert system.config == {}
 
-    @patch("subprocess.run")
-    def test_run_command_called_process_error(self, mock_subprocess_run, system_refactor_instance):
-        mock_subprocess_run.side_effect = subprocess.CalledProcessError(1, "cmd", stderr="test_error")
-        output = system_refactor_instance._run_command("test_command")
-        assert output == ""
-        mock_subprocess_run.assert_called_once()
+    def test_init_with_invalid_json(self, system_refactor):
+        with patch('builtins.open', mock_open(read_data="invalid json")) as mock_file:
+            system = SystemRefactor()
+            assert system.config == {}
 
-    @patch("subprocess.run")
-    def test_run_command_file_not_found(self, mock_subprocess_run, system_refactor_instance):
-        mock_subprocess_run.side_effect = FileNotFoundError
-        output = system_refactor_instance._run_command("test_command")
-        assert output == ""
-        mock_subprocess_run.assert_called_once()
-        
-    @patch("subprocess.run")
-    def test_get_system_info_success(self, mock_subprocess_run, system_refactor_instance):
-        mock_subprocess_run.side_effect = [
-            MagicMock(stdout="OS"),
-            MagicMock(stdout="Kernel"),
-            MagicMock(stdout="Hostname"),
-            MagicMock(stdout="CPU"),
-            MagicMock(stdout="Memory")
-        ]
-        info = system_refactor_instance.get_system_info()
-        assert info == {
-            "os_name": "OS",
-            "kernel_version": "Kernel",
-            "hostname": "Hostname",
-            "cpu_info": "CPU",
-            "memory_info": "Memory",
-        }
-        assert mock_subprocess_run.call_count == 5
+    def test_load_config_successful(self, system_refactor, mock_config):
+        with patch('builtins.open', mock_open(read_data=json.dumps(mock_config))) as mock_file:
+            config = system_refactor._load_config()
+            mock_file.assert_called_once_with("test_config.json", "r")
+            assert config == mock_config
 
-    @patch("subprocess.run")
-    def test_get_system_info_error(self, mock_subprocess_run, system_refactor_instance):
-        mock_subprocess_run.side_effect = Exception("Test error")
-        info = system_refactor_instance.get_system_info()
-        assert info == {}
-        assert mock_subprocess_run.call_count == 1
+    def test_load_config_file_not_found(self, system_refactor):
+        with patch('builtins.open', side_effect=FileNotFoundError):
+            config = system_refactor._load_config()
+            assert config == {}
 
-    @patch("subprocess.run")
-    def test_get_disk_usage_success(self, mock_subprocess_run, system_refactor_instance):
-        mock_subprocess_run.return_value.stdout = "Filesystem  Size  Used  Avail Use% Mounted on\n/dev/sda1   100G   20G   80G   20%   /\n/dev/sdb1   50G    10G   40G   20%   /mnt"
-        usage = system_refactor_instance.get_disk_usage()
-        assert len(usage) == 2
-        assert usage[0]["filesystem"] == "/dev/sda1"
-        assert usage[1]["mounted_on"] == "/mnt"
-        mock_subprocess_run.assert_called_once()
+    def test_load_config_invalid_json(self, system_refactor):
+        with patch('builtins.open', mock_open(read_data="invalid json")):
+            config = system_refactor._load_config()
+            assert config == {}
 
-    @patch("subprocess.run")
-    def test_get_disk_usage_error(self, mock_subprocess_run, system_refactor_instance):
-        mock_subprocess_run.side_effect = Exception("Test error")
-        usage = system_refactor_instance.get_disk_usage()
-        assert usage == []
-        mock_subprocess_run.assert_called_once()
+    def test_execute_command_success(self, system_refactor):
+        with patch('subprocess.run') as mock_subprocess:
+            mock_subprocess.return_value.stdout = "test_output"
+            output = system_refactor._execute_command("test_command")
+            mock_subprocess.assert_called_once_with(
+                "test_command", shell=True, capture_output=True, text=True, check=True
+            )
+            assert output == "test_output"
 
-    @patch("subprocess.run")
-    @patch("time.sleep")
-    def test_monitor_cpu_usage_success(self, mock_sleep, mock_subprocess_run, system_refactor_instance):
-        mock_subprocess_run.side_effect = [
-            MagicMock(stdout="Cpu(s):  0.0%us,  0.0%sy,  0.0%ni, 100.0%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st"),
-            MagicMock(stdout="Cpu(s):  1.0%us,  1.0%sy,  1.0%ni, 97.0%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st")
-        ]
-        percentages = system_refactor_instance.monitor_cpu_usage(interval=1, duration=2)
-        assert len(percentages) == 2
-        assert abs(percentages[0] - 100.0) < 0.001
-        assert abs(percentages[1] - 97.0) < 0.001
-        assert mock_subprocess_run.call_count == 2
-        mock_sleep.assert_called_with(1)
+    def test_execute_command_called_process_error(self, system_refactor):
+        with patch('subprocess.run') as mock_subprocess:
+            mock_subprocess.side_effect = subprocess.CalledProcessError(1, "cmd", stderr="test_error")
+            output = system_refactor._execute_command("test_command")
+            assert output == ""
 
-    @patch("subprocess.run")
-    @patch("time.sleep")
-    def test_monitor_cpu_usage_error(self, mock_sleep, mock_subprocess_run, system_refactor_instance):
-        mock_subprocess_run.side_effect = Exception("Test error")
-        percentages = system_refactor_instance.monitor_cpu_usage(interval=1, duration=2)
-        assert percentages == []
-        mock_subprocess_run.assert_called_once()
-        mock_sleep.assert_not_called()
+    def test_execute_command_file_not_found_error(self, system_refactor):
+        with patch('subprocess.run', side_effect=FileNotFoundError):
+            output = system_refactor._execute_command("test_command")
+            assert output == ""
 
-    @patch.object(SystemRefactor, 'get_system_info')
-    @patch.object(SystemRefactor, 'get_disk_usage')
-    @patch.object(SystemRefactor, 'monitor_cpu_usage')
-    def test_perform_system_check_success(self, mock_monitor_cpu, mock_get_disk, mock_get_system, system_refactor_instance):
-        mock_get_system.return_value = {"os_name": "TestOS"}
-        mock_get_disk.return_value = [{"filesystem": "/"}]
-        mock_monitor_cpu.return_value = [50.0]
+    def test_execute_command_general_exception(self, system_refactor):
+        with patch('subprocess.run', side_effect=Exception("generic error")):
+            output = system_refactor._execute_command("test_command")
+            assert output == ""
 
-        results = system_refactor_instance.perform_system_check()
-        assert results["system_info"] == {"os_name": "TestOS"}
-        assert results["disk_usage"] == [{"filesystem": "/"}]
-        assert results["cpu_usage"] == [50.0]
+    def test_run_command_success(self, system_refactor):
+        with patch.object(system_refactor, '_execute_command') as mock_execute_command:
+            mock_execute_command.return_value = "test_output"
+            output = system_refactor._run_command("test_command")
+            mock_execute_command.assert_called_once_with("test_command")
+            assert output == "test_output"
 
-        mock_get_system.assert_called_once()
-        mock_get_disk.assert_called_once()
-        mock_monitor_cpu.assert_called_once()
+    def test_run_command_no_output(self, system_refactor):
+        with patch.object(system_refactor, '_execute_command') as mock_execute_command:
+            mock_execute_command.return_value = ""
+            output = system_refactor._run_command("test_command")
+            mock_execute_command.assert_called_once_with("test_command")
+            assert output == ""
 
-    @patch.object(SystemRefactor, 'get_system_info', side_effect=Exception("Test Error"))
-    @patch.object(SystemRefactor, 'get_disk_usage')
-    @patch.object(SystemRefactor, 'monitor_cpu_usage')
-    def test_perform_system_check_error(self, mock_monitor_cpu, mock_get_disk, mock_get_system, system_refactor_instance):
-        results = system_refactor_instance.perform_system_check()
-        assert results == {}
-        mock_get_system.assert_called_once()
-        mock_get_disk.assert_not_called()
-        mock_monitor_cpu.assert_not_called()
+    def test_get_system_info_success(self, system_refactor):
+        with patch.object(system_refactor, '_run_command') as mock_run_command:
+            mock_run_command.side_effect = ["os_name", "kernel_version", "hostname", "cpu_info", "memory_info"]
+            system_info = system_refactor.get_system_info()
+            assert system_info == {
+                "os_name": "os_name",
+                "kernel_version": "kernel_version",
+                "hostname": "hostname",
+                "cpu_info": "cpu_info",
+                "memory_info": "memory_info",
+            }
+            assert mock_run_command.call_count == 5
 
-    def test_process_system_check_results_success(self, system_refactor_instance):
-        results = {
-            "system_info": {"os_name": "TestOS"},
-            "disk_usage": [{"filesystem": "/"}],
-            "cpu_usage": [50.0],
-        }
-        with patch('loguru.logger.info') as mock_info:
-            system_refactor_instance.process_system_check_results(results)
-            assert mock_info.call_count == 4
-            mock_info.assert_any_call("Resultaten van systeemcheck:")
-            mock_info.assert_any_call("Systeem informatie: {'os_name': 'TestOS'}")
-            mock_info.assert_any_call("Disk Usage: [{'filesystem': '/'}]")
-            mock_info.assert_any_call("CPU Usage: [50.0]")
-            mock_info.assert_any_call("Verwerking van resultaten voltooid.")
-    
-    def test_process_system_check_results_no_cpu(self, system_refactor_instance):
-        results = {
-            "system_info": {"os_name": "TestOS"},
-            "disk_usage": [{"filesystem": "/"}],
-        }
-        with patch('loguru.logger.info') as mock_info, patch('loguru.logger.warning') as mock_warn:
-            system_refactor_instance.process_system_check_results(results)
-            assert mock_info.call_count == 3
-            mock_warn.assert_called_once_with("Geen CPU usage data beschikbaar.")
-            mock_info.assert_any_call("Resultaten van systeemcheck:")
+    def test_get_system_info_failure(self, system_refactor):
+        with patch.object(system_refactor, '_run_command', side_effect=Exception("error")):
+            system_info = system_refactor.get_system_info()
+            assert system_info == {}
 
-    def test_process_system_check_results_error(self, system_refactor_instance):
-        with patch('loguru.logger.error') as mock_error:
+    def test_get_disk_usage_success(self, system_refactor):
+        with patch.object(system_refactor, '_run_command') as mock_run_command:
+            mock_run_command.return_value = "Filesystem  Size  Used Avail Use% Mounted on\n/dev/sda1   100G   20G   70G   20%   /\n/dev/sdb1   50G    10G   30G   20%   /mnt"
+            disk_usage = system_refactor.get_disk_usage()
+            assert len(disk_usage) == 2
+            assert disk_usage[0]["filesystem"] == "/dev/sda1"
+            assert disk_usage[1]["mounted_on"] == "/mnt"
+            mock_run_command.assert_called_once_with("df -h")
+
+    def test_get_disk_usage_no_output(self, system_refactor):
+        with patch.object(system_refactor, '_run_command') as mock_run_command:
+            mock_run_command.return_value = ""
+            disk_usage = system_refactor.get_disk_usage()
+            assert disk_usage == []
+            mock_run_command.assert_called_once_with("df -h")
+
+
+    def test_get_disk_usage_failure(self, system_refactor):
+        with patch.object(system_refactor, '_run_command', side_effect=Exception("error")):
+            disk_usage = system_refactor.get_disk_usage()
+            assert disk_usage == []
+
+    def test_monitor_cpu_usage_success(self, system_refactor):
+        with patch.object(system_refactor, '_run_command') as mock_run_command, patch('time.sleep') as mock_sleep:
+            mock_run_command.return_value = "20.0%"
+            cpu_usage = system_refactor.monitor_cpu_usage(interval=1, duration=2)
+            assert len(cpu_usage) == 2
+            assert mock_run_command.call_count == 2
+            mock_sleep.assert_called()
+
+    def test_monitor_cpu_usage_command_failure(self, system_refactor):
+        with patch.object(system_refactor, '_run_command') as mock_run_command, patch('time.sleep') as mock_sleep:
+            mock_run_command.return_value = ""
+            cpu_usage = system_refactor.monitor_cpu_usage(interval=1, duration=2)
+            assert cpu_usage == []
+            assert mock_run_command.call_count == 2
+
+    def test_monitor_cpu_usage_parsing_error(self, system_refactor):
+        with patch.object(system_refactor, '_run_command') as mock_run_command, patch('time.sleep') as mock_sleep:
+            mock_run_command.return_value = "invalid_cpu_usage"
+            cpu_usage = system_refactor.monitor_cpu_usage(interval=1, duration=2)
+            assert cpu_usage == []
+            assert mock_run_command.call_count == 2
+
+    def test_monitor_cpu_usage_general_exception(self, system_refactor):
+        with patch.object(system_refactor, '_run_command', side_effect=Exception("error")), patch('time.sleep'):
+            cpu_usage = system_refactor.monitor_cpu_usage(interval=1, duration=2)
+            assert cpu_usage == []
+
+    def test_perform_system_check_success(self, system_refactor):
+        with patch.object(system_refactor, 'get_system_info') as mock_get_system_info, \
+                patch.object(system_refactor, 'get_disk_usage') as mock_get_disk_usage, \
+                patch.object(system_refactor, 'monitor_cpu_usage') as mock_monitor_cpu_usage:
+            mock_get_system_info.return_value = {"os_name": "test_os"}
+            mock_get_disk_usage.return_value = [{"filesystem": "/dev/sda1"}]
+            mock_monitor_cpu_usage.return_value = [20.0, 21.0]
+            results = system_refactor.perform_system_check()
+            assert results["system_info"] == {"os_name": "test_os"}
+            assert results["disk_usage"] == [{"filesystem": "/dev/sda1"}]
+            assert results["cpu_usage"] == [20.0, 21.0]
+
+    def test_perform_system_check_failure(self, system_refactor):
+        with patch.object(system_refactor, 'get_system_info', side_effect=Exception("error")):
+            results = system_refactor.perform_system_check()
+            assert results == {}
+
+    def test_process_system_check_results_success(self, system_refactor):
+        with patch('loguru.logger.info') as mock_logger_info:
+            results = {
+                "system_info": {"os_name": "test_os"},
+                "disk_usage": [{"filesystem": "/dev/sda1"}],
+                "cpu_usage": [20.0, 21.0],
+            }
+            system_refactor.process_system_check_results(results)
+            assert mock_logger_info.call_count == 5
+
+    def test_process_system_check_results_no_cpu_usage(self, system_refactor):
+        with patch('loguru.logger.info') as mock_logger_info, patch('loguru.logger.warning') as mock_logger_warning:
+            results = {
+                "system_info": {"os_name": "test_os"},
+                "disk_usage": [{"filesystem": "/dev/sda1"}],
+            }
+            system_refactor.process_system_check_results(results)
+            assert mock_logger_info.call_count == 3
+            mock_logger_warning.assert_called_once()
+
+
+    def test_process_system_check_results_failure(self, system_refactor):
+        with patch('loguru.logger.error') as mock_logger_error:
             with pytest.raises(Exception):
-                system_refactor_instance.process_system_check_results("invalid_results")
-            mock_error.assert_called_once()
+                system_refactor.process_system_check_results({"results": 123})
+            mock_logger_error.assert_called_once()

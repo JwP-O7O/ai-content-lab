@@ -45,21 +45,14 @@ class SystemRefactor:
             logger.error(f"Onverwachte fout bij het laden van configuratiebestand: {e}")
             return {}
 
-    def _run_command(self, command: str) -> str:
+    def _execute_command(self, command: str) -> str:
         """
-        Voert een shell commando uit en returned de output.
-
-        Args:
-            command (str): Het commando om uit te voeren.
-
-        Returns:
-            str: De output van het commando.
+        Private helper to execute shell commands.  Centralizes error handling.
         """
         try:
             result = subprocess.run(
                 command, shell=True, capture_output=True, text=True, check=True
             )
-            logger.debug(f"Commando '{command}' uitgevoerd met succes.")
             return result.stdout.strip()
         except subprocess.CalledProcessError as e:
             logger.error(f"Fout bij het uitvoeren van commando '{command}': {e.stderr}")
@@ -72,6 +65,21 @@ class SystemRefactor:
                 f"Onverwachte fout bij het uitvoeren van commando '{command}': {e}"
             )
             return ""
+
+    def _run_command(self, command: str) -> str:
+        """
+        Voert een shell commando uit en returned de output.
+
+        Args:
+            command (str): Het commando om uit te voeren.
+
+        Returns:
+            str: De output van het commando.
+        """
+        output = self._execute_command(command)
+        if output:
+            logger.debug(f"Commando '{command}' uitgevoerd met succes.")
+        return output
 
     def get_system_info(self) -> Dict[str, str]:
         """
@@ -107,6 +115,8 @@ class SystemRefactor:
         disk_usage: List[Dict[str, str]] = []
         try:
             df_output = self._run_command("df -h")
+            if not df_output:
+                return disk_usage  # handle the case where df fails.
             lines = df_output.splitlines()[1:]  # Skip header
             for line in lines:
                 fields = line.split()
@@ -139,12 +149,16 @@ class SystemRefactor:
         cpu_usage_percentages: List[float] = []
         try:
             for _ in range(duration // interval):
-                cpu_percent = float(
-                    self._run_command(
-                        "top -bn1 | grep 'Cpu(s)' | awk '{print $8}'"
-                    ).replace("%", "")
+                cpu_output = self._run_command(
+                    "top -bn1 | grep 'Cpu(s)' | awk '{print $8}'"
                 )
-                cpu_usage_percentages.append(cpu_percent)
+                if not cpu_output:
+                    continue  # Skip if the command fails.
+                try:
+                    cpu_percent = float(cpu_output.replace("%", ""))
+                    cpu_usage_percentages.append(cpu_percent)
+                except ValueError as e:
+                    logger.error(f"Fout bij het parsen van CPU usage: {e}")
                 time.sleep(interval)
             logger.info("CPU usage monitoring voltooid.")
         except Exception as e:
