@@ -1,1 +1,0 @@
-This is the new_value in the example file.

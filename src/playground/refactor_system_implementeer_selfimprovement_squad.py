@@ -206,14 +206,16 @@ def analyze_and_backup_file(filepath: str, backup_dir: str) -> bool:
     logger.info(f"Analyzing file: {filepath}, Size: {file_size} bytes")
 
     backup_filepath = os.path.join(backup_dir, os.path.basename(filepath) + ".bak")
-    if os.path.exists(filepath):
-        if not copy_file(filepath, backup_filepath):
-            logger.error(f"Failed to create backup for {filepath}")
-            return False
-        logger.info(f"Created backup: {backup_filepath}")
-    else:
-        logger.warning(f"File {filepath} does not exist, no backup needed.")
-    return True
+    try:
+        if os.path.exists(filepath):
+            shutil.copy2(filepath, backup_filepath)
+            logger.info(f"Copied file from {filepath} to {backup_filepath}")
+        else:
+            logger.warning(f"File {filepath} does not exist, no backup needed.")
+        return True
+    except OSError as e:
+        logger.error(f"Error creating backup: {e}")
+        return False
 
 
 def process_file_content(
