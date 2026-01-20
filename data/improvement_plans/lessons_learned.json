@@ -99,12 +99,16 @@
     {
       "task": "SYSTEM: REFACTOR. Het bestand `src/playground/system_implementeer_selfimprovement_squad.py` is groot. Analyseer het en pas 'Extract Method' toe om de leesbaarheid te verbeteren. Zorg dat alle functionaliteit behouden blijft en tests blijven slagen.",
       "pattern": "Het herbruikbare patroon is het toepassen van de \"Extract Method\" refactoring techniek om grote codebestanden op te splitsen in kleinere, beter leesbare en beheersbare methoden."
+    },
+    {
+      "task": "SYSTEM: TEST COVERAGE. Maak een unit test bestand voor `src/mission_control.py`. Gebruik pytest.",
+      "pattern": "Het herbruikbare patroon is het gebruik van een `SYSTEM: TEST COVERAGE` taak, met pytest, om unit tests te genereren en te valideren, wat resulteert in een succesvolle testrun."
     }
   ],
   "failed_patterns": [],
   "metrics": {
-    "total_tasks": 21,
-    "success_count": 21,
-    "avg_duration": 42.12842803909665
+    "total_tasks": 22,
+    "success_count": 22,
+    "avg_duration": 41.91064874692396
   }
 }
