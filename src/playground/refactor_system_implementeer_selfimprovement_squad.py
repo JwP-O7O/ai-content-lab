@@ -78,6 +78,7 @@ class SystemRefactor:
                     "Incompatible Python version.  Requires Python 3.7 or higher."
                 )
                 return False
+            logger.info("Python version check passed.")
             return True
         except Exception as e:
             logger.error(f"Error checking Python version: {e}")

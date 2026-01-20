@@ -95,12 +95,16 @@
     {
       "task": "SYSTEM: REFACTOR. Het bestand `src/playground/system_implementeer_selfimprovement_squad.py` is groot. Analyseer het en pas 'Extract Method' toe om de leesbaarheid te verbeteren. Zorg dat alle functionaliteit behouden blijft en tests blijven slagen.",
       "pattern": "Het herbruikbare patroon is het gebruik van 'Extract Method' om de leesbaarheid en onderhoudbaarheid van een grote codebasis te verbeteren, terwijl de functionaliteit behouden blijft."
+    },
+    {
+      "task": "SYSTEM: REFACTOR. Het bestand `src/playground/system_implementeer_selfimprovement_squad.py` is groot. Analyseer het en pas 'Extract Method' toe om de leesbaarheid te verbeteren. Zorg dat alle functionaliteit behouden blijft en tests blijven slagen.",
+      "pattern": "Het herbruikbare patroon is het toepassen van de \"Extract Method\" refactoring techniek om grote codebestanden op te splitsen in kleinere, beter leesbare en beheersbare methoden."
     }
   ],
   "failed_patterns": [],
   "metrics": {
-    "total_tasks": 20,
-    "success_count": 20,
-    "avg_duration": 38.65339097976685
+    "total_tasks": 21,
+    "success_count": 21,
+    "avg_duration": 42.12842803909665
   }
 }
