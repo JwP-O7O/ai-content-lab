@@ -79,12 +79,16 @@
     {
       "task": "SYSTEM: Create a Python script `src/playground/robust_logger.py` that writes logs to a file with rotation, including unit tests.",
       "pattern": "Het herbruikbare patroon is het cre\u00ebren van een taak met een specifiek doel, gevolgd door een evaluatie van het succes ervan, inclusief bestandsnaam en testresultaten."
+    },
+    {
+      "task": "SYSTEM: TEST COVERAGE. Maak een unit test bestand voor `src/mission_control.py`. Gebruik pytest.",
+      "pattern": "Het herbruikbare patroon is het uitvoeren van een unit test voor een gegeven Python bestand, met gebruik van pytest, waarbij de test initieel faalt."
     }
   ],
   "failed_patterns": [],
   "metrics": {
-    "total_tasks": 16,
-    "success_count": 16,
-    "avg_duration": 31.250446051359177
+    "total_tasks": 17,
+    "success_count": 17,
+    "avg_duration": 30.970190342734842
   }
 }
