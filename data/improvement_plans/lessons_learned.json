@@ -63,12 +63,16 @@
     {
       "task": "SYSTEM: Maak een FastAPI backend (`src/dashboard/api.py`) met CORS enabled. Endpoints: GET /tasks (alle taken uit DB), GET /metrics (uit lessons_learned.json). Gebruik `sqlite3` voor DB en `json` voor metrics.",
       "pattern": "Het herbruikbare patroon is het cre\u00ebren van een REST API backend met FastAPI, inclusief CORS-ondersteuning, die data ophaalt uit verschillende bronnen (database en JSON-bestand)."
+    },
+    {
+      "task": "WEB: Maak een Dashboard UI (`apps/dashboard.html`) die fetch gebruikt om data van `http://localhost:8000` te halen. Toon Takenlijst, Success Rate (Metric) en Memory Log. Auto-refresh elke 5s. Stijl: Cyberpunk Neon.",
+      "pattern": "Het herbruikbare patroon is het gebruik van een front-end webpagina die data via API's (fetch) ophaalt en deze data dynamisch weergeeft en periodiek vernieuwt."
     }
   ],
   "failed_patterns": [],
   "metrics": {
-    "total_tasks": 12,
-    "success_count": 12,
-    "avg_duration": 28.254903693993885
+    "total_tasks": 13,
+    "success_count": 13,
+    "avg_duration": 26.91322025885949
   }
 }

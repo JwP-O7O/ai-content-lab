@@ -37,6 +37,20 @@ class TermuxMasterOrchestrator:
         self.memory = MemorySystem()  # 🧠 The Brain
         self.optimizer = EvolutionaryOptimizer() # 🧬 The Evolution
 
+    async def start(self):
+        """Main loop of the autonomous system."""
+        logger.info("🧠 TermuxMasterOrchestrator started. Entering autonomous loop...")
+        while True:
+            try:
+                await self.run_cycle()
+                await asyncio.sleep(2)
+            except KeyboardInterrupt:
+                logger.info("🛑 Stopping orchestrator...")
+                break
+            except Exception as e:
+                logger.error(f"Critical System Error: {e}")
+                await asyncio.sleep(5)
+
     async def run_cycle(self):
         # 1. Check Commando's
         orders = await self.listener.check_for_orders()
@@ -101,14 +115,6 @@ class TermuxMasterOrchestrator:
             await self.optimizer.suggest_improvement()
             
         return None # No tasks processed
-        while True:
-            try:
-                await self.run_cycle()
-                await asyncio.sleep(2)
-            except Exception as e:
-                logger.error(f"Critical System Error: {e}")
-                await asyncio.sleep(5)
-
 
 if __name__ == "__main__":
     asyncio.run(TermuxMasterOrchestrator().start())
