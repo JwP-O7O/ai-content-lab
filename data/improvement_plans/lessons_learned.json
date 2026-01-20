@@ -67,12 +67,16 @@
     {
       "task": "WEB: Maak een Dashboard UI (`apps/dashboard.html`) die fetch gebruikt om data van `http://localhost:8000` te halen. Toon Takenlijst, Success Rate (Metric) en Memory Log. Auto-refresh elke 5s. Stijl: Cyberpunk Neon.",
       "pattern": "Het herbruikbare patroon is het gebruik van een front-end webpagina die data via API's (fetch) ophaalt en deze data dynamisch weergeeft en periodiek vernieuwt."
+    },
+    {
+      "task": "SYSTEM: REFACTOR. Het bestand `src/playground/system_implementeer_selfimprovement_squad.py` is groot. Analyseer het en pas 'Extract Method' toe om de leesbaarheid te verbeteren. Zorg dat alle functionaliteit behouden blijft en tests blijven slagen.",
+      "pattern": "Het herbruikbare patroon is het gebruik van 'Extract Method' om de leesbaarheid en onderhoudbaarheid van een grote codebestand te verbeteren door complexe functionaliteit in kleinere, herbruikbare methoden te plaatsen."
     }
   ],
   "failed_patterns": [],
   "metrics": {
-    "total_tasks": 13,
-    "success_count": 13,
-    "avg_duration": 26.91322025885949
+    "total_tasks": 14,
+    "success_count": 14,
+    "avg_duration": 32.7727655172348
   }
 }

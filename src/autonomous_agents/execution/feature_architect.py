@@ -62,12 +62,26 @@ class FeatureArchitect:
         
         test_prompt = f"""
         ACT AS: QA Automation Engineer.
-        TASK: Write a robust `pytest` unit test.
-        CONTEXT: Code at `{target_file}`, Test at `{test_file_path}`.
-        IMPORT: `from {rel_path} import *`. Use `sys.path.append(os.getcwd())`.
-        CODE:
+        TASK: Write a robust `pytest` unit test for the code below.
+        
+        CONTEXT:
+        - Code under test: `{target_file}`
+        - Test file location: `{test_file_path}`
+        - Import path: `from {rel_path} import *`
+        
+        CRITICAL INSTRUCTIONS FOR MOCKING:
+        1. **MOCK EVERYTHING:** Do not access the actual file system, network, or external processes.
+        2. **Use `unittest.mock`:** Heavily rely on `patch`, `MagicMock`, and `mock_open`.
+        3. **Mock File I/O:** When testing file reading/writing, use `patch('builtins.open', new_callable=mock_open)`.
+        4. **Mock Subprocesses:** If the code runs commands, use `patch('subprocess.run')` or `patch('subprocess.Popen')`.
+        5. **No Side Effects:** The test must NOT create, delete, or modify any real files on disk.
+        6. **Setup:** Ensure `sys.path.append(os.getcwd())` is at the top.
+        
+        CODE TO TEST:
         {code}
-        OUTPUT: ONLY Python test code. Include `import pytest`.
+        
+        OUTPUT:
+        Return ONLY valid Python test code. Include `import pytest` and `from unittest.mock import ...`.
         """
         
         response = await self.ai.generate_text(test_prompt)
@@ -109,7 +123,7 @@ class FeatureArchitect:
         {test_output}
         
         TASK:
-        Analyze the failure. Is the CODE wrong, or is the TEST wrong?
+        Analyze the failure. Is the CODE wrong, or is the TEST wrong (e.g., bad mocking)?
         Fix the CODE to satisfy the test, OR fix the TEST if it was hallucinated/incorrect.
         
         OUTPUT:

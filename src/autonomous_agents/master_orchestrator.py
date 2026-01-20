@@ -78,7 +78,13 @@ class TermuxMasterOrchestrator:
 
                     elif "SYSTEM:" in title.upper():
                         result = await self.backend_squad.build_feature(title)
-                        await self.publisher.publish_changes()
+                        
+                        # STRICT GIT POLICY: Alleen pushen als tests slagen
+                        if result.get("tests_passed", False):
+                            await self.publisher.publish_changes()
+                        else:
+                            logger.warning("🛑 Tests failed. Skipping git push to protect codebase.")
+
                         logger.debug(f"DEBUG: Backend Squad Result: {result}")
 
                     # Bereken duur
