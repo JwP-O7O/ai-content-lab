@@ -16,7 +16,7 @@ DEFAULT_SHELL = "/bin/bash"
 
 def _execute_command(
     command: str, shell: bool = False, timeout: int = 60
-) -> Tuple[int, str, str]:
+) -> Tuple[int, str, str, float]:
     """Executes a shell command and captures output and error."""
     try:
         start_time = time.time()
@@ -68,6 +68,7 @@ def _retry_command(
 def _write_update_script(script_content: str) -> bool:
     """Writes the update script to a temporary file."""
     try:
+        os.makedirs(os.path.dirname(UPDATE_SCRIPT_PATH), exist_ok=True)
         with open(UPDATE_SCRIPT_PATH, "w") as f:
             f.write(script_content)
         os.chmod(UPDATE_SCRIPT_PATH, 0o755)

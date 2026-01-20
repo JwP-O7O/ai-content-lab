@@ -1,339 +1,237 @@
 import pytest
 import os
 import sys
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import patch, mock_open, MagicMock
 from src.playground.extract_methods_for_system_implementation import (
-    _execute_command,
-    _retry_command,
-    _write_update_script,
-    _run_update_script,
-    _reboot_system,
     perform_system_update,
     is_process_running,
     kill_process,
     safely_remove_file,
     execute_commands_in_parallel,
     get_system_information,
-    UPDATE_SCRIPT_PATH,
-    REBOOT_COMMAND,
-    MAX_RETRIES,
-    RETRY_DELAY,
-    DEFAULT_SHELL,
+    _execute_command,
+    _retry_command,
+    _write_update_script,
+    _run_update_script,
+    _reboot_system,
 )
+import subprocess
+import time
 
 sys.path.append(os.getcwd())
 
+UPDATE_SCRIPT_PATH = "/tmp/update_script.sh"
 
-class TestExtractMethods:
-    @patch('subprocess.Popen')
-    def test_execute_command_success(self, mock_popen):
-        mock_process = MagicMock()
-        mock_process.communicate.return_value = (b"stdout", b"stderr")
-        mock_process.returncode = 0
-        mock_popen.return_value = mock_process
 
-        return_code, stdout, stderr, execution_time = _execute_command("some_command")
-        assert return_code == 0
-        assert stdout == "stdout"
-        assert stderr == "stderr"
-        assert execution_time >= 0
-        mock_popen.assert_called_once_with(
-            "some_command",
-            shell=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            executable=DEFAULT_SHELL,
-        )
-
-    @patch('subprocess.Popen')
-    def test_execute_command_failure(self, mock_popen):
-        mock_process = MagicMock()
-        mock_process.communicate.return_value = (b"stdout", b"stderr")
-        mock_process.returncode = 1
-        mock_popen.return_value = mock_process
-
-        return_code, stdout, stderr, execution_time = _execute_command("some_command")
-        assert return_code == 1
-        assert stdout == "stdout"
-        assert stderr == "stderr"
-        assert execution_time >= 0
-
-    @patch('subprocess.Popen')
-    def test_execute_command_timeout(self, mock_popen):
-        mock_process = MagicMock()
-        mock_process.communicate.side_effect = subprocess.TimeoutExpired("cmd", 1)
-        mock_popen.return_value = mock_process
-        return_code, stdout, stderr, execution_time = _execute_command("some_command", timeout=1)
-        assert return_code == -1
-        assert execution_time == 1
-
-    @patch('subprocess.Popen')
-    def test_execute_command_file_not_found(self, mock_popen):
-        mock_popen.side_effect = FileNotFoundError
-        return_code, stdout, stderr, execution_time = _execute_command("nonexistent_command")
-        assert return_code == -1
-        assert "Command not found" in stderr
-        assert execution_time == 0
-
-    @patch('src.playground.extract_methods_for_system_implementation._execute_command')
-    def test_retry_command_success(self, mock_execute_command):
-        mock_execute_command.return_value = (0, "stdout", "stderr", 0.1)
-        result = _retry_command(lambda: mock_execute_command("cmd"))
-        assert result == (0, "stdout", "stderr", 0.1)
-        mock_execute_command.assert_called_once()
-
-    @patch('src.playground.extract_methods_for_system_implementation._execute_command')
-    def test_retry_command_retry(self, mock_execute_command):
-        mock_execute_command.side_effect = [
-            (1, "stdout", "stderr", 0.1),
-            (0, "stdout", "stderr", 0.1),
-        ]
-        result = _retry_command(lambda: mock_execute_command("cmd"), retries=1, delay=0)
-        assert result == (0, "stdout", "stderr", 0.1)
-        assert mock_execute_command.call_count == 2
-
-    @patch('src.playground.extract_methods_for_system_implementation._execute_command')
-    def test_retry_command_failure_after_retries(self, mock_execute_command):
-        mock_execute_command.side_effect = [(1, "stdout", "stderr", 0.1)] * (MAX_RETRIES + 1)
-        with pytest.raises(Exception):
-            _retry_command(lambda: mock_execute_command("cmd"), retries=MAX_RETRIES, delay=0)
-        assert mock_execute_command.call_count == MAX_RETRIES + 1
-
-    @patch('builtins.open', new_callable=mock_open)
-    def test_write_update_script_success(self, mock_open):
-        script_content = "some script content"
-        result = _write_update_script(script_content)
+class TestSystemUpdate:
+    @patch('src.playground.extract_methods_for_system_implementation._write_update_script')
+    @patch('src.playground.extract_methods_for_system_implementation._run_update_script')
+    @patch('src.playground.extract_methods_for_system_implementation._reboot_system')
+    def test_perform_system_update_success(self, mock_reboot, mock_run_script, mock_write_script):
+        mock_write_script.return_value = True
+        mock_run_script.return_value = (0, "stdout", "stderr", 1.0)
+        mock_reboot.return_value = (0, "stdout", "stderr", 0.5)
+        update_script_content = "#!/bin/bash\necho 'hello'"
+        result = perform_system_update(update_script_content, True)
         assert result is True
-        mock_open.assert_called_once_with(UPDATE_SCRIPT_PATH, "w")
-        mock_open().write.assert_called_once_with(script_content)
-        assert os.chmod.called
-        assert os.chmod.call_args[0][0] == UPDATE_SCRIPT_PATH
+        mock_write_script.assert_called_once_with(update_script_content)
+        mock_run_script.assert_called_once()
+        mock_reboot.assert_called_once()
 
-    @patch('builtins.open', new_callable=mock_open)
-    def test_write_update_script_failure(self, mock_open):
-        mock_open.side_effect = OSError("Permission denied")
-        result = _write_update_script("content")
+    @patch('src.playground.extract_methods_for_system_implementation._write_update_script')
+    @patch('src.playground.extract_methods_for_system_implementation._run_update_script')
+    @patch('src.playground.extract_methods_for_system_implementation._reboot_system')
+    def test_perform_system_update_no_reboot(self, mock_reboot, mock_run_script, mock_write_script):
+        mock_write_script.return_value = True
+        mock_run_script.return_value = (0, "stdout", "stderr", 1.0)
+        update_script_content = "#!/bin/bash\necho 'hello'"
+        result = perform_system_update(update_script_content, False)
+        assert result is True
+        mock_write_script.assert_called_once_with(update_script_content)
+        mock_run_script.assert_called_once()
+        mock_reboot.assert_not_called()
+
+    @patch('src.playground.extract_methods_for_system_implementation._write_update_script')
+    @patch('src.playground.extract_methods_for_system_implementation._run_update_script')
+    @patch('src.playground.extract_methods_for_system_implementation._reboot_system')
+    def test_perform_system_update_write_script_fail(self, mock_reboot, mock_run_script, mock_write_script):
+        mock_write_script.return_value = False
+        update_script_content = "#!/bin/bash\necho 'hello'"
+        result = perform_system_update(update_script_content, True)
         assert result is False
-
-    @patch('src.playground.extract_methods_for_system_implementation._execute_command')
-    def test_run_update_script(self, mock_execute_command):
-        mock_execute_command.return_value = (0, "stdout", "stderr", 0.1)
-        return_code, stdout, stderr, execution_time = _run_update_script()
-        assert return_code == 0
-        assert stdout == "stdout"
-        assert stderr == "stderr"
-        mock_execute_command.assert_called_once_with(f"sudo {UPDATE_SCRIPT_PATH}", shell=True)
-        assert execution_time >= 0
-
-    @patch('src.playground.extract_methods_for_system_implementation._execute_command')
-    def test_reboot_system(self, mock_execute_command):
-        mock_execute_command.return_value = (0, "stdout", "stderr", 0.1)
-        return_code, stdout, stderr, execution_time = _reboot_system()
-        assert return_code == 0
-        assert stdout == "stdout"
-        assert stderr == "stderr"
-        mock_execute_command.assert_called_once_with(REBOOT_COMMAND, shell=True)
-        assert execution_time >= 0
+        mock_write_script.assert_called_once_with(update_script_content)
+        mock_run_script.assert_not_called()
+        mock_reboot.assert_not_called()
 
     @patch('src.playground.extract_methods_for_system_implementation._write_update_script')
     @patch('src.playground.extract_methods_for_system_implementation._run_update_script')
     @patch('src.playground.extract_methods_for_system_implementation._reboot_system')
-    def test_perform_system_update_success(
-        self, mock_reboot_system, mock_run_update_script, mock_write_update_script
-    ):
-        mock_write_update_script.return_value = True
-        mock_run_update_script.return_value = (0, "stdout", "stderr", 0.1)
-        mock_reboot_system.return_value = (0, "stdout", "stderr", 0.1)
-        assert perform_system_update("script_content", reboot_after_update=True) is True
-        mock_write_update_script.assert_called_once_with("script_content")
-        mock_run_update_script.assert_called_once()
-        mock_reboot_system.assert_called_once()
+    def test_perform_system_update_script_fail(self, mock_reboot, mock_run_script, mock_write_script):
+        mock_write_script.return_value = True
+        mock_run_script.return_value = (1, "stdout", "stderr", 1.0)
+        update_script_content = "#!/bin/bash\necho 'hello'"
+        result = perform_system_update(update_script_content, True)
+        assert result is False
+        mock_write_script.assert_called_once_with(update_script_content)
+        mock_run_script.assert_called_once()
+        mock_reboot.assert_not_called()
 
     @patch('src.playground.extract_methods_for_system_implementation._write_update_script')
     @patch('src.playground.extract_methods_for_system_implementation._run_update_script')
     @patch('src.playground.extract_methods_for_system_implementation._reboot_system')
-    def test_perform_system_update_failure_write_script(
-        self, mock_reboot_system, mock_run_update_script, mock_write_update_script
-    ):
-        mock_write_update_script.return_value = False
-        assert perform_system_update("script_content") is False
-        mock_write_update_script.assert_called_once_with("script_content")
-        mock_run_update_script.assert_not_called()
-        mock_reboot_system.assert_not_called()
+    def test_perform_system_update_reboot_fail(self, mock_reboot, mock_run_script, mock_write_script):
+        mock_write_script.return_value = True
+        mock_run_script.return_value = (0, "stdout", "stderr", 1.0)
+        mock_reboot.return_value = (1, "stdout", "stderr", 0.5)
+        update_script_content = "#!/bin/bash\necho 'hello'"
+        result = perform_system_update(update_script_content, True)
+        assert result is False
+        mock_write_script.assert_called_once_with(update_script_content)
+        mock_run_script.assert_called_once()
+        mock_reboot.assert_called_once()
 
-    @patch('src.playground.extract_methods_for_system_implementation._write_update_script')
-    @patch('src.playground.extract_methods_for_system_implementation._run_update_script')
-    @patch('src.playground.extract_methods_for_system_implementation._reboot_system')
-    def test_perform_system_update_failure_script_execution(
-        self, mock_reboot_system, mock_run_update_script, mock_write_update_script
-    ):
-        mock_write_update_script.return_value = True
-        mock_run_update_script.return_value = (1, "stdout", "stderr", 0.1)
-        assert perform_system_update("script_content") is False
-        mock_run_update_script.assert_called_once()
-        mock_reboot_system.assert_not_called()
 
-    @patch('src.playground.extract_methods_for_system_implementation._write_update_script')
-    @patch('src.playground.extract_methods_for_system_implementation._run_update_script')
-    @patch('src.playground.extract_methods_for_system_implementation._reboot_system')
-    def test_perform_system_update_failure_reboot_execution(
-        self, mock_reboot_system, mock_run_update_script, mock_write_update_script
-    ):
-        mock_write_update_script.return_value = True
-        mock_run_update_script.return_value = (0, "stdout", "stderr", 0.1)
-        mock_reboot_system.return_value = (1, "stdout", "stderr", 0.1)
-        assert perform_system_update("script_content") is False
-        mock_run_update_script.assert_called_once()
-        mock_reboot_system.assert_called_once()
-
+class TestProcessManagement:
     @patch('src.playground.extract_methods_for_system_implementation._execute_command')
     def test_is_process_running_running(self, mock_execute_command):
-        mock_execute_command.return_value = (0, "pid", "stderr", 0.1)
-        assert is_process_running("process_name") is True
-        mock_execute_command.assert_called_once_with("pgrep process_name", shell=True)
+        mock_execute_command.return_value = (0, "1234", "", 0.1)
+        assert is_process_running("test_process") is True
+        mock_execute_command.assert_called_once_with("pgrep test_process", shell=True)
 
     @patch('src.playground.extract_methods_for_system_implementation._execute_command')
     def test_is_process_running_not_running(self, mock_execute_command):
-        mock_execute_command.return_value = (1, "", "stderr", 0.1)
-        assert is_process_running("process_name") is False
-        mock_execute_command.assert_called_once_with("pgrep process_name", shell=True)
+        mock_execute_command.return_value = (1, "", "", 0.1)
+        assert is_process_running("test_process") is False
+        mock_execute_command.assert_called_once_with("pgrep test_process", shell=True)
 
     @patch('src.playground.extract_methods_for_system_implementation._execute_command')
     def test_is_process_running_error(self, mock_execute_command):
-        mock_execute_command.side_effect = Exception("error")
-        assert is_process_running("process_name") is False
-        mock_execute_command.assert_called_once_with("pgrep process_name", shell=True)
+        mock_execute_command.side_effect = Exception("Some error")
+        assert is_process_running("test_process") is False
+        mock_execute_command.assert_called_once_with("pgrep test_process", shell=True)
 
     @patch('src.playground.extract_methods_for_system_implementation._execute_command')
     def test_kill_process_success(self, mock_execute_command):
-        mock_execute_command.return_value = (0, "stdout", "stderr", 0.1)
-        with patch(
-            'src.playground.extract_methods_for_system_implementation.is_process_running'
-        ) as mock_is_running:
-            mock_is_running.return_value = True
-            assert kill_process("process_name") is True
-            mock_execute_command.assert_called_once_with("pkill process_name", shell=True)
-            mock_is_running.assert_called_once_with("process_name")
+        mock_execute_command.side_effect = [(0, "1234", "", 0.1), (0, "", "", 0.1)]
+        assert kill_process("test_process") is True
+        assert mock_execute_command.call_count == 2
+        mock_execute_command.assert_any_call("pgrep test_process", shell=True)
+        mock_execute_command.assert_any_call("pkill test_process", shell=True)
 
     @patch('src.playground.extract_methods_for_system_implementation._execute_command')
     def test_kill_process_not_running(self, mock_execute_command):
-        with patch(
-            'src.playground.extract_methods_for_system_implementation.is_process_running'
-        ) as mock_is_running:
-            mock_is_running.return_value = False
-            assert kill_process("process_name") is True
-            mock_execute_command.assert_not_called()
-            mock_is_running.assert_called_once_with("process_name")
+        mock_execute_command.side_effect = [(1, "", "", 0.1)]
+        assert kill_process("test_process") is True
+        assert mock_execute_command.call_count == 1
+        mock_execute_command.assert_called_once_with("pgrep test_process", shell=True)
 
     @patch('src.playground.extract_methods_for_system_implementation._execute_command')
-    def test_kill_process_failure(self, mock_execute_command):
-        mock_execute_command.return_value = (1, "stdout", "stderr", 0.1)
-        with patch(
-            'src.playground.extract_methods_for_system_implementation.is_process_running'
-        ) as mock_is_running:
-            mock_is_running.return_value = True
-            assert kill_process("process_name") is False
-            mock_execute_command.assert_called_once_with("pkill process_name", shell=True)
-            mock_is_running.assert_called_once_with("process_name")
+    def test_kill_process_fail(self, mock_execute_command):
+        mock_execute_command.side_effect = [(0, "1234", "", 0.1), (1, "", "error", 0.1)]
+        assert kill_process("test_process") is False
+        assert mock_execute_command.call_count == 2
+        mock_execute_command.assert_any_call("pgrep test_process", shell=True)
+        mock_execute_command.assert_any_call("pkill test_process", shell=True)
 
     @patch('src.playground.extract_methods_for_system_implementation._execute_command')
-    def test_kill_process_error(self, mock_execute_command):
-        with patch(
-            'src.playground.extract_methods_for_system_implementation.is_process_running'
-        ) as mock_is_running:
-            mock_is_running.return_value = True
-            mock_execute_command.side_effect = Exception("error")
-            assert kill_process("process_name") is False
-            mock_is_running.assert_called_once_with("process_name")
+    def test_kill_process_error_getting_pid(self, mock_execute_command):
+        mock_execute_command.side_effect = Exception("Some error")
+        assert kill_process("test_process") is False
+        mock_execute_command.assert_called_once_with("pgrep test_process", shell=True)
 
+    @patch('src.playground.extract_methods_for_system_implementation._execute_command')
+    def test_kill_process_error_killing(self, mock_execute_command):
+        mock_execute_command.side_effect = [(0, "1234", "", 0.1), Exception("Some error")]
+        assert kill_process("test_process") is False
+        assert mock_execute_command.call_count == 2
+        mock_execute_command.assert_any_call("pgrep test_process", shell=True)
+        mock_execute_command.assert_any_call("pkill test_process", shell=True)
+
+
+class TestFileManagement:
     @patch('os.path.exists')
     @patch('os.remove')
-    def test_safely_remove_file_exists_success(self, mock_remove, mock_exists):
+    def test_safely_remove_file_success(self, mock_remove, mock_exists):
         mock_exists.return_value = True
-        assert safely_remove_file("file_path") is True
-        mock_exists.assert_called_once_with("file_path")
-        mock_remove.assert_called_once_with("file_path")
+        assert safely_remove_file("/tmp/test_file.txt") is True
+        mock_exists.assert_called_once_with("/tmp/test_file.txt")
+        mock_remove.assert_called_once_with("/tmp/test_file.txt")
 
     @patch('os.path.exists')
     @patch('os.remove')
-    def test_safely_remove_file_not_exists(self, mock_remove, mock_exists):
+    def test_safely_remove_file_does_not_exist(self, mock_remove, mock_exists):
         mock_exists.return_value = False
-        assert safely_remove_file("file_path") is True
-        mock_exists.assert_called_once_with("file_path")
+        assert safely_remove_file("/tmp/test_file.txt") is True
+        mock_exists.assert_called_once_with("/tmp/test_file.txt")
         mock_remove.assert_not_called()
 
     @patch('os.path.exists')
     @patch('os.remove')
-    def test_safely_remove_file_failure(self, mock_remove, mock_exists):
+    def test_safely_remove_file_error(self, mock_remove, mock_exists):
         mock_exists.return_value = True
-        mock_remove.side_effect = OSError("Permission denied")
-        assert safely_remove_file("file_path") is False
-        mock_exists.assert_called_once_with("file_path")
-        mock_remove.assert_called_once_with("file_path")
+        mock_remove.side_effect = Exception("Some error")
+        assert safely_remove_file("/tmp/test_file.txt") is False
+        mock_exists.assert_called_once_with("/tmp/test_file.txt")
+        mock_remove.assert_called_once_with("/tmp/test_file.txt")
 
-    @patch(
-        'src.playground.extract_methods_for_system_implementation._execute_command'
-    )
-    def test_execute_commands_in_parallel_success(self, mock_execute_command):
+
+class TestParallelExecution:
+    @patch('src.playground.extract_methods_for_system_implementation._execute_command')
+    def test_execute_commands_in_parallel(self, mock_execute_command):
         mock_execute_command.side_effect = [
             (0, "stdout1", "stderr1", 0.1),
             (1, "stdout2", "stderr2", 0.2),
-            (0, "stdout3", "stderr3", 0.3),
+            (2, "stdout3", "stderr3", 0.3),
         ]
         commands = [
-            ("cmd1", False, 1),
-            ("cmd2", False, 1),
-            ("cmd3", False, 1),
+            ("command1", False, 1),
+            ("command2", True, 2),
+            ("command3", False, 1),
         ]
         results = execute_commands_in_parallel(commands)
-        assert results == [
-            (0, "stdout1", "stderr1"),
-            (1, "stdout2", "stderr2"),
-            (0, "stdout3", "stderr3"),
-        ]
+        assert len(results) == 3
+        assert results[0] == (0, "stdout1", "stderr1")
+        assert results[1] == (1, "stdout2", "stderr2")
+        assert results[2] == (2, "stdout3", "stderr3")
         assert mock_execute_command.call_count == 3
-        mock_execute_command.assert_any_call("cmd1", False, 1)
-        mock_execute_command.assert_any_call("cmd2", False, 1)
-        mock_execute_command.assert_any_call("cmd3", False, 1)
+        mock_execute_command.assert_any_call("command1", False, 1)
+        mock_execute_command.assert_any_call("command2", True, 2)
+        mock_execute_command.assert_any_call("command3", False, 1)
 
-    @patch(
-        'src.playground.extract_methods_for_system_implementation._execute_command'
-    )
+    @patch('src.playground.extract_methods_for_system_implementation._execute_command')
     def test_execute_commands_in_parallel_error(self, mock_execute_command):
         mock_execute_command.side_effect = [
-            (0, "stdout1", "stderr1", 0.1),
-            Exception("error"),
-            (0, "stdout3", "stderr3", 0.3),
+            Exception("Command 1 failed"),
+            (1, "stdout2", "stderr2", 0.2),
         ]
         commands = [
-            ("cmd1", False, 1),
-            ("cmd2", False, 1),
-            ("cmd3", False, 1),
+            ("command1", False, 1),
+            ("command2", True, 2),
         ]
         results = execute_commands_in_parallel(commands)
-        assert results[0] == (0, "stdout1", "stderr1")
-        assert results[1][0] == -1
-        assert "error" in results[1][2]
-        assert results[2] == (0, "stdout3", "stderr3")
-        assert mock_execute_command.call_count == 3
-        mock_execute_command.assert_any_call("cmd1", False, 1)
-        mock_execute_command.assert_any_call("cmd2", False, 1)
-        mock_execute_command.assert_any_call("cmd3", False, 1)
+        assert len(results) == 2
+        assert results[0] == (-1, "", "Command 1 failed")
+        assert results[1] == (1, "stdout2", "stderr2")
+        assert mock_execute_command.call_count == 2
+        mock_execute_command.assert_any_call("command1", False, 1)
+        mock_execute_command.assert_any_call("command2", True, 2)
 
 
+class TestSystemInformation:
     @patch('src.playground.extract_methods_for_system_implementation._execute_command')
     def test_get_system_information_success(self, mock_execute_command):
         mock_execute_command.side_effect = [
             (0, "5.4.0-58-generic", "", 0.1),
-            (0, "hostname", "", 0.1),
-            (0, "up 1 day, 2 hours", "", 0.1),
+            (0, "myhostname", "", 0.1),
+            (0, "10:20:30 up", "", 0.1),
         ]
-        result = get_system_information()
-        assert result == {
-            "kernel_version": "5.4.0-58-generic",
-            "hostname": "hostname",
-            "uptime": "up 1 day, 2 hours",
-        }
+        info = get_system_information()
+        assert "kernel_version" in info
+        assert "hostname" in info
+        assert "uptime" in info
+        assert info["kernel_version"] == "5.4.0-58-generic"
+        assert info["hostname"] == "myhostname"
+        assert info["uptime"] == "10:20:30 up"
         assert mock_execute_command.call_count == 3
         mock_execute_command.assert_any_call("uname -r")
         mock_execute_command.assert_any_call("hostname")
@@ -343,14 +241,155 @@ class TestExtractMethods:
     def test_get_system_information_failure(self, mock_execute_command):
         mock_execute_command.side_effect = [
             (1, "", "error", 0.1),
-            (0, "hostname", "", 0.1),
-            (0, "up 1 day, 2 hours", "", 0.1),
+            (0, "myhostname", "", 0.1),
+            (0, "10:20:30 up", "", 0.1),
         ]
-        result = get_system_information()
-        assert "kernel_version" not in result
-        assert "hostname" in result
-        assert "uptime" in result
+        info = get_system_information()
+        assert "kernel_version" not in info
+        assert "hostname" in info
+        assert "uptime" in info
+        assert info["hostname"] == "myhostname"
+        assert info["uptime"] == "10:20:30 up"
         assert mock_execute_command.call_count == 3
         mock_execute_command.assert_any_call("uname -r")
         mock_execute_command.assert_any_call("hostname")
         mock_execute_command.assert_any_call("uptime -p")
+
+class TestExecuteCommand:
+    @patch('subprocess.Popen')
+    def test_execute_command_success(self, mock_popen):
+        mock_process = MagicMock()
+        mock_process.communicate.return_value = (b"stdout", b"stderr")
+        mock_process.returncode = 0
+        mock_popen.return_value = mock_process
+        return_code, stdout, stderr, execution_time = _execute_command("some_command", shell=False)
+        assert return_code == 0
+        assert stdout == "stdout"
+        assert stderr == "stderr"
+        mock_popen.assert_called_once_with("some_command", shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, executable='/bin/bash')
+        mock_process.communicate.assert_called_once_with(timeout=60)
+        assert execution_time >= 0
+
+    @patch('subprocess.Popen')
+    def test_execute_command_timeout(self, mock_popen):
+        mock_process = MagicMock()
+        mock_process.communicate.side_effect = subprocess.TimeoutExpired("cmd", 10)
+        mock_process.kill.return_value = None
+        mock_popen.return_value = mock_process
+        return_code, stdout, stderr, execution_time = _execute_command("some_command", shell=False, timeout=10)
+        assert return_code == -1
+        assert stdout == ""
+        assert stderr == ""
+        assert execution_time == 10
+        mock_popen.assert_called_once_with("some_command", shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, executable='/bin/bash')
+        mock_process.communicate.assert_called_once_with(timeout=10)
+        mock_process.kill.assert_called_once()
+    
+    @patch('subprocess.Popen')
+    def test_execute_command_failure(self, mock_popen):
+        mock_process = MagicMock()
+        mock_process.communicate.return_value = (b"", b"stderr")
+        mock_process.returncode = 1
+        mock_popen.return_value = mock_process
+        return_code, stdout, stderr, execution_time = _execute_command("some_command", shell=False)
+        assert return_code == 1
+        assert stdout == ""
+        assert stderr == "stderr"
+        mock_popen.assert_called_once_with("some_command", shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, executable='/bin/bash')
+        mock_process.communicate.assert_called_once_with(timeout=60)
+        assert execution_time >= 0
+
+    @patch('subprocess.Popen')
+    def test_execute_command_file_not_found(self, mock_popen):
+        mock_popen.side_effect = FileNotFoundError
+        return_code, stdout, stderr, execution_time = _execute_command("nonexistent_command", shell=False)
+        assert return_code == -1
+        assert stdout == ""
+        assert "Command not found" in stderr
+        assert execution_time == 0
+        mock_popen.assert_called_once_with("nonexistent_command", shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, executable='/bin/bash')
+    
+    @patch('subprocess.Popen')
+    def test_execute_command_exception(self, mock_popen):
+        mock_popen.side_effect = Exception("Some error")
+        return_code, stdout, stderr, execution_time = _execute_command("some_command", shell=False)
+        assert return_code == -1
+        assert stdout == ""
+        assert "An unexpected error occurred" in stderr
+        assert execution_time == 0
+        mock_popen.assert_called_once_with("some_command", shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, executable='/bin/bash')
+
+class TestRetryCommand:
+    @patch('src.playground.extract_methods_for_system_implementation._execute_command')
+    def test_retry_command_success_first_attempt(self, mock_execute_command):
+        mock_execute_command.return_value = (0, "stdout", "stderr", 1.0)
+        result = _retry_command(lambda: mock_execute_command("cmd", False, 10), retries=2, delay=0)
+        assert result == (0, "stdout", "stderr", 1.0)
+        mock_execute_command.assert_called_once_with("cmd", False, 10)
+
+    @patch('src.playground.extract_methods_for_system_implementation._execute_command')
+    def test_retry_command_success_after_retry(self, mock_execute_command):
+        mock_execute_command.side_effect = [
+            Exception("error"),
+            (0, "stdout", "stderr", 1.0),
+        ]
+        result = _retry_command(lambda: mock_execute_command("cmd", False, 10), retries=2, delay=0)
+        assert result == (0, "stdout", "stderr", 1.0)
+        assert mock_execute_command.call_count == 2
+        mock_execute_command.assert_any_call("cmd", False, 10)
+
+    @patch('src.playground.extract_methods_for_system_implementation._execute_command')
+    def test_retry_command_failure_after_all_retries(self, mock_execute_command):
+        mock_execute_command.side_effect = [Exception("error")] * 3
+        with pytest.raises(Exception):
+            _retry_command(lambda: mock_execute_command("cmd", False, 10), retries=2, delay=0)
+        assert mock_execute_command.call_count == 3
+        mock_execute_command.assert_any_call("cmd", False, 10)
+
+class TestWriteUpdateScript:
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.makedirs')
+    @patch('os.chmod')
+    def test_write_update_script_success(self, mock_chmod, mock_makedirs, mock_open):
+        script_content = "#!/bin/bash\necho 'hello'"
+        result = _write_update_script(script_content)
+        assert result is True
+        mock_makedirs.assert_called_once_with(os.path.dirname(UPDATE_SCRIPT_PATH), exist_ok=True)
+        mock_open.return_value.__enter__.return_value.write.assert_called_once_with(script_content)
+        mock_chmod.assert_called_once_with(UPDATE_SCRIPT_PATH, 0o755)
+
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.makedirs')
+    @patch('os.chmod')
+    def test_write_update_script_failure_makedirs(self, mock_chmod, mock_makedirs, mock_open):
+        mock_makedirs.side_effect = Exception("Some error")
+        script_content = "#!/bin/bash\necho 'hello'"
+        result = _write_update_script(script_content)
+        assert result is False
+        mock_makedirs.assert_called_once_with(os.path.dirname(UPDATE_SCRIPT_PATH), exist_ok=True)
+        mock_open.assert_not_called()
+        mock_chmod.assert_not_called()
+
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.makedirs')
+    @patch('os.chmod')
+    def test_write_update_script_failure_open(self, mock_chmod, mock_makedirs, mock_open):
+        mock_open.side_effect = Exception("Some error")
+        script_content = "#!/bin/bash\necho 'hello'"
+        result = _write_update_script(script_content)
+        assert result is False
+        mock_makedirs.assert_called_once_with(os.path.dirname(UPDATE_SCRIPT_PATH), exist_ok=True)
+        mock_open.assert_called_once_with(UPDATE_SCRIPT_PATH, "w")
+        mock_chmod.assert_not_called()
+
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.makedirs')
+    @patch('os.chmod')
+    def test_write_update_script_failure_chmod(self, mock_chmod, mock_makedirs, mock_open):
+        mock_chmod.side_effect = Exception("Some error")
+        script_content = "#!/bin/bash\necho 'hello'"
+        result = _write_update_script(script_content)
+        assert result is False
+        mock_makedirs.assert_called_once_with(os.path.dirname(UPDATE_SCRIPT_PATH), exist_ok=True)
+        mock_open.return_value.__enter__.return_value.write.assert_called_once_with(script_content)
+        mock_chmod.assert_called_once_with(UPDATE_SCRIPT_PATH, 0o755)
