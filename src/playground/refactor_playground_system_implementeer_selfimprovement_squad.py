@@ -121,19 +121,26 @@ class SystemRefactor:
             for line in lines:
                 fields = line.split()
                 if len(fields) >= 6:
-                    disk_info: Dict[str, str] = {
-                        "filesystem": fields[0],
-                        "size": fields[1],
-                        "used": fields[2],
-                        "available": fields[3],
-                        "use_percentage": fields[4],
-                        "mounted_on": fields[5],
-                    }
+                    disk_info: Dict[str, str] = self._parse_disk_info(fields)
                     disk_usage.append(disk_info)
             logger.info("Disk usage informatie succesvol opgehaald.")
         except Exception as e:
             logger.error(f"Fout bij het ophalen van disk usage informatie: {e}")
         return disk_usage
+
+    def _parse_disk_info(self, fields: list[str]) -> Dict[str, str]:
+        """
+        Parses a line from the df -h output into a dictionary.
+        """
+        disk_info: Dict[str, str] = {
+            "filesystem": fields[0],
+            "size": fields[1],
+            "used": fields[2],
+            "available": fields[3],
+            "use_percentage": fields[4],
+            "mounted_on": fields[5],
+        }
+        return disk_info
 
     def monitor_cpu_usage(self, interval: int = 1, duration: int = 10) -> List[float]:
         """
@@ -154,17 +161,29 @@ class SystemRefactor:
                 )
                 if not cpu_output:
                     continue  # Skip if the command fails.
-                try:
-                    cpu_percent = float(cpu_output.replace("%", ""))
+                cpu_percent = self._parse_cpu_usage(cpu_output)
+                if cpu_percent is not None:
                     cpu_usage_percentages.append(cpu_percent)
-                except ValueError as e:
-                    logger.error(f"Fout bij het parsen van CPU usage: {e}")
+
                 time.sleep(interval)
             logger.info("CPU usage monitoring voltooid.")
         except Exception as e:
             logger.error(f"Fout bij het monitoren van CPU usage: {e}")
 
         return cpu_usage_percentages
+
+    def _parse_cpu_usage(self, cpu_output: str) -> float | None:
+        """
+        Parses the CPU usage percentage from the output of the top command.
+        """
+        if not cpu_output:
+            return None
+        try:
+            cpu_percent = float(cpu_output.replace("%", ""))
+            return cpu_percent
+        except ValueError as e:
+            logger.error(f"Fout bij het parsen van CPU usage: {e}")
+            return None
 
     def perform_system_check(self) -> Dict[str, Any]:
         """
