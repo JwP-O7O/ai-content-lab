@@ -231,9 +231,24 @@ def get_system_information() -> Dict[str, str]:
     """Gathers basic system information."""
     system_info: Dict[str, str] = {}
     try:
-        _, system_info["kernel_version"], _, _ = _execute_command("uname -r")
-        _, system_info["hostname"], _, _ = _execute_command("hostname")
-        _, system_info["uptime"], _, _ = _execute_command("uptime -p")
+        return_code, system_info["kernel_version"], stderr, _ = _execute_command(
+            "uname -r"
+        )
+        if return_code != 0:
+            logger.error(f"Failed to get kernel version: {stderr}")
+            system_info["kernel_version"] = ""
+
+        return_code, system_info["hostname"], stderr, _ = _execute_command("hostname")
+        if return_code != 0:
+            logger.error(f"Failed to get hostname: {stderr}")
+            system_info["hostname"] = ""
+
+        return_code, system_info["uptime"], stderr, _ = _execute_command("uptime -p")
+        if return_code != 0:
+            logger.error(f"Failed to get uptime: {stderr}")
+            system_info["uptime"] = ""
+
     except Exception as e:
         logger.error(f"Failed to gather system information: {e}")
+        system_info = {}  # Reset to empty dict if a major failure occurs
     return system_info

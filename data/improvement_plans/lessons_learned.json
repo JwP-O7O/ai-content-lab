@@ -91,12 +91,16 @@
     {
       "task": "SYSTEM: TEST COVERAGE. Maak een unit test bestand voor `src/mission_control.py`. Gebruik pytest.",
       "pattern": "Het herbruikbare patroon is het gebruik van een taakomschrijving, gevolgd door een resultaat dat aangeeft of de taak succesvol is voltooid, met specifieke details zoals de gegenereerde bestandsnaam en de status van de testen."
+    },
+    {
+      "task": "SYSTEM: REFACTOR. Het bestand `src/playground/system_implementeer_selfimprovement_squad.py` is groot. Analyseer het en pas 'Extract Method' toe om de leesbaarheid te verbeteren. Zorg dat alle functionaliteit behouden blijft en tests blijven slagen.",
+      "pattern": "Het herbruikbare patroon is het gebruik van 'Extract Method' om de leesbaarheid en onderhoudbaarheid van een grote codebasis te verbeteren, terwijl de functionaliteit behouden blijft."
     }
   ],
   "failed_patterns": [],
   "metrics": {
-    "total_tasks": 19,
-    "success_count": 19,
-    "avg_duration": 33.41738260419745
+    "total_tasks": 20,
+    "success_count": 20,
+    "avg_duration": 38.65339097976685
   }
 }
