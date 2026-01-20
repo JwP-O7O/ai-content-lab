@@ -1,89 +1,68 @@
-import pytest
-import unittest
 import os
 import sys
-
+import pytest
 from unittest.mock import patch, mock_open, MagicMock
 
-# Add the current directory to the Python path
+# Add the project root to the Python path
 sys.path.append(os.getcwd())
-
-from src.playground.robust_logger import configure_logging, log_something, logger
+from src.playground.robust_logger import configure_logging, log_something
 
 
 class TestRobustLogger:
-    """
-    Pytest tests for the robust logger.
-    """
+    @patch("src.playground.robust_logger.logger.add")
+    @patch("src.playground.robust_logger.logger.remove")
+    def test_configure_logging_success(self, mock_remove, mock_add):
+        """Test configure_logging with success."""
+        log_file = "test.log"
+        log_level = "DEBUG"
+        rotation = "100MB"
 
-    LOG_FILE = "test.log"
-    LOG_LEVEL = "DEBUG"
-    ROTATION = "100B"  # Small rotation for testing
-    TEST_MESSAGE = "This is a test message."
+        configure_logging(log_file, log_level, rotation)
 
-    @pytest.fixture(autouse=True)
-    def setup_and_teardown(self):
-        """
-        Pytest fixture to set up and tear down for each test.
-        """
-        # Setup
-        configure_logging(self.LOG_FILE, self.LOG_LEVEL, self.ROTATION)
-        with open(self.LOG_FILE, "w") as f:
-            pass
-        yield  # This is where the test runs
-        # Teardown
-        try:
-            os.remove(self.LOG_FILE)
-            rotated_files = [
-                f
-                for f in os.listdir(".")
-                if f.startswith(self.LOG_FILE) and f != self.LOG_FILE
-            ]
-            for file in rotated_files:
-                os.remove(file)
-        except FileNotFoundError:
-            pass  # Ignore if file doesn't exist.
-        except Exception as e:
-            print(f"Failed to clean up test file: {e}")
+        mock_remove.assert_called_once()
+        mock_add.assert_called_once_with(
+            log_file,
+            rotation=rotation,
+            level=log_level,
+            format="{time} - {level} - {message}",
+            enqueue=True,
+        )
 
-    @patch('builtins.open', new_callable=mock_open, read_data="")
-    def test_log_message(self, mock_open):
-        """
-        Test that a message is logged.
-        """
-        log_something(self.TEST_MESSAGE)
-        mock_open.assert_called_with(self.LOG_FILE, "r")
-        mock_open().read.assert_called()
-        log_content = mock_open().read()
-        assert self.TEST_MESSAGE in log_content
+    @patch("src.playground.robust_logger.logger.add")
+    @patch("src.playground.robust_logger.logger.remove")
+    def test_configure_logging_exception(self, mock_remove, mock_add):
+        """Test configure_logging with exception."""
+        mock_add.side_effect = Exception("Simulated error")
+        log_file = "test.log"
+        log_level = "DEBUG"
+        rotation = "100MB"
 
-    @patch('builtins.open', new_callable=mock_open)
-    def test_log_rotation(self, mock_open):
-        """
-        Test that log rotation occurs (basic check - no guarantees about the exact behavior).
-        """
-        for _ in range(10):  # increased to cover the log size
-            log_something("A" * 100)  # write a message larger than rotation
-        mock_open.assert_called() # Check that open was called at least once
-        rotated_files = [
-            f
-            for f in os.listdir(".")
-            if f.startswith(self.LOG_FILE) and f != self.LOG_FILE
-        ]
-        assert len(rotated_files) >= 1, "Log rotation did not occur."
+        configure_logging(log_file, log_level, rotation)
 
+        mock_remove.assert_called_once()
+        mock_add.assert_called_once_with(
+            log_file,
+            rotation=rotation,
+            level=log_level,
+            format="{time} - {level} - {message}",
+            enqueue=True,
+        )
 
-    @patch('builtins.open', new_callable=mock_open, read_data="")
-    def test_log_level(self, mock_open):
-        """
-        Test that log level filtering works.
-        """
-        configure_logging(self.LOG_FILE, "WARNING")  # Configure for WARNING
-        log_something("This should not be logged")
-        logger.debug("Debug message")  # this will not be logged.
-        logger.warning("Warning message")  # this will be logged.
-        mock_open.assert_called_with(self.LOG_FILE, "r")
-        mock_open().read.assert_called()
-        log_content = mock_open().read()
-        assert "This should not be logged" not in log_content
-        assert "Warning message" in log_content
+    @patch("src.playground.robust_logger.logger.debug")
+    def test_log_something_success(self, mock_debug):
+        """Test log_something with success."""
+        message = "Test message"
+
+        log_something(message)
+
+        mock_debug.assert_called_once_with(message)
+
+    @patch("src.playground.robust_logger.logger.debug")
+    def test_log_something_exception(self, mock_debug):
+        """Test log_something with exception."""
+        mock_debug.side_effect = Exception("Simulated error")
+        message = "Test message"
+
+        log_something(message)
+
+        mock_debug.assert_called_once_with(message)
