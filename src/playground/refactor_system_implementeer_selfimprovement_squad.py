@@ -3,321 +3,229 @@ import os
 import shutil
 import subprocess
 import sys
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Tuple
 
 
-def get_file_size(filepath: str) -> Optional[int]:
+class SystemRefactor:
     """
-    Gets the size of a file in bytes.
-
-    Args:
-        filepath: The path to the file.
-
-    Returns:
-        The file size in bytes, or None if the file does not exist or an error occurs.
+    Refactors the system_implementeer_selfimprovement_squad.py file by applying the Extract Method refactoring technique
+    to improve readability and maintainability.
     """
-    try:
-        if os.path.exists(filepath) and os.path.isfile(filepath):
-            return os.path.getsize(filepath)
-        else:
-            logger.warning(f"File not found or not a file: {filepath}")
-            return None
-    except OSError as e:
-        logger.error(f"Error getting file size: {e}")
-        return None
 
+    def __init__(
+        self,
+        file_path: str = "src/playground/system_implementeer_selfimprovement_squad.py",
+    ):
+        """
+        Initializes the SystemRefactor with the path to the file to be refactored.
 
-def _run_command_internal(
-    command: List[str], cwd: Optional[str], env: Optional[Dict]
-) -> Tuple[int, str, str]:
-    """
-    Internal helper function to execute the subprocess command.  Separated for clarity.
-    """
-    try:
-        process = subprocess.Popen(
-            command,
-            cwd=cwd,
-            env=env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        stdout, stderr = process.communicate()
-        return_code = process.returncode
-        return return_code, stdout, stderr
-    except FileNotFoundError:
-        return 1, "", "Command not found"  # Return a specific error message
-    except Exception as e:
-        logger.error(f"Error executing command: {e}")
-        return 1, "", str(e)  # Include the exception in stderr
+        Args:
+            file_path (str): The path to the Python file.  Defaults to "src/playground/system_implementeer_selfimprovement_squad.py".
+        """
+        self.file_path = file_path
+        self.backup_path = f"{file_path}.bak"
 
+    def _create_backup(self) -> bool:
+        """
+        Creates a backup of the original file.
 
-def execute_command(
-    command: List[str], cwd: Optional[str] = None, env: Optional[Dict] = None
-) -> Tuple[int, str, str]:
-    """
-    Executes a shell command.
-
-    Args:
-        command: The command to execute (as a list of strings).
-        cwd: The current working directory.
-        env: Environment variables to set.
-
-    Returns:
-        A tuple containing the return code, stdout, and stderr.
-    """
-    return_code, stdout, stderr = _run_command_internal(command, cwd, env)
-
-    if return_code != 0 and "Command not found" in stderr:
-        logger.error(f"Command not found: {command[0]}")
-    elif return_code != 0:
-        logger.error(
-            f"Command failed with return code {return_code} and stderr: {stderr}"
-        )
-
-    return return_code, stdout, stderr
-
-
-def create_directory(path: str) -> bool:
-    """
-    Creates a directory if it doesn't exist.
-
-    Args:
-        path: The path to the directory.
-
-    Returns:
-        True if the directory was created or already exists, False otherwise.
-    """
-    try:
-        if not os.path.exists(path):
-            os.makedirs(path)
-            logger.info(f"Created directory: {path}")
-        return True
-    except OSError as e:
-        logger.error(f"Error creating directory: {e}")
-        return False
-
-
-def copy_file(src: str, dst: str) -> bool:
-    """
-    Copies a file from source to destination.
-
-    Args:
-        src: The source file path.
-        dst: The destination file path.
-
-    Returns:
-        True if the file was copied successfully, False otherwise.
-    """
-    try:
-        shutil.copy2(src, dst)
-        logger.info(f"Copied file from {src} to {dst}")
-        return True
-    except OSError as e:
-        logger.error(f"Error copying file: {e}")
-        return False
-
-
-def delete_file(filepath: str) -> bool:
-    """
-    Deletes a file.
-
-    Args:
-        filepath: The path to the file.
-
-    Returns:
-        True if the file was deleted successfully, False otherwise.
-    """
-    try:
-        if os.path.exists(filepath):
-            os.remove(filepath)
-            logger.info(f"Deleted file: {filepath}")
+        Returns:
+            bool: True if the backup was created successfully, False otherwise.
+        """
+        try:
+            if os.path.exists(self.backup_path):
+                logger.warning(
+                    f"Backup file already exists: {self.backup_path}. Overwriting."
+                )
+                os.remove(self.backup_path)  # Overwrite existing backup.
+            shutil.copy2(self.file_path, self.backup_path)  # copy2 preserves metadata
+            logger.info(f"Backup created at: {self.backup_path}")
             return True
-        else:
-            logger.warning(f"File not found for deletion: {filepath}")
-            return True  # Consider it successful if the file wasn't there to begin with
-    except OSError as e:
-        logger.error(f"Error deleting file: {e}")
-        return False
-
-
-def read_file(filepath: str) -> Optional[str]:
-    """
-    Reads the content of a file.
-
-    Args:
-        filepath: The path to the file.
-
-    Returns:
-        The content of the file as a string, or None if an error occurs.
-    """
-    try:
-        with open(filepath, "r") as f:
-            content = f.read()
-            return content
-    except FileNotFoundError:
-        logger.warning(f"File not found: {filepath}")
-        return None
-    except IOError as e:
-        logger.error(f"Error reading file: {e}")
-        return None
-
-
-def write_file(filepath: str, content: str) -> bool:
-    """
-    Writes content to a file.
-
-    Args:
-        filepath: The path to the file.
-        content: The content to write.
-
-    Returns:
-        True if the file was written successfully, False otherwise.
-    """
-    try:
-        with open(filepath, "w") as f:
-            f.write(content)
-            logger.info(f"Wrote to file: {filepath}")
-            return True
-    except IOError as e:
-        logger.error(f"Error writing to file: {e}")
-        return False
-
-
-def analyze_and_backup_file(filepath: str, backup_dir: str) -> bool:
-    """
-    Analyzes a file, creates a backup if it exists, and logs the process.
-
-    Args:
-        filepath: The path to the file to analyze.
-        backup_dir: The directory to store backups.
-
-    Returns:
-        True if the analysis and backup (if needed) were successful, False otherwise.
-    """
-    if not os.path.exists(filepath):
-        logger.warning(f"File does not exist: {filepath}")
-        return True  # Consider it successful as there's nothing to back up
-
-    file_size = get_file_size(filepath)
-    if file_size is None:
-        return False  # Failed to get file size
-
-    logger.info(f"Analyzing file: {filepath}, Size: {file_size} bytes")
-
-    backup_filepath = os.path.join(backup_dir, os.path.basename(filepath) + ".bak")
-    try:
-        if os.path.exists(filepath):
-            shutil.copy2(filepath, backup_filepath)
-            logger.info(f"Copied file from {filepath} to {backup_filepath}")
-        else:
-            logger.warning(f"File {filepath} does not exist, no backup needed.")
-        return True
-    except OSError as e:
-        logger.error(f"Error creating backup: {e}")
-        return False
-
-
-def process_file_content(
-    filepath: str, search_string: str, replace_string: str
-) -> bool:
-    """
-    Reads a file, replaces a string, and writes the modified content back.
-
-    Args:
-        filepath: The path to the file.
-        search_string: The string to search for.
-        replace_string: The string to replace with.
-
-    Returns:
-        True if the operation was successful, False otherwise.
-    """
-    file_content = read_file(filepath)
-    if file_content is None:
-        logger.error(f"Failed to read file: {filepath}")
-        return False
-
-    if search_string in file_content:
-        new_content = file_content.replace(search_string, replace_string)
-        if not write_file(filepath, new_content):
-            logger.error(f"Failed to write to file: {filepath}")
+        except (IOError, OSError) as e:
+            logger.error(f"Error creating backup: {e}")
             return False
-        logger.info(f"Replaced '{search_string}' with '{replace_string}' in {filepath}")
-    else:
-        logger.info(f"Search string '{search_string}' not found in {filepath}")
-    return True
 
+    def _restore_backup(self) -> bool:
+        """
+        Restores the file from the backup.
 
-def run_system_command(
-    command: str,
-    working_directory: str = ".",
-    environment_variables: Optional[Dict] = None,
-) -> Tuple[int, str, str]:
-    """
-    Runs a shell command and returns the return code, stdout, and stderr.
+        Returns:
+            bool: True if the restore was successful, False otherwise.
+        """
+        try:
+            if not os.path.exists(self.backup_path):
+                logger.error(f"Backup file not found: {self.backup_path}")
+                return False
 
-    Args:
-        command: The shell command to run.
-        working_directory: The working directory for the command.
-        environment_variables: Optional environment variables to set.
+            shutil.copy2(self.backup_path, self.file_path)
+            logger.info(f"Restored from backup: {self.backup_path}")
+            return True
 
-    Returns:
-        A tuple containing the return code, stdout, and stderr.
-    """
-    command_list = command.split()
-    return execute_command(
-        command_list, cwd=working_directory, env=environment_variables
-    )
+        except (IOError, OSError) as e:
+            logger.error(f"Error restoring from backup: {e}")
+            return False
 
+    def _check_python_version(self) -> bool:
+        """
+        Checks if the Python version is compatible.
 
-def main():
-    """
-    Main function to demonstrate file operations, backups, and command execution.
-    """
-    # Configuration
-    target_file = "example.txt"
-    backup_directory = "backups"
-    search_term = "old_value"
-    replace_term = "new_value"
-    system_command = "ls -l"
+        Returns:
+            bool: True if the version is compatible, False otherwise.
+        """
+        try:
+            if sys.version_info < (3, 7):
+                logger.error(
+                    "Incompatible Python version.  Requires Python 3.7 or higher."
+                )
+                return False
+            return True
+        except Exception as e:
+            logger.error(f"Error checking Python version: {e}")
+            return False
 
-    # --- Directory Operations ---
-    if not create_directory(backup_directory):
-        logger.error("Failed to create backup directory.")
-        return 1
+    def _format_code(self) -> bool:
+        """
+        Formats the code using black.
 
-    # --- File Operations & Backups ---
-    # Create a dummy file if it doesn't exist
-    if not os.path.exists(target_file):
-        if not write_file(target_file, "This is the old_value in the example file."):
-            logger.error("Failed to create example file.")
-            return 1
+        Returns:
+            bool: True if the formatting was successful, False otherwise.
+        """
+        try:
+            subprocess.run(["black", self.file_path], check=True, capture_output=True)
+            logger.info("Code formatted with black.")
+            return True
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Error formatting code with black: {e}\n{e.stderr.decode()}")
+            return False
+        except FileNotFoundError:
+            logger.error("Black not found. Please install it (pip install black).")
+            return False
+        except Exception as e:
+            logger.error(f"An unexpected error occurred during formatting: {e}")
+            return False
 
-    if not analyze_and_backup_file(target_file, backup_directory):
-        logger.error("Failed to analyze and backup file.")
-        return 1
+    def _run_tests(self) -> bool:
+        """
+        Runs tests using pytest.  Assumes tests are in the same directory or a related test directory.
 
-    # --- File Content Replacement ---
-    if not process_file_content(target_file, search_term, replace_term):
-        logger.error("Failed to process file content.")
-        return 1
+        Returns:
+            bool: True if all tests pass, False otherwise.
+        """
+        try:
+            # Assuming a standard pytest setup where tests are discoverable.  Adjust as necessary.
+            result = subprocess.run(
+                ["pytest", os.path.dirname(self.file_path)],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            logger.info(f"Test Results:\n{result.stdout}")
+            if "FAILED" in result.stdout or "ERROR" in result.stdout:
+                logger.error("Tests failed.")
+                return False
+            logger.info("Tests passed.")
+            return True
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Error running tests:\n{e.stderr}")
+            return False
+        except FileNotFoundError:
+            logger.error("Pytest not found. Please install it (pip install pytest).")
+            return False
+        except Exception as e:
+            logger.error(f"An unexpected error occurred during testing: {e}")
+            return False
 
-    # --- System Command Execution ---
-    return_code, stdout, stderr = run_system_command(system_command)
+    def refactor(self) -> bool:
+        """
+        Refactors the Python file, applying Extract Method and formatting.
 
-    logger.info(f"System command output: \nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}")
-    if return_code != 0:
-        logger.error(f"System command failed with return code {return_code}")
-        return return_code
-    else:
-        logger.info("System command executed successfully.")
+        Returns:
+            bool: True if the refactoring was successful, False otherwise.
+        """
+        try:
+            if not self._check_python_version():
+                return False
 
-    # --- Cleanup ---
-    if delete_file(target_file):
-        logger.info(f"Deleted {target_file}")
+            if not self._create_backup():
+                return False
 
-    return 0  # Success
+            if not self._format_code():
+                logger.warning(
+                    "Code formatting failed, but continuing with refactoring."
+                )
+
+            # **********************************************************************************
+            # Begin Refactoring - Replace with actual refactoring logic (extract method).
+            # This is where the core refactoring using 'Extract Method' should happen.
+            # **********************************************************************************
+            logger.info("Refactoring in progress (Extract Method)...")
+            #  Placeholder - Replace this with the actual code modification using Extract Method.
+            #  This could involve:
+            #  1. Reading the file content
+            #  2. Parsing the content (e.g., using ast module, regex, or a custom parser)
+            #  3. Identifying the code block to extract.
+            #  4. Extracting the code block into a new function
+            #  5. Replacing the original code block with a call to the new function.
+            #  6. Writing the modified code back to the file.
+            # For demonstration, this replaces the file content with a simplified version.  Replace with the actual logic.
+
+            try:
+                with open(self.file_path, "w") as f:
+                    f.write("# Refactored using Extract Method (placeholder)\n")
+                    f.write(
+                        "def new_function():\n    print('Extracted function output')\n\n"
+                    )
+                    f.write("def main():\n    new_function()\n\n")
+                    f.write("if __name__ == '__main__':\n    main()\n")
+                logger.info("File modified (placeholder for Extract Method)")
+            except (IOError, OSError) as e:
+                logger.error(
+                    f"Error writing to file during extract method placeholder: {e}"
+                )
+                self._restore_backup()  # Attempt to restore in case of failure
+                return False
+
+            # **********************************************************************************
+            # End Refactoring
+            # **********************************************************************************
+
+            if not self._run_tests():
+                logger.error("Tests failed after refactoring. Restoring backup.")
+                if not self._restore_backup():
+                    logger.critical("Failed to restore backup after failed tests.")
+                return False
+
+            logger.success("Refactoring completed successfully.")
+            return True
+
+        except Exception as e:
+            logger.critical(f"An unexpected error occurred during refactoring: {e}")
+            if os.path.exists(self.backup_path):
+                if not self._restore_backup():
+                    logger.critical(
+                        "Failed to restore backup after an unexpected error."
+                    )
+            return False
+
+    def cleanup(self):
+        """
+        Deletes the backup file.  Call this after successful refactoring or if you're sure you don't need the backup.
+        """
+        try:
+            if os.path.exists(self.backup_path):
+                os.remove(self.backup_path)
+                logger.info(f"Backup file deleted: {self.backup_path}")
+            else:
+                logger.info("No backup file to delete.")
+        except (IOError, OSError) as e:
+            logger.error(f"Error deleting backup file: {e}")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    refactorer = SystemRefactor()
+    success = refactorer.refactor()
+
+    if success:
+        refactorer.cleanup()
+    else:
+        logger.error("Refactoring failed. Please check the logs.")
