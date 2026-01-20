@@ -1,56 +1,45 @@
 import pytest
-import os
-import sys
 from unittest.mock import patch, MagicMock
-
-# Add the project root to the Python path
-sys.path.append(os.getcwd())
-
-from src.playground.test_mission_control import (
-    test_mission_control_initialization,
-    test_mission_control_start_mission,
-    test_mission_control_end_mission,
-    test_mission_control_mission_status,
-)
-from src.mission_control import MissionControl
-from loguru import logger
-
-# Mock the logger to avoid real logging during tests
-@pytest.fixture
-def mock_logger():
-    with patch("src.mission_control.logger.info") as mock_info, \
-         patch("src.mission_control.logger.error") as mock_error:
-        yield mock_info, mock_error
-
+from src.playground.test_mission_control import MissionControl
+import logging
 
 @pytest.fixture
 def mission_control():
-    """Fixture to create a MissionControl instance."""
-    try:
-        return MissionControl()
-    except Exception as e:
-        logger.error(f"Failed to initialize MissionControl for testing: {e}")
-        pytest.fail(f"Failed to initialize MissionControl: {e}")
+    return MissionControl()
+
+def test_start_mission(mission_control, caplog):
+    caplog.set_level(logging.INFO)
+    mission_name = "TestMission"
+    mission_control.start_mission(mission_name)
+    assert mission_name in mission_control.missions
+    assert mission_control.missions[mission_name] == "Active"
+    assert any(record.levelname == "INFO" and record.message == f"Starting mission: {mission_name}" for record in caplog.records)
 
 
-def test_mission_control_initialization_wrapper(mission_control):
-    """Wrapper for test_mission_control_initialization."""
-    test_mission_control_initialization(mission_control)
+def test_end_mission(mission_control, caplog):
+    caplog.set_level(logging.INFO)
+    mission_name = "TestMission"
+    mission_control.start_mission(mission_name)
+    mission_control.end_mission(mission_name)
+    assert mission_name in mission_control.missions
+    assert mission_control.missions[mission_name] == "Inactive"
+    assert any(record.levelname == "INFO" and record.message == f"Ending mission: {mission_name}" for record in caplog.records)
 
 
-def test_mission_control_start_mission_wrapper(mission_control, mock_logger):
-    """Wrapper for test_mission_control_start_mission."""
-    mock_info, mock_error = mock_logger
-    test_mission_control_start_mission(mock_info, mission_control)
+def test_mission_status_active(mission_control):
+    mission_name = "TestMission"
+    mission_control.start_mission(mission_name)
+    status = mission_control.mission_status(mission_name)
+    assert status == f"Mission Status: {mission_name} - Active"
 
 
-def test_mission_control_end_mission_wrapper(mission_control, mock_logger):
-    """Wrapper for test_mission_control_end_mission."""
-    mock_info, mock_error = mock_logger
-    test_mission_control_end_mission(mock_info, mission_control)
+def test_mission_status_inactive(mission_control):
+    mission_name = "TestMission"
+    status = mission_control.mission_status(mission_name)
+    assert status == f"Mission Status: {mission_name} - Inactive"
 
 
-def test_mission_control_mission_status_wrapper(mission_control, mock_logger):
-    """Wrapper for test_mission_control_mission_status."""
-    mock_info, mock_error = mock_logger
-    test_mission_control_mission_status(mission_control)
+def test_mission_status_does_not_exist(mission_control):
+    mission_name = "NonExistentMission"
+    status = mission_control.mission_status(mission_name)
+    assert status == f"Mission Status: {mission_name} - Inactive"
