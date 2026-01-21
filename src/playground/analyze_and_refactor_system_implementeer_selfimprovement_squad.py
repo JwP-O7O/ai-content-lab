@@ -115,7 +115,7 @@ class SelfImprovementSquad:
         Berekent de kans op succes gebaseerd op de skill level en task complexity.
         """
         try:
-            return min(0.9, skill_level * 0.1) - (task_complexity * 0.05)
+            return max(0.0, min(0.9, skill_level * 0.1 - task_complexity * 0.05))
         except Exception as e:
             logger.error(f"Error calculating success chance: {e}")
             return 0.1
